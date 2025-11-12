@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ats.android.models.Employee
@@ -27,10 +28,11 @@ import com.ats.android.utils.LocaleManager
 import com.ats.android.utils.TestDataHelper
 import com.ats.android.viewmodels.SettingsViewModel
 import kotlinx.coroutines.launch
+import com.ats.android.services.UpdateManager
 
 
 /**
- * Settings Screen matching iOS design
+ * Settings Screen with Material 3 Design
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +43,8 @@ fun IOSSettingsScreen(
     onSignOut: () -> Unit
 ) {
     val context = LocalContext.current
+    val updateManager = remember { UpdateManager(context) }
+    val downloadProgress by updateManager.downloadProgress.collectAsState()
     val settingsViewModel: SettingsViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -88,6 +92,16 @@ fun IOSSettingsScreen(
                 contentPadding = PaddingValues(Spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(Spacing.xl)
             ) {
+                // App Update Section (Prominent at top)
+                item {
+                    UpdateSection(
+                        downloadProgress = downloadProgress,
+                        onUpdateClick = {
+                            updateManager.downloadAndInstallUpdate()
+                        }
+                    )
+                }
+                
                 // Profile Section (if employee exists)
                 currentEmployee?.let { employee ->
                     item {
@@ -245,30 +259,12 @@ fun IOSSettingsScreen(
                 item {
                     SettingsGroupCard(title = stringResource(com.ats.android.R.string.about)) {
                         IOSSettingsRow(
-                            icon = Icons.Default.SystemUpdate,
-                            title = "Check for Updates",
-                            subtitle = "Download latest version",
-                            value = null,
-                            showChevron = true,
-                            onClick = {
-                                showMessage = "Opening update page..."
-                                val intent = android.content.Intent(
-                                    android.content.Intent.ACTION_VIEW,
-                                    android.net.Uri.parse("https://github.com/Atshansd1/ATS-Android/releases/latest")
-                                )
-                                context.startActivity(intent)
-                            }
-                        )
-                        
-                        Divider(color = ATSColors.DividerColor)
-                        
-                        IOSSettingsRow(
                             icon = Icons.Default.Info,
                             title = stringResource(com.ats.android.R.string.version),
-                            value = "1.2.0",
+                            value = "1.3.0",
                             showChevron = false,
                             onClick = { 
-                                showMessage = context.getString(com.ats.android.R.string.ats_android_version)
+                                showMessage = "ATS Android v1.3.0 - Material Design 3"
                             }
                         )
                         
@@ -590,6 +586,202 @@ fun IOSSettingsRow(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Update Section Component - Material 3 Design
+ */
+@Composable
+fun UpdateSection(
+    downloadProgress: UpdateManager.DownloadProgress,
+    onUpdateClick: () -> Unit
+) {
+    val context = LocalContext.current
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SystemUpdate,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(com.ats.android.R.string.app_updates),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = stringResource(com.ats.android.R.string.update_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            
+            // Update Status/Progress
+            when (downloadProgress) {
+                is UpdateManager.DownloadProgress.Idle -> {
+                    // Update Button
+                    Button(
+                        onClick = onUpdateClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(com.ats.android.R.string.download_and_install),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    
+                    Text(
+                        text = stringResource(com.ats.android.R.string.tap_to_download),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                
+                is UpdateManager.DownloadProgress.Downloading -> {
+                    // Progress Bar
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        LinearProgressIndicator(
+                            progress = downloadProgress.progress / 100f,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(MaterialTheme.shapes.small),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = stringResource(com.ats.android.R.string.downloading_update),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = stringResource(com.ats.android.R.string.download_progress, downloadProgress.progress),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+                
+                is UpdateManager.DownloadProgress.Completed -> {
+                    // Install prompt
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Text(
+                            text = stringResource(com.ats.android.R.string.update_downloaded),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = stringResource(com.ats.android.R.string.install_update),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+                
+                is UpdateManager.DownloadProgress.Error -> {
+                    // Error message
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Error,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Column {
+                            Text(
+                                text = stringResource(com.ats.android.R.string.update_failed),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                text = downloadProgress.message,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                    
+                    // Retry button
+                    OutlinedButton(
+                        onClick = onUpdateClick,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Retry")
+                    }
+                }
             }
         }
     }

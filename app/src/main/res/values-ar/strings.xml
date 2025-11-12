@@ -370,17 +370,18 @@
     <string name="check_for_updates">التحقق من التحديثات</string>
     <string name="new_version_available">إصدار جديد متاح</string>
     <string name="update_now">التحديث الآن</string>
-    <string name="downloading_update">جاري تحميل التحديث...</string>
-    <string name="download_progress">تم التحميل %d%%</string>
-    <string name="update_downloaded">تم تحميل التحديث</string>
-    <string name="install_update">تثبيت التحديث</string>
+    <string name="downloading_update">جاري التثبيت...</string>
+    <string name="download_progress">%d%%</string>
+    <string name="update_downloaded">جاهز للتثبيت</string>
+    <string name="install_update">اضغط للتثبيت</string>
     <string name="update_failed">فشل التحديث</string>
-    <string name="update_description">تحميل وتثبيت أحدث إصدار من تطبيق ATS</string>
-    <string name="current_version">الإصدار الحالي: %s</string>
-    <string name="latest_version">أحدث إصدار: %s</string>
+    <string name="update_description">تثبيت أحدث إصدار</string>
+    <string name="current_version">%s</string>
+    <string name="latest_version">%s</string>
     <string name="up_to_date">أنت تستخدم أحدث إصدار!</string>
     <string name="checking_updates">جاري التحقق من التحديثات...</string>
-    <string name="download_and_install">تحميل وتثبيت</string>
+    <string name="install_now">تثبيت</string>
     <string name="automatic_update">تحديث تلقائي</string>
-    <string name="tap_to_download">اضغط للتحميل والتثبيت تلقائياً</string>
+    <string name="tap_to_install">اضغط لتثبيت النسخة الجديدة</string>
+    <string name="version_info">%s ← %s</string>
 </resources>

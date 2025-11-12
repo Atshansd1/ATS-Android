@@ -45,6 +45,14 @@ fun IOSSettingsScreen(
     val context = LocalContext.current
     val updateManager = remember { UpdateManager(context) }
     val downloadProgress by updateManager.downloadProgress.collectAsState()
+    val versionInfo by updateManager.versionInfo.collectAsState()
+    val scope = rememberCoroutineScope()
+    
+    // Check for updates on screen load
+    LaunchedEffect(Unit) {
+        updateManager.checkForUpdates()
+    }
+    
     val settingsViewModel: SettingsViewModel = viewModel(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -61,7 +69,6 @@ fun IOSSettingsScreen(
     }
     
     var showSignOutDialog by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
     var showMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     
@@ -92,16 +99,6 @@ fun IOSSettingsScreen(
                 contentPadding = PaddingValues(Spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(Spacing.xl)
             ) {
-                // App Update Section (Prominent at top)
-                item {
-                    UpdateSection(
-                        downloadProgress = downloadProgress,
-                        onUpdateClick = {
-                            updateManager.downloadAndInstallUpdate()
-                        }
-                    )
-                }
-                
                 // Profile Section (if employee exists)
                 currentEmployee?.let { employee ->
                     item {
@@ -255,16 +252,32 @@ fun IOSSettingsScreen(
                     }
                 }
                 
+                // Update Section (Only show if new version available)
+                versionInfo?.let { info ->
+                    if (info.isUpdateAvailable) {
+                        item {
+                            ExpressiveUpdateCard(
+                                currentVersion = "1.3.1",
+                                newVersion = info.latestVersion,
+                                downloadProgress = downloadProgress,
+                                onUpdateClick = {
+                                    updateManager.downloadAndInstallUpdate(info.downloadUrl)
+                                }
+                            )
+                        }
+                    }
+                }
+                
                 // About Section
                 item {
                     SettingsGroupCard(title = stringResource(com.ats.android.R.string.about)) {
                         IOSSettingsRow(
                             icon = Icons.Default.Info,
                             title = stringResource(com.ats.android.R.string.version),
-                            value = "1.3.0",
+                            value = "1.3.1",
                             showChevron = false,
                             onClick = { 
-                                showMessage = "ATS Android v1.3.0 - Material Design 3"
+                                showMessage = "ATS Android v1.3.1 - M3 Expressive"
                             }
                         )
                         
@@ -592,39 +605,67 @@ fun IOSSettingsRow(
 }
 
 /**
- * Update Section Component - Material 3 Design
+ * M3 Expressive Update Card - Only shown when update is available
+ * Applies expressive design principles: shape variety, rich colors, emphasized typography
  */
 @Composable
-fun UpdateSection(
+fun ExpressiveUpdateCard(
+    currentVersion: String,
+    newVersion: String,
     downloadProgress: UpdateManager.DownloadProgress,
     onUpdateClick: () -> Unit
 ) {
-    val context = LocalContext.current
-    
+    // M3 Expressive: Mix of shapes - rounded card with contrasting elements
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        shape = MaterialTheme.shapes.extraLarge, // Expressive: Extra large corners
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = MaterialTheme.colorScheme.secondaryContainer // Expressive: Rich color
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
+            defaultElevation = 4.dp // Expressive: Elevated for emphasis
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(24.dp), // Expressive: Generous padding
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Header
+            // Hero Moment: Emphasized header with version info
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    // Expressive Typography: Bold, large title
+                    Text(
+                        text = stringResource(com.ats.android.R.string.new_version_available),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold, // Emphasized
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    // Version progression
+                    Text(
+                        text = stringResource(
+                            com.ats.android.R.string.version_info,
+                            currentVersion,
+                            newVersion
+                        ),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary // Expressive: Color contrast
+                    )
+                }
+                
+                // Expressive: Circular icon badge with contrasting shape
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(56.dp) // Larger for emphasis
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary),
                     contentAlignment = Alignment.Center
@@ -633,21 +674,7 @@ fun UpdateSection(
                         imageVector = Icons.Default.SystemUpdate,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(com.ats.android.R.string.app_updates),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        text = stringResource(com.ats.android.R.string.update_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
@@ -655,11 +682,13 @@ fun UpdateSection(
             // Update Status/Progress
             when (downloadProgress) {
                 is UpdateManager.DownloadProgress.Idle -> {
-                    // Update Button
+                    // Expressive: Prominent action button
                     Button(
                         onClick = onUpdateClick,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp), // Expressive: Taller button for emphasis
+                        shape = MaterialTheme.shapes.large, // Mix of shapes
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         )
@@ -667,52 +696,55 @@ fun UpdateSection(
                         Icon(
                             imageVector = Icons.Default.Download,
                             contentDescription = null,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(24.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        // Expressive: Emphasized button text
                         Text(
-                            text = stringResource(com.ats.android.R.string.download_and_install),
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold
+                            text = stringResource(com.ats.android.R.string.install_now),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                     
                     Text(
-                        text = stringResource(com.ats.android.R.string.tap_to_download),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                        text = stringResource(com.ats.android.R.string.tap_to_install),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
                 
                 is UpdateManager.DownloadProgress.Downloading -> {
-                    // Progress Bar
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Expressive: Animated progress with emphasized text
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // Bold progress bar
                         LinearProgressIndicator(
                             progress = downloadProgress.progress / 100f,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(8.dp)
-                                .clip(MaterialTheme.shapes.small),
+                                .height(12.dp), // Thicker for visibility
                             color = MaterialTheme.colorScheme.primary,
                             trackColor = MaterialTheme.colorScheme.surfaceVariant
                         )
                         
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = stringResource(com.ats.android.R.string.downloading_update),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
+                            // Expressive: Large, bold percentage
                             Text(
                                 text = stringResource(com.ats.android.R.string.download_progress, downloadProgress.progress),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -720,66 +752,68 @@ fun UpdateSection(
                 }
                 
                 is UpdateManager.DownloadProgress.Completed -> {
-                    // Install prompt
+                    // Expressive: Success state with large icon
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(48.dp) // Large for emphasis
                         )
                         Text(
                             text = stringResource(com.ats.android.R.string.update_downloaded),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                         Text(
                             text = stringResource(com.ats.android.R.string.install_update),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                         )
                     }
                 }
                 
                 is UpdateManager.DownloadProgress.Error -> {
-                    // Error message
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Error,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        Column {
-                            Text(
-                                text = stringResource(com.ats.android.R.string.update_failed),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.error
+                    // Expressive: Clear error state
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Error,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(32.dp)
                             )
-                            Text(
-                                text = downloadProgress.message,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
+                            Column {
+                                Text(
+                                    text = stringResource(com.ats.android.R.string.update_failed),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                Text(
+                                    text = downloadProgress.message,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                                )
+                            }
                         }
-                    }
-                    
-                    // Retry button
-                    OutlinedButton(
-                        onClick = onUpdateClick,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Retry")
+                        
+                        OutlinedButton(
+                            onClick = onUpdateClick,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Retry")
+                        }
                     }
                 }
             }

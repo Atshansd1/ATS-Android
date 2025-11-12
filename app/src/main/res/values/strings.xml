@@ -263,17 +263,18 @@
     <string name="check_for_updates">Check for Updates</string>
     <string name="new_version_available">New Version Available</string>
     <string name="update_now">Update Now</string>
-    <string name="downloading_update">Downloading Update...</string>
-    <string name="download_progress">%d%% downloaded</string>
-    <string name="update_downloaded">Update Downloaded</string>
-    <string name="install_update">Install Update</string>
+    <string name="downloading_update">Installing update...</string>
+    <string name="download_progress">%d%%</string>
+    <string name="update_downloaded">Ready to Install</string>
+    <string name="install_update">Tap to Install</string>
     <string name="update_failed">Update Failed</string>
-    <string name="update_description">Download and install the latest version of ATS</string>
-    <string name="current_version">Current Version: %s</string>
-    <string name="latest_version">Latest Version: %s</string>
+    <string name="update_description">Install the latest version</string>
+    <string name="current_version">v%s</string>
+    <string name="latest_version">v%s</string>
     <string name="up_to_date">You\'re up to date!</string>
     <string name="checking_updates">Checking for updates...</string>
-    <string name="download_and_install">Download &amp; Install</string>
+    <string name="install_now">Install</string>
     <string name="automatic_update">Automatic Update</string>
-    <string name="tap_to_download">Tap to download and install automatically</string>
+    <string name="tap_to_install">Tap to install the new version</string>
+    <string name="version_info">%s → %s</string>
 </resources>

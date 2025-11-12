@@ -13,22 +13,36 @@ import androidx.core.content.FileProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.io.File
+import java.net.URL
 
 class UpdateManager(private val context: Context) {
     
     companion object {
         private const val TAG = "UpdateManager"
-        private const val GITHUB_LATEST_RELEASE_URL = "https://github.com/Atshansd1/ATS-Android/releases/latest"
-        private const val DOWNLOAD_URL = "https://github.com/Atshansd1/ATS-Android/releases/download/v1.3.0/ATS-Android-v1.3.0-signed.apk"
+        private const val GITHUB_API_URL = "https://api.github.com/repos/Atshansd1/ATS-Android/releases/latest"
+        private const val CURRENT_VERSION = "1.3.1"
         private const val APK_FILENAME = "ATS-Update.apk"
     }
+    
+    data class VersionInfo(
+        val latestVersion: String,
+        val downloadUrl: String,
+        val isUpdateAvailable: Boolean
+    )
     
     private val _downloadProgress = MutableStateFlow<DownloadProgress>(DownloadProgress.Idle)
     val downloadProgress: StateFlow<DownloadProgress> = _downloadProgress.asStateFlow()
     
+    private val _versionInfo = MutableStateFlow<VersionInfo?>(null)
+    val versionInfo: StateFlow<VersionInfo?> = _versionInfo.asStateFlow()
+    
     private var downloadId: Long = -1
     private var downloadManager: DownloadManager? = null
+    private var latestDownloadUrl: String = ""
     
     private val downloadReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -41,16 +55,75 @@ class UpdateManager(private val context: Context) {
         }
     }
     
-    fun checkForUpdates() {
-        Log.d(TAG, "Opening GitHub releases page")
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(GITHUB_LATEST_RELEASE_URL))
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
+    suspend fun checkForUpdates(): VersionInfo? {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "Checking for updates from GitHub API")
+                val url = URL(GITHUB_API_URL)
+                val connection = url.openConnection()
+                connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+                
+                val response = connection.getInputStream().bufferedReader().use { it.readText() }
+                val json = JSONObject(response)
+                
+                val tagName = json.getString("tag_name").removePrefix("v")
+                val assets = json.getJSONArray("assets")
+                
+                var apkUrl = ""
+                for (i in 0 until assets.length()) {
+                    val asset = assets.getJSONObject(i)
+                    val name = asset.getString("name")
+                    if (name.endsWith(".apk") && name.contains("signed")) {
+                        apkUrl = asset.getString("browser_download_url")
+                        break
+                    }
+                }
+                
+                val isNewer = compareVersions(tagName, CURRENT_VERSION) > 0
+                val versionInfo = VersionInfo(
+                    latestVersion = tagName,
+                    downloadUrl = apkUrl,
+                    isUpdateAvailable = isNewer
+                )
+                
+                _versionInfo.value = versionInfo
+                Log.d(TAG, "Latest version: $tagName, Current: $CURRENT_VERSION, Update available: $isNewer")
+                versionInfo
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking for updates: ${e.message}", e)
+                null
+            }
+        }
     }
     
-    fun downloadAndInstallUpdate() {
+    private fun compareVersions(v1: String, v2: String): Int {
+        val parts1 = v1.split(".").map { it.toIntOrNull() ?: 0 }
+        val parts2 = v2.split(".").map { it.toIntOrNull() ?: 0 }
+        
+        for (i in 0 until maxOf(parts1.size, parts2.size)) {
+            val part1 = parts1.getOrNull(i) ?: 0
+            val part2 = parts2.getOrNull(i) ?: 0
+            if (part1 != part2) {
+                return part1.compareTo(part2)
+            }
+        }
+        return 0
+    }
+    
+    fun downloadAndInstallUpdate(downloadUrl: String? = null) {
         try {
-            Log.d(TAG, "Starting update download")
+            val urlToUse = downloadUrl ?: latestDownloadUrl
+            if (urlToUse.isEmpty()) {
+                _downloadProgress.value = DownloadProgress.Error("No download URL available")
+                return
+            }
+            
+            latestDownloadUrl = urlToUse
+            
+            Log.d(TAG, "Starting update download from: $urlToUse")
             _downloadProgress.value = DownloadProgress.Downloading(0)
             
             // Register download complete receiver
@@ -77,7 +150,7 @@ class UpdateManager(private val context: Context) {
             }
             
             // Create download request
-            val request = DownloadManager.Request(Uri.parse(DOWNLOAD_URL)).apply {
+            val request = DownloadManager.Request(Uri.parse(urlToUse)).apply {
                 setTitle("ATS Update")
                 setDescription("Downloading latest version")
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)

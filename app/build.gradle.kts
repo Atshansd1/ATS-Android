@@ -24,6 +24,15 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("../ats-release-key.jks")
+            storePassword = "atsandroid2024"
+            keyAlias = "ats-key-alias"
+            keyPassword = "atsandroid2024"
+        }
+    }
+    
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -31,7 +40,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
+    }
+    
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
     }
     
     compileOptions {

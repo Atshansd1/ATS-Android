@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name -->
+    <string name="app_name">نظام تتبع الحضور</string>
+    
+    <!-- Authentication -->
+    <string name="login_subtitle">نظام تتبع الحضور</string>
+    <string name="email_or_employee_id">البريد الإلكتروني أو رقم الموظف</string>
+    <string name="password">كلمة المرور</string>
+    <string name="sign_in">تسجيل الدخول</string>
+    <string name="sign_out">تسجيل الخروج</string>
+    <string name="sign_out_confirm">هل أنت متأكد من تسجيل الخروج؟</string>
+    <string name="cancel">إلغاء</string>
+    <string name="login_instructions">المدير: استخدم البريد الإلكتروني\nالموظف: استخدم رقم الموظف</string>
+    
+    <!-- Errors -->
+    <string name="error_empty_credentials">الرجاء إدخال البريد الإلكتروني/رقم الموظف وكلمة المرور</string>
+    <string name="error_not_authenticated">غير مصرح</string>
+    <string name="error_location_unavailable">الموقع غير متاح</string>
+    <string name="error_no_active_checkin">لا يوجد تسجيل حضور نشط</string>
+    
+    <!-- Tabs -->
+    <string name="tab_dashboard">لوحة التحكم</string>
+    <string name="tab_checkin">تسجيل الحضور</string>
+    <string name="tab_history">السجل</string>
+    <string name="tab_reports">التقارير</string>
+    <string name="tab_settings">الإعدادات</string>
+    <string name="tab_live_map">الخريطة المباشرة</string>
+    <string name="tab_employees">الموظفون</string>
+    
+    <!-- Check In -->
+    <string name="checkin_title">الحضور</string>
+    <string name="status_checked_in">تم تسجيل الحضور</string>
+    <string name="status_not_checked_in">لم يتم تسجيل الحضور</string>
+    <string name="checked_in_at">تم التسجيل في</string>
+    <string name="latitude">خط العرض</string>
+    <string name="longitude">خط الطول</string>
+    <string name="accuracy">الدقة</string>
+    <string name="location_unavailable">الموقع غير متاح</string>
+    <string name="enable_location">تفعيل الموقع</string>
+    <string name="check_in">تسجيل الحضور</string>
+    <string name="check_out">تسجيل الانصراف</string>
+    
+    <!-- Dashboard -->
+    <string name="dashboard">لوحة التحكم</string>
+    <string name="welcome">مرحباً، %s</string>
+    <string name="user">المستخدم</string>
+    <string name="active_now">نشط الآن</string>
+    <string name="total_employees">إجمالي الموظفين</string>
+    <string name="on_leave">في إجازة</string>
+    <string name="todays_checkins">تسجيلات اليوم</string>
+    <string name="live_activity">النشاط المباشر</string>
+    <string name="live_activity_24h">النشاط المباشر (24 ساعة)</string>
+    <string name="employee_movements">تحركات الموظفين</string>
+    <string name="recent_activity">النشاط الحديث</string>
+    <string name="no_recent_activity">لا يوجد نشاط حديث</string>
+    <string name="employee_activity_desc">سيظهر نشاط الموظفين هنا</string>
+    <string name="no_active_employees">لا يوجد موظفون نشطون</string>
+    <string name="active_employees_desc">سيظهر الموظفون هنا عند تسجيل الحضور</string>
+    <string name="no_active_employees_desc">سيظهر الموظفون هنا عند تسجيل الحضور</string>
+    <string name="view_map">عرض الخريطة</string>
+    <string name="good_morning">صباح الخير</string>
+    <string name="good_afternoon">مساء الخير</string>
+    <string name="good_evening">مساء الخير</string>
+    <string name="active">نشط</string>
+    
+    <!-- History -->
+    <string name="history_title">سجل الحضور</string>
+    <string name="filter_week">الأسبوع الماضي</string>
+    <string name="filter_month">الشهر الماضي</string>
+    <string name="filter_all">كل الوقت</string>
+    <string name="no_attendance_records">لا توجد سجلات حضور</string>
+    <string name="in_progress">جاري</string>
+    <string name="attendance_history">سجل الحضور</string>
+    <string name="no_attendance_history">لا توجد سجلات حضور</string>
+    
+    <!-- Reports -->
+    <string name="reports_title">التقارير</string>
+    <string name="no_reports">لا توجد تقارير</string>
+    <string name="create_report">إنشاء تقرير</string>
+    <string name="download">تحميل</string>
+    <string name="date_range">نطاق التاريخ</string>
+    <string name="start_date">تاريخ البداية</string>
+    <string name="end_date">تاريخ النهاية</string>
+    <string name="team_optional">الفريق (اختياري)</string>
+    <string name="create">إنشاء</string>
+    <string name="quick_reports">تقارير سريعة</string>
+    <string name="custom_report">تقرير مخصص</string>
+    <string name="today">اليوم</string>
+    <string name="this_week">هذا الأسبوع</string>
+    <string name="this_month">هذا الشهر</string>
+    <string name="preview">معاينة</string>
+    <string name="export_csv">تصدير CSV</string>
+    <string name="employees">الموظفون</string>
+    <string name="all_employees">جميع الموظفين</string>
+    <string name="selected">محدد</string>
+    <string name="employee_selection">اختيار الموظفين</string>
+    <string name="select_all_employees">تحديد جميع الموظفين</string>
+    <string name="configure_report">إعداد التقرير</string>
+    <string name="report_preview">معاينة التقرير</string>
+    <string name="no_records_found">لا توجد سجلات</string>
+    <string name="no_attendance_desc">لم يتم العثور على سجلات حضور للفترة والموظفين المحددين.</string>
+    <string name="total_records">إجمالي السجلات</string>
+    <string name="total_hours">إجمالي الساعات</string>
+    <string name="avg_day">متوسط/يوم</string>
+    <string name="attendance_records">سجلات الحضور</string>
+    <string name="location_not_available">الموقع غير متاح</string>
+    <string name="generating_report">جاري إنشاء التقرير...</string>
+    <string name="employees_selected">%d محدد</string>
+    <string name="export_records_csv">تصدير %d سجل إلى CSV</string>
+    <string name="duration">المدة</string>
+    <string name="about_reports">حول التقارير</string>
+    <string name="reports_info_text">يتم إنشاء التقارير بتنسيق CSV وتتضمن بيانات حضور الموظفين وأوقات تسجيل الحضور/الانصراف والمواقع والمدة. يمكنك فتحها في Excel أو Google Sheets.</string>
+    <string name="today_report_generated">تم إنشاء تقرير اليوم بنجاح</string>
+    <string name="weekly_report_generated">تم إنشاء التقرير الأسبوعي بنجاح</string>
+    <string name="monthly_report_generated">تم إنشاء التقرير الشهري بنجاح</string>
+    <string name="report_exported">تم تصدير التقرير بنجاح</string>
+    <string name="report_export_failed">فشل تصدير التقرير</string>
+    <string name="close">إغلاق</string>
+    <string name="records">السجلات</string>
+    <string name="still_checked_in">لا يزال مسجل حضور</string>
+    
+    <!-- Settings -->
+    <string name="settings_title">الإعدادات</string>
+    <string name="profile">الملف الشخصي</string>
+    <string name="name">الاسم</string>
+    <string name="preferences">التفضيلات</string>
+    <string name="language">اللغة</string>
+    <string name="notifications">الإشعارات</string>
+    <string name="privacy">الخصوصية والأمان</string>
+    <string name="privacy_center">مركز الخصوصية</string>
+    <string name="location_settings">إعدادات الموقع</string>
+    <string name="location_permissions">أذونات الموقع</string>
+    <string name="about">حول</string>
+    <string name="version">الإصدار</string>
+    <string name="app_info">معلومات التطبيق</string>
+    <string name="source_code">الكود المصدري</string>
+    <string name="done">تم</string>
+    
+    <!-- Language -->
+    <string name="change_language">تغيير اللغة</string>
+    <string name="language_english">English</string>
+    <string name="language_arabic">العربية</string>
+    <string name="language_change_note">سيتم إعادة تشغيل التطبيق لتطبيق تغييرات اللغة</string>
+    <string name="restart_app">إعادة التشغيل</string>
+    <string name="language_restart_message">يجب إعادة تشغيل التطبيق لتطبيق تغيير اللغة. سيتم حفظ بياناتك.</string>
+    
+    <!-- Employee Management -->
+    <string name="manage_employees">إدارة الموظفين</string>
+    <string name="employee_management">إدارة الموظفين</string>
+    <string name="add_employee">إضافة موظف</string>
+    <string name="edit_employee">تعديل موظف</string>
+    <string name="employee_details">تفاصيل الموظف</string>
+    <string name="employee_id">رقم الموظف</string>
+    <string name="email">البريد الإلكتروني</string>
+    <string name="phone">الهاتف</string>
+    <string name="department">القسم</string>
+    <string name="status">الحالة</string>
+    <string name="inactive">غير نشط</string>
+    <string name="edit">تعديل</string>
+    <string name="uploading">جاري الرفع...</string>
+    <string name="n_a">غير متاح</string>
+    <string name="search_employees">البحث عن موظفين...</string>
+    <string name="no_employees_found">لا يوجد موظفون</string>
+    <string name="no_matches">لا توجد نتائج</string>
+    <string name="employees_count">%d موظف</string>
+    
+    <!-- Employee Form -->
+    <string name="english_name">الاسم بالإنجليزية</string>
+    <string name="arabic_name">الاسم بالعربية</string>
+    <string name="phone_number">رقم الهاتف</string>
+    <string name="select_role">اختر الدور</string>
+    <string name="employee">موظف</string>
+    <string name="supervisor">مشرف</string>
+    <string name="admin">مدير</string>
+    <string name="create_employee">إنشاء موظف</string>
+    <string name="creating">جاري الإنشاء...</string>
+    <string name="save_changes">حفظ التغييرات</string>
+    <string name="saving">جاري الحفظ...</string>
+    <string name="deactivate_employee">إلغاء تفعيل الموظف</string>
+    <string name="deactivate_confirm">هل أنت متأكد من رغبتك في إلغاء تفعيل %s؟ لن يتمكن من تسجيل الدخول.</string>
+    
+    <!-- Admin Map -->
+    <string name="admin_map_title">التتبع المباشر</string>
+    <string name="live_map">الخريطة المباشرة</string>
+    <string name="loading_locations">جاري تحميل المواقع...</string>
+    <string name="retry">إعادة المحاولة</string>
+    <string name="unknown">غير معروف</string>
+    <string name="search_location">البحث عن موقع</string>
+    <string name="refresh">تحديث</string>
+    <string name="filter">تصفية</string>
+    <string name="search_places">البحث عن الأماكن</string>
+    <string name="clear">مسح</string>
+    <string name="expand">توسيع</string>
+    <string name="employees_active">موظف نشط</string>
+    <string name="nearest_employee">أقرب موظف</string>
+    <string name="searched_location">الموقع المبحوث</string>
+    <string name="filters">التصفية</string>
+    <string name="filter_team">الفريق</string>
+    <string name="filter_role">الدور</string>
+    <string name="team">الفريق</string>
+    <string name="role">الدور</string>
+    <string name="all">الكل</string>
+    <string name="apply">تطبيق</string>
+    <string name="tap_to_view_all">اضغط لعرض الكل</string>
+    <string name="nearby_employees">الموظفون القريبون</string>
+    <string name="km">كم</string>
+    <string name="since">منذ</string>
+    <string name="from">من:</string>
+    <string name="search_error">خطأ في البحث</string>
+    <string name="try_again">حاول مرة أخرى</string>
+    <string name="no_results_found">لم يتم العثور على نتائج</string>
+    <string name="try_different_search">جرب بحثاً مختلفاً</string>
+    
+    <!-- Employee Movements -->
+    <string name="view_all">عرض الكل</string>
+    <string name="loading_movements">جاري تحميل التحركات...</string>
+    <string name="no_movements_detected">لم يتم اكتشاف تحركات</string>
+    <string name="movements_will_appear">ستظهر التحركات هنا عند انتقال الموظفين بين المواقع</string>
+    <string name="movement_details">تفاصيل التحرك</string>
+    <string name="stayed_for">بقي لمدة %s</string>
+    <string name="error_loading_movements">خطأ في تحميل التحركات</string>
+    <string name="time_ago">منذ</string>
+    <string name="just_now">الآن</string>
+    
+    <!-- Movement Types -->
+    <string name="movement_moved">تحرك</string>
+    <string name="movement_stayed">بقي</string>
+    <string name="movement_returned">عاد</string>
+    <string name="movement_left_area">غادر المنطقة</string>
+    <string name="significant_move">تحرك كبير</string>
+    <string name="stationary_stay">بقاء ثابت</string>
+    <string name="returned_to_checkin">عاد إلى موقع الحضور</string>
+    <string name="left_checkin_area">غادر منطقة الحضور</string>
+    
+    <!-- Movement Details -->
+    <string name="from_location">من</string>
+    <string name="to_location">إلى</string>
+    <string name="distance">المسافة</string>
+    <string name="view_on_map">عرض على الخريطة</string>
+    <string name="from_checkin">من موقع الحضور</string>
+    <string name="check_in_location">موقع الحضور</string>
+    
+    <!-- Time Units -->
+    <string name="minutes_short">د</string>
+    <string name="hours_short">س</string>
+    <string name="days_short">ي</string>
+    <string name="meters">م</string>
+    <string name="kilometers">كم</string>
+    
+    <!-- Attendance Management -->
+    <string name="attendance_management">إدارة الحضور</string>
+    <string name="management">الإدارة</string>
+    <string name="configure_shifts_locations">إدارة المناوبات وقيود المواقع</string>
+    <string name="shifts">المناوبات</string>
+    <string name="locations">المواقع</string>
+    <string name="configure_work_schedule">إعداد جدول العمل</string>
+    <string name="set_working_days_hours">تحديد أيام وساعات العمل لمؤسستك</string>
+    <string name="work_days">أيام العمل</string>
+    
+    <!-- Location Restrictions -->
+    <string name="location_restrictions">قيود الموقع</string>
+    <string name="control_where_employees_check_in">التحكم في أماكن تسجيل دخول الموظفين</string>
+    <string name="restriction_type">نوع القيود</string>
+    <string name="check_in_policy">سياسة الحضور</string>
+    <string name="check_in_anywhere">من أي مكان</string>
+    <string name="check_in_specific_location">موقع محدد</string>
+    <string name="check_in_multiple_locations">مواقع متعددة</string>
+    <string name="allowed_locations">المواقع المسموحة</string>
+    <string name="no_locations_added">لم تتم إضافة مواقع بعد</string>
+    <string name="add_location">إضافة موقع</string>
+    <string name="check_in_radius">نطاق الحضور</string>
+    <string name="adjust_check_in_radius">ضبط نطاق الحضور</string>
+    <string name="radius">النطاق</string>
+    
+    <!-- Employee Selection -->
+    <string name="applicable_employees">الموظفون المعنيون</string>
+    <string name="apply_to">تطبيق على</string>
+    <string name="specific_employees">موظفون محددون</string>
+    <string name="selected_employees">الموظفون المحددون</string>
+    <string name="select_employees">اختيار الموظفين</string>
+    
+    <!-- Location Search -->
+    <string name="search_locations">البحث عن مواقع...</string>
+    <string name="search_location_instruction">اكتب للبحث عن موقع باستخدام خرائط جوجل</string>
+    <string name="selected_location">الموقع المحدد</string>
+    <string name="no_locations_found">لم يتم العثور على مواقع</string>
+    
+    <!-- Common -->
+    <string name="success">نجح</string>
+    <string name="error">خطأ</string>
+    <string name="ok">حسناً</string>
+    <string name="loading">جاري التحميل...</string>
+    <string name="searching">جارٍ البحث...</string>
+    <string name="clear_all">مسح الكل</string>
+    <string name="configuration_saved">تم حفظ الإعدادات بنجاح</string>
+    <string name="unknown_error">خطأ غير معروف</string>
+    <string name="active_employees">الموظفون النشطون</string>
+    <string name="checked_in_count">%d موظف حاضر</string>
+    <string name="active_count">%d نشط</string>
+    <string name="showing_last_records">عرض آخر %d سجلات</string>
+    
+    <!-- Days of Week -->
+    <string name="monday">الاثنين</string>
+    <string name="tuesday">الثلاثاء</string>
+    <string name="wednesday">الأربعاء</string>
+    <string name="thursday">الخميس</string>
+    <string name="friday">الجمعة</string>
+    <string name="saturday">السبت</string>
+    <string name="sunday">الأحد</string>
+    
+    <!-- Shift Management -->
+    <string name="shift_management">إدارة المناوبات</string>
+    <string name="start_time">وقت البداية</string>
+    <string name="end_time">وقت النهاية</string>
+    <string name="save">حفظ</string>
+    <string name="enabled">مفعل</string>
+    <string name="disabled">معطل</string>
+    
+    <!-- Additional Settings Screen Strings (non-duplicates only) -->
+    <string name="administration">الإدارة</string>
+    <string name="coming_soon">قريباً</string>
+    <string name="notification_settings">إعدادات الإشعارات - قريباً</string>
+    <string name="location_always_enabled">مفعل دائماً لتتبع الحضور</string>
+    <string name="test_data_development">بيانات تجريبية (للتطوير)</string>
+    <string name="add_test_employees">إضافة موظفين تجريبيين</string>
+    <string name="add_4_sample_employees">إضافة 4 موظفين كعينة</string>
+    <string name="add_test_locations">إضافة مواقع تجريبية</string>
+    <string name="add_3_active_locations">إضافة 3 مواقع نشطة</string>
+    <string name="clean_up_old_locations">تنظيف المواقع القديمة</string>
+    <string name="remove_locations_older_24h">إزالة المواقع الأقدم من 24 ساعة</string>
+    <string name="clear_all_active_locations">مسح جميع المواقع النشطة</string>
+    <string name="remove_all_active_locations">إزالة جميع المواقع النشطة</string>
+    <string name="app_info_details">نظام تتبع الحضور\nمبني بتقنية Jetpack Compose\nقاعدة بيانات Firebase</string>
+    <string name="ats_android_version">ATS أندرويد الإصدار 1.0.0 - تصميم iOS</string>
+    <string name="employee_id_label">رقم الموظف</string>
+    <string name="team_label">الفريق</string>
+    <string name="email_label">البريد الإلكتروني</string>
+    <!-- Check-In Screen -->
+    <string name="check_in_title">تسجيل الحضور</string>
+    <string name="check_out_title">تسجيل الانصراف</string>
+    <string name="check_in_button">تسجيل الحضور</string>
+    <string name="check_out_button">تسجيل الانصراف</string>
+    <string name="current_location">الموقع الحالي</string>
+    <string name="loading_location">جاري تحميل الموقع...</string>
+    <string name="ready_to_check_in">جاهز لتسجيل الحضور</string>
+    <string name="currently_checked_in">مسجل حالياً</string>
+    <string name="check_in_time">وقت الحضور</string>
+    <string name="getting_location">جاري تحديد موقعك...</string>
+    <string name="location_required">يلزم إذن الموقع</string>
+    <string name="unable_to_get_location">تعذر الحصول على الموقع</string>
+    
+    <!-- History Screen -->
+    <string name="attendance_summary">ملخص الحضور</string>
+    <string name="total_days">إجمالي الأيام</string>
+    <string name="days_present">أيام الحضور</string>
+    <string name="hours_worked">ساعات العمل</string>
+    <string name="view_details">عرض التفاصيل</string>
+    <string name="no_records_yet">لا توجد سجلات بعد</string>
+    <string name="no_records_description">سيظهر سجل الحضور الخاص بك هنا بمجرد بدء تسجيل الحضور</string>
+    <string name="completed">مكتمل</string>
+    <string name="load_more">تحميل المزيد</string>
+    <string name="select_date_range">اختر نطاق التاريخ</string>
+    
+    <!-- Reports Config -->
+    <string name="employees_of">%1$d من %2$d موظف</string>
+</resources>

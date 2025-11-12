@@ -1,0 +1,9 @@
+## This file must be created as local.properties (without .template)
+## It should not be checked into Version Control Systems
+
+# Location of the Android SDK
+sdk.dir=/Users/YOUR_USERNAME/Library/Android/sdk
+
+# Google Maps API Key
+# Get your key from: https://console.cloud.google.com/google/maps-apis
+MAPS_API_KEY=AIzaSyDqzJ9FhZ8vQQZX-yU5_xW8nY9KqQFJxYo

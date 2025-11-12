@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name -->
+    <string name="app_name">ATS</string>
+    
+    <!-- Attendance Management -->
+    <string name="attendance_management">Attendance Management</string>
+    <string name="configure_shifts_locations">Manage shifts and location restrictions</string>
+    <string name="shifts">Shifts</string>
+    <string name="locations">Locations</string>
+    <string name="location_restrictions">Location Restrictions</string>
+    <string name="control_where_employees_check_in">Control where employees can check in</string>
+    <string name="check_in_policy">Check-In Policy</string>
+    <string name="allowed_locations">Allowed Locations</string>
+    <string name="add_location">Add Location</string>
+    <string name="no_locations_added">No locations added yet</string>
+    <string name="apply_to">Apply To</string>
+    <string name="specific_employees">Specific Employees</string>
+    <string name="selected_employees">%d selected</string>
+    <string name="search_location">Search for a location</string>
+    <string name="select_employees">Select Employees</string>
+    <string name="radius_meters">Radius: %d meters</string>
+    <string name="saving">Saving...</string>
+    <string name="configuration_saved">Configuration saved successfully</string>
+    <string name="error_saving_configuration">Error saving configuration</string>
+    
+    <!-- Authentication -->
+    <string name="sign_in">Sign In</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="email_or_employee_id">Email or Employee ID</string>
+    <string name="password">Password</string>
+    <string name="enter_email_or_employee_id">Enter your email or employee ID</string>
+    <string name="enter_password">Enter your password</string>
+    <string name="need_help">Need help? Contact your administrator</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
+    
+    <!-- Navigation -->
+    <string name="map">Map</string>
+    <string name="check_in">Check In</string>
+    <string name="history">History</string>
+    <string name="reports">Reports</string>
+    <string name="employees">Employees</string>
+    <string name="settings">Settings</string>
+    
+    <!-- Dashboard -->
+    <string name="dashboard">Dashboard</string>
+    <string name="welcome">Welcome, %s</string>
+    <string name="user">User</string>
+    <string name="todays_summary">Today\'s Summary</string>
+    <string name="active_now">Active Now</string>
+    <string name="total_employees">Total Employees</string>
+    <string name="on_leave">On Leave</string>
+    <string name="todays_checkins">Today\'s Check-ins</string>
+    <string name="checked_in">Checked In</string>
+    <string name="live_activity">Live Activity</string>
+    <string name="live_activity_24h">Live Activity (24h)</string>
+    <string name="employee_movements">Employee Movements</string>
+    <string name="recent_activity">Recent Activity</string>
+    <string name="no_recent_activity">No Recent Activity</string>
+    <string name="employee_activity_desc">Employee activity will appear here</string>
+    <string name="no_active_employees">No Active Employees</string>
+    <string name="active_employees_desc">Active employees will appear here</string>
+    <string name="view_map">View Map</string>
+    
+    <!-- Check In -->
+    <string name="check_in_out">Check In/Out</string>
+    <string name="check_out">Check Out</string>
+    <string name="you_are_checked_in">You are checked in</string>
+    <string name="you_are_checked_out">You are checked out</string>
+    <string name="since">Since %s</string>
+    <string name="logged_in_as">Logged in as: %s</string>
+    
+    <!-- History -->
+    <string name="attendance_history">Attendance History</string>
+    <string name="no_attendance_records">No attendance records</string>
+    <string name="attendance_history_description">Your attendance history will appear here</string>
+    
+    <!-- Map -->
+    <string name="live_map">Live Map</string>
+    <string name="map_feature">Map Feature</string>
+    <string name="map_description">Live employee locations will be displayed here</string>
+    <string name="loading_locations">Loading locations...</string>
+    <string name="retry">Retry</string>
+    <string name="unknown">Unknown</string>
+    <string name="refresh">Refresh</string>
+    <string name="filter">Filter</string>
+    <string name="search_places">Search places</string>
+    <string name="clear">Clear</string>
+    <string name="expand">Expand</string>
+    
+    <!-- Reports -->
+    <string name="reports_feature">Reports Feature</string>
+    <string name="reports_description">Generate and export attendance reports</string>
+    <string name="generate_report">Generate Report</string>
+    <string name="generate_reports">Generate Reports</string>
+    <string name="quick_reports">Quick Reports</string>
+    <string name="today">Today</string>
+    <string name="this_week">This Week</string>
+    <string name="this_month">This Month</string>
+    <string name="custom_report">Custom Report</string>
+    <string name="all_employees">All employees</string>
+    <string name="employees_selected">%d selected</string>
+    <string name="date_range">Date Range</string>
+    <string name="preview">Preview</string>
+    <string name="export_csv">Export CSV</string>
+    <string name="generating_report">Generating report...</string>
+    <string name="report_preview">Report Preview</string>
+    <string name="records">Records</string>
+    <string name="total_hours">Total Hours</string>
+    <string name="avg_day">Avg/Day</string>
+    <string name="attendance_records">Attendance Records</string>
+    <string name="export_records_csv">Export %d Records to CSV</string>
+    <string name="duration">Duration</string>
+    <string name="about_reports">About Reports</string>
+    <string name="reports_info_text">Reports are generated in CSV format and include employee attendance data, check-in/out times, locations, and duration. You can open them in Excel or Google Sheets.</string>
+    <string name="today_report_generated">Today\'s report generated successfully</string>
+    <string name="weekly_report_generated">Weekly report generated successfully</string>
+    <string name="monthly_report_generated">Monthly report generated successfully</string>
+    <string name="report_exported">Report exported successfully</string>
+    <string name="report_export_failed">Failed to export report</string>
+    <string name="close">Close</string>
+    
+    <!-- Movements -->
+    <string name="no_movements_detected">No Movements Detected</string>
+    <string name="movements_will_appear">Movements will appear here when employees move locations</string>
+    <string name="stayed_for">Stayed for %s</string>
+    <string name="error_loading_movements">Error Loading Movements</string>
+    
+    <!-- Employee Management -->
+    <string name="employee_management">Employee Management</string>
+    <string name="add_employee">Add Employee</string>
+    <string name="edit_employee">Edit Employee</string>
+    <string name="delete_employee">Delete Employee</string>
+    <string name="employee_details">Employee Details</string>
+    <string name="employee_management_description">Manage employees, add new ones, and view details</string>
+    <string name="search_employees">Search employees...</string>
+    <string name="no_employees_found">No employees found</string>
+    <string name="no_matches">No matches</string>
+    <string name="employees_count">%d employees</string>
+    
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="preferences">Preferences</string>
+    <string name="language">Language</string>
+    <string name="english">English</string>
+    <string name="arabic">Arabic</string>
+    <string name="notifications">Notifications</string>
+    <string name="notification_preferences">Manage notification preferences</string>
+    <string name="account">Account</string>
+    <string name="profile">Profile</string>
+    <string name="view_edit_profile">View and edit your profile</string>
+    <string name="privacy">Privacy</string>
+    <string name="privacy_security">Privacy and security settings</string>
+    <string name="about">About</string>
+    <string name="about_ats">About ATS</string>
+    <string name="version">Version</string>
+    <string name="app_info">App Info</string>
+    <string name="sign_out_confirm">Are you sure you want to sign out?</string>
+    
+    <!-- Employee Roles -->
+    <string name="admin">Admin</string>
+    <string name="supervisor">Supervisor</string>
+    <string name="employee">Employee</string>
+    <string name="active">Active</string>
+    <string name="inactive">Inactive</string>
+    
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="loading">Loading...</string>
+    <string name="error">Error</string>
+    <string name="success">Success</string>
+    <string name="navigate">Navigate</string>
+    <string name="enabled">Enabled</string>
+    <string name="active_employees">Active Employees</string>
+    <string name="checked_in_count">%d checked in</string>
+    <string name="tap_to_view_all">Tap to view all</string>
+    <string name="active_count">%d Active</string>
+    
+    <!-- Permissions -->
+    <string name="location_permission_required">Location permission is required</string>
+    <string name="grant_permission">Grant Permission</string>
+    
+    <!-- Errors -->
+    <string name="error_generic">An error occurred. Please try again.</string>
+    <string name="error_network">Network error. Please check your connection.</string>
+    <string name="error_auth">Authentication failed. Please check your credentials.</string>
+    
+    <!-- Language Settings -->
+    <string name="change_language">Change Language</string>
+    <string name="language_change_note">App will restart to apply language changes</string>
+    <string name="language_english">English</string>
+    <string name="language_arabic">العربية</string>
+    <string name="restart_app">Restart App</string>
+    <string name="language_restart_message">The app needs to restart to apply the language change. Your data will be saved.</string>
+    
+    <!-- Additional Settings Screen Strings (non-duplicates only) -->
+    <string name="administration">Administration</string>
+    <string name="coming_soon">Coming soon</string>
+    <string name="notification_settings">Notification settings - Coming soon</string>
+    <string name="privacy_center">Privacy Center</string>
+    <string name="location_permissions">Location Permissions</string>
+    <string name="location_always_enabled">Always enabled for attendance tracking</string>
+    <string name="test_data_development">Test Data (Development)</string>
+    <string name="add_test_employees">Add Test Employees</string>
+    <string name="add_4_sample_employees">Add 4 sample employees</string>
+    <string name="add_test_locations">Add Test Locations</string>
+    <string name="add_3_active_locations">Add 3 active locations</string>
+    <string name="clean_up_old_locations">Clean Up Old Locations</string>
+    <string name="remove_locations_older_24h">Remove locations older than 24h</string>
+    <string name="clear_all_active_locations">Clear All Active Locations</string>
+    <string name="remove_all_active_locations">Remove all active locations</string>
+    <string name="app_info_details">Attendance Tracking System\nBuilt with Jetpack Compose\nFirebase Backend</string>
+    <string name="ats_android_version">ATS Android v1.0.0 - iOS Design</string>
+    <string name="employee_id_label">Employee ID</string>
+    <string name="team_label">Team</string>
+    <string name="email_label">Email</string>
+    <!-- Check-In Screen -->
+    <string name="check_in_title">Check In</string>
+    <string name="check_out_title">Check Out</string>
+    <string name="check_in_button">Check In</string>
+    <string name="check_out_button">Check Out</string>
+    <string name="currently_checked_in">Currently Checked In</string>
+    <string name="checked_in_at">Checked in at</string>
+    <string name="check_in_time">Check-in Time</string>
+    <string name="current_location">Current Location</string>
+    <string name="loading_location">Loading location...</string>
+    <string name="getting_location">Getting your location...</string>
+    <string name="location_required">Location permission required</string>
+    <string name="unable_to_get_location">Unable to get location</string>
+    <string name="location_unavailable">Location unavailable</string>
+    
+    <!-- History Screen -->
+    <string name="attendance_summary">Attendance Summary</string>
+    <string name="total_days">Total Days</string>
+    <string name="days_present">Days Present</string>
+    <string name="hours_worked">Hours Worked</string>
+    <string name="view_details">View Details</string>
+    <string name="no_attendance_desc">Your attendance history will appear here</string>
+    <string name="no_records_yet">No Records Yet</string>
+    <string name="no_records_description">Your attendance history will appear here once you start checking in</string>
+    <string name="completed">Completed</string>
+    <string name="in_progress">In Progress</string>
+    <string name="ready_to_check_in">Ready to Check In</string>
+    <string name="load_more">Load More</string>
+    <string name="select_date_range">Select Date Range</string>
+    
+    <!-- Reports Config -->
+    <string name="configure_report">Configure Report</string>
+    <string name="employee_selection">Employee Selection</string>
+    <string name="employees_of">%1$d of %2$d employees</string>
+    <string name="select_all">Select All</string>
+    <string name="done">Done</string>
+    <string name="start_date">Start Date</string>
+    <string name="end_date">End Date</string>
+</resources>

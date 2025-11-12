@@ -1,0 +1,253 @@
+package com.ats.android.viewmodels
+
+import android.app.Application
+import android.content.Context
+import android.location.Location
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.ats.android.models.AttendanceRecord
+import com.ats.android.models.Employee
+import com.ats.android.services.FirestoreService
+import com.ats.android.services.GeocodingService
+import com.ats.android.services.LocationService
+import com.google.firebase.firestore.GeoPoint
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+class CheckInViewModel(application: Application) : AndroidViewModel(application) {
+    
+    private val firestoreService = FirestoreService.getInstance()
+    private val locationService = LocationService(application.applicationContext)
+    private val geocodingService = GeocodingService(application.applicationContext)
+    
+    private val _uiState = MutableStateFlow<CheckInUiState>(CheckInUiState.Loading)
+    val uiState: StateFlow<CheckInUiState> = _uiState.asStateFlow()
+    
+    private val _isCheckedIn = MutableStateFlow(false)
+    val isCheckedIn: StateFlow<Boolean> = _isCheckedIn.asStateFlow()
+    
+    private val _currentLocation = MutableStateFlow<Location?>(null)
+    val currentLocation: StateFlow<Location?> = _currentLocation.asStateFlow()
+    
+    private val _placeName = MutableStateFlow<String?>(null)
+    val placeName: StateFlow<String?> = _placeName.asStateFlow()
+    
+    private val _activeRecord = MutableStateFlow<AttendanceRecord?>(null)
+    val activeRecord: StateFlow<AttendanceRecord?> = _activeRecord.asStateFlow()
+    
+    fun initialize(employee: Employee?) {
+        if (employee == null) {
+            _uiState.value = CheckInUiState.Error("Employee not found")
+            return
+        }
+        
+        viewModelScope.launch {
+            try {
+                // Set to Ready immediately so UI can render
+                _uiState.value = CheckInUiState.Ready
+                
+                // Check if already checked in
+                val activeRecord = firestoreService.getActiveCheckIn(employee.employeeId)
+                _activeRecord.value = activeRecord
+                _isCheckedIn.value = activeRecord != null
+                
+                Log.d(TAG, "✅ Check-in initialized: isCheckedIn=${_isCheckedIn.value}")
+                
+                // Get current location asynchronously (doesn't block UI)
+                getCurrentLocation()
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error initializing: ${e.message}", e)
+                _uiState.value = CheckInUiState.Error(e.message ?: "Initialization failed")
+            }
+        }
+    }
+    
+    private suspend fun getCurrentLocation() {
+        try {
+            // Set location to null to show loading state in UI
+            _placeName.value = null
+            
+            if (!locationService.hasLocationPermission()) {
+                _placeName.value = "permission_required" // Special key for UI
+                return
+            }
+            
+            // Quick location fetch with 3 second timeout
+            val location = kotlinx.coroutines.withTimeoutOrNull(3000L) {
+                locationService.getCurrentLocation()
+            }
+            
+            _currentLocation.value = location
+            
+            if (location != null) {
+                // Show coordinates immediately
+                val coords = "${String.format("%.4f", location.latitude)}, ${String.format("%.4f", location.longitude)}"
+                _placeName.value = coords
+                Log.d(TAG, "📍 Location: $coords")
+                
+                // Try to get place name in background (don't block UI)
+                viewModelScope.launch {
+                    try {
+                        val place = kotlinx.coroutines.withTimeoutOrNull(5000L) {
+                            geocodingService.getPlaceName(location.latitude, location.longitude)
+                        }
+                        if (place != null) {
+                            _placeName.value = place
+                            Log.d(TAG, "📍 Place name: $place")
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to get place name: ${e.message}")
+                        // Keep showing coordinates
+                    }
+                }
+            } else {
+                _placeName.value = "location_unavailable"
+                Log.w(TAG, "⚠️ Location is null after timeout")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Location error: ${e.message}", e)
+            _placeName.value = "location_error"
+        }
+    }
+    
+    fun checkIn(employee: Employee) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = CheckInUiState.Processing
+                Log.d(TAG, "⏱️ Checking in: ${employee.displayName}")
+                
+                // Get location quickly (with 2 second timeout)
+                var location = _currentLocation.value
+                if (location == null) {
+                    Log.d(TAG, "Getting location for check-in...")
+                    location = kotlinx.coroutines.withTimeoutOrNull(2000L) {
+                        locationService.getCurrentLocation()
+                    }
+                    _currentLocation.value = location
+                }
+                
+                if (location == null) {
+                    _uiState.value = CheckInUiState.Error("Location not available. Please try again.")
+                    return@launch
+                }
+                
+                // Use place name if available, otherwise use coordinates
+                var placeName = _placeName.value
+                if (placeName == null || placeName.startsWith("permission") || placeName.startsWith("location")) {
+                    placeName = "${String.format("%.4f", location.latitude)}, ${String.format("%.4f", location.longitude)}"
+                }
+                
+                val geoPoint = GeoPoint(location.latitude, location.longitude)
+                val result = firestoreService.checkIn(
+                    employeeId = employee.employeeId,
+                    employeeName = employee.displayName,
+                    location = geoPoint,
+                    placeName = placeName
+                )
+                
+                if (result.isSuccess) {
+                    _isCheckedIn.value = true
+                    _uiState.value = CheckInUiState.Success("Checked in successfully")
+                    Log.d(TAG, "✅ Check-in successful")
+                    
+                    // Reload active record in background
+                    launch {
+                        val activeRecord = firestoreService.getActiveCheckIn(employee.employeeId)
+                        _activeRecord.value = activeRecord
+                    }
+                } else {
+                    _uiState.value = CheckInUiState.Error(result.exceptionOrNull()?.message ?: "Check-in failed")
+                }
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Check-in error: ${e.message}", e)
+                _uiState.value = CheckInUiState.Error(e.message ?: "Check-in failed")
+            }
+        }
+    }
+    
+    fun checkOut(employee: Employee) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = CheckInUiState.Processing
+                Log.d(TAG, "⏱️ Checking out: ${employee.displayName}")
+                
+                // Try current location first
+                var location = _currentLocation.value
+                var placeName = _placeName.value
+                
+                // If no current location, try quick fetch
+                if (location == null) {
+                    Log.d(TAG, "Getting location for check-out...")
+                    location = kotlinx.coroutines.withTimeoutOrNull(2000L) {
+                        locationService.getCurrentLocation()
+                    }
+                    _currentLocation.value = location
+                }
+                
+                // If still no location, use check-in location
+                if (location == null && _activeRecord.value?.checkInLocation != null) {
+                    val checkInLoc = _activeRecord.value!!.checkInLocation!!
+                    location = Location("fallback").apply {
+                        latitude = checkInLoc.latitude
+                        longitude = checkInLoc.longitude
+                    }
+                    placeName = _activeRecord.value?.checkInPlaceName
+                    Log.d(TAG, "⚠️ Using check-in location as fallback")
+                }
+                
+                if (location == null) {
+                    _uiState.value = CheckInUiState.Error("Location not available. Please try again.")
+                    return@launch
+                }
+                
+                // Use place name if available, otherwise use coordinates
+                if (placeName == null || placeName.startsWith("permission") || placeName.startsWith("location")) {
+                    placeName = "${String.format("%.4f", location.latitude)}, ${String.format("%.4f", location.longitude)}"
+                }
+                
+                val geoPoint = GeoPoint(location.latitude, location.longitude)
+                val result = firestoreService.checkOut(
+                    employeeId = employee.employeeId,
+                    location = geoPoint,
+                    placeName = placeName
+                )
+                
+                if (result.isSuccess) {
+                    _isCheckedIn.value = false
+                    _activeRecord.value = null
+                    _uiState.value = CheckInUiState.Success("Checked out successfully")
+                    Log.d(TAG, "✅ Check-out successful")
+                } else {
+                    _uiState.value = CheckInUiState.Error(result.exceptionOrNull()?.message ?: "Check-out failed")
+                }
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Check-out error: ${e.message}", e)
+                _uiState.value = CheckInUiState.Error(e.message ?: "Check-out failed")
+            }
+        }
+    }
+    
+    fun refreshLocation() {
+        viewModelScope.launch {
+            getCurrentLocation()
+        }
+    }
+    
+    companion object {
+        private const val TAG = "CheckInViewModel"
+    }
+}
+
+sealed class CheckInUiState {
+    object Loading : CheckInUiState()
+    object Ready : CheckInUiState()
+    object Processing : CheckInUiState()
+    data class Success(val message: String) : CheckInUiState()
+    data class Error(val message: String) : CheckInUiState()
+}

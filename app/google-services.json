@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "423838488176",
+    "project_id": "it-adc",
+    "storage_bucket": "it-adc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:423838488176:android:523d302dff94980212c6b5",
+        "android_client_info": {
+          "package_name": "com.ats.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNEUn9Nt9aKtYxlP2qPrQBm4somcLLohQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:423838488176:android:ff6bf466292f9aa512c6b5",
+        "android_client_info": {
+          "package_name": "com.colorworks.attendance"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNEUn9Nt9aKtYxlP2qPrQBm4somcLLohQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -149,7 +149,7 @@ fun SettingsScreen(
                 SettingsItem(
                     icon = Icons.Default.Info,
                     title = "About ATS",
-                    subtitle = "Version 1.1.0",
+                    subtitle = "Version 1.2.0",
                     onClick = { /* TODO: About */ }
                 )
             }

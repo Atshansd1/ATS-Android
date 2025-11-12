@@ -91,6 +91,68 @@ fun EmployeeAvatar(
 }
 
 /**
+ * Employee avatar with URL and name parameters
+ */
+@Composable
+fun EmployeeAvatar(
+    avatarUrl: String?,
+    employeeName: String,
+    size: Dp = AvatarSize.large,
+    showBorder: Boolean = false,
+    borderColor: Color = Color.White,
+    borderWidth: Dp = 2.dp
+) {
+    if (!avatarUrl.isNullOrEmpty()) {
+        // Show image with AsyncImage
+        Box(
+            modifier = Modifier
+                .size(size)
+                .clip(CircleShape)
+                .then(
+                    if (showBorder) {
+                        Modifier.border(borderWidth, borderColor, CircleShape)
+                    } else Modifier
+                )
+        ) {
+            AsyncImage(
+                model = avatarUrl,
+                contentDescription = employeeName,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
+    } else {
+        // Show gradient circle with initial
+        Box(
+            modifier = Modifier
+                .size(size)
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF2196F3).copy(alpha = 0.6f),
+                            Color(0xFF2196F3).copy(alpha = 0.3f)
+                        )
+                    ),
+                    shape = CircleShape
+                )
+                .then(
+                    if (showBorder) {
+                        Modifier.border(borderWidth, borderColor, CircleShape)
+                    } else Modifier
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = employeeName.firstOrNull()?.uppercase() ?: "?",
+                fontSize = (size.value * 0.4f).sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
+            )
+        }
+    }
+}
+
+/**
  * Simple avatar for compact displays
  */
 @Composable

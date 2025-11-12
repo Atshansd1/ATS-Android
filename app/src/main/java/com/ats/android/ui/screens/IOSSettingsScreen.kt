@@ -245,9 +245,27 @@ fun IOSSettingsScreen(
                 item {
                     SettingsGroupCard(title = stringResource(com.ats.android.R.string.about)) {
                         IOSSettingsRow(
+                            icon = Icons.Default.SystemUpdate,
+                            title = "Check for Updates",
+                            subtitle = "Download latest version",
+                            value = null,
+                            showChevron = true,
+                            onClick = {
+                                showMessage = "Opening update page..."
+                                val intent = android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse("https://github.com/Atshansd1/ATS-Android/releases/latest")
+                                )
+                                context.startActivity(intent)
+                            }
+                        )
+                        
+                        Divider(color = ATSColors.DividerColor)
+                        
+                        IOSSettingsRow(
                             icon = Icons.Default.Info,
                             title = stringResource(com.ats.android.R.string.version),
-                            value = "1.0.0",
+                            value = "1.2.0",
                             showChevron = false,
                             onClick = { 
                                 showMessage = context.getString(com.ats.android.R.string.ats_android_version)

@@ -48,6 +48,16 @@ fun IOSSettingsScreen(
     val versionInfo by updateManager.versionInfo.collectAsState()
     val scope = rememberCoroutineScope()
     
+    // Get current app version dynamically
+    val currentAppVersion = remember {
+        try {
+            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            packageInfo.versionName
+        } catch (e: Exception) {
+            "1.0.0"
+        }
+    }
+    
     // Check for updates on screen load
     LaunchedEffect(Unit) {
         updateManager.checkForUpdates()
@@ -257,7 +267,7 @@ fun IOSSettingsScreen(
                     if (info.isUpdateAvailable) {
                         item {
                             ExpressiveUpdateCard(
-                                currentVersion = "1.3.7",
+                                currentVersion = currentAppVersion,
                                 newVersion = info.latestVersion,
                                 downloadProgress = downloadProgress,
                                 onUpdateClick = {
@@ -274,10 +284,10 @@ fun IOSSettingsScreen(
                         IOSSettingsRow(
                             icon = Icons.Default.Info,
                             title = stringResource(com.ats.android.R.string.version),
-                            value = "1.3.7",
+                            value = currentAppVersion,
                             showChevron = false,
                             onClick = { 
-                                showMessage = "ATS Android v1.3.7 - Complete Arabic Fix"
+                                showMessage = "ATS Android v$currentAppVersion"
                             }
                         )
                         

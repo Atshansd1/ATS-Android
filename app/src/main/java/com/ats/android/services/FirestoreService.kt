@@ -374,6 +374,14 @@ class FirestoreService private constructor() {
     }
     
     // Active locations
+    suspend fun updateEmployeeLocation(
+        employeeId: String,
+        location: GeoPoint,
+        placeName: String?
+    ) {
+        updateActiveLocation(employeeId, location, placeName)
+    }
+    
     private suspend fun updateActiveLocation(
         employeeId: String,
         location: GeoPoint,

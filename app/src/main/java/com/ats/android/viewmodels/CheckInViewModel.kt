@@ -56,6 +56,16 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                 
                 Log.d(TAG, "✅ Check-in initialized: isCheckedIn=${_isCheckedIn.value}")
                 
+                // If already checked in, start location tracking service
+                if (_isCheckedIn.value) {
+                    com.ats.android.services.LocationTrackingService.startTracking(
+                        getApplication(),
+                        employee.employeeId,
+                        employee.displayName
+                    )
+                    Log.d(TAG, "📍 Resumed location tracking service")
+                }
+                
                 // Get current location asynchronously (doesn't block UI)
                 getCurrentLocation()
                 
@@ -189,6 +199,14 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                     _uiState.value = CheckInUiState.Success("Checked in successfully")
                     Log.d(TAG, "✅ Check-in successful")
                     
+                    // Start location tracking service
+                    com.ats.android.services.LocationTrackingService.startTracking(
+                        getApplication(),
+                        employee.employeeId,
+                        employee.displayName
+                    )
+                    Log.d(TAG, "📍 Started location tracking service")
+                    
                     // Reload active record in background
                     launch {
                         val activeRecord = firestoreService.getActiveCheckIn(employee.employeeId)
@@ -257,6 +275,10 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                     _activeRecord.value = null
                     _uiState.value = CheckInUiState.Success("Checked out successfully")
                     Log.d(TAG, "✅ Check-out successful")
+                    
+                    // Stop location tracking service
+                    com.ats.android.services.LocationTrackingService.stopTracking(getApplication())
+                    Log.d(TAG, "🛑 Stopped location tracking service")
                 } else {
                     _uiState.value = CheckInUiState.Error(result.exceptionOrNull()?.message ?: "Check-out failed")
                 }

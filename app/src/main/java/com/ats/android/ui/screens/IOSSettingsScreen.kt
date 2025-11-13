@@ -257,7 +257,7 @@ fun IOSSettingsScreen(
                     if (info.isUpdateAvailable) {
                         item {
                             ExpressiveUpdateCard(
-                                currentVersion = "1.3.2",
+                                currentVersion = "1.3.3",
                                 newVersion = info.latestVersion,
                                 downloadProgress = downloadProgress,
                                 onUpdateClick = {
@@ -274,10 +274,10 @@ fun IOSSettingsScreen(
                         IOSSettingsRow(
                             icon = Icons.Default.Info,
                             title = stringResource(com.ats.android.R.string.version),
-                            value = "1.3.2",
+                            value = "1.3.3",
                             showChevron = false,
                             onClick = { 
-                                showMessage = "ATS Android v1.3.2 - Location & Settings Fix"
+                                showMessage = "ATS Android v1.3.3 - UI Fixes & Permissions"
                             }
                         )
                         

@@ -63,6 +63,15 @@ fun ATSNavigation() {
     val authViewModel: AuthViewModel = viewModel()
     val authState by authViewModel.uiState.collectAsState()
     val currentEmployee by authViewModel.currentEmployee.collectAsState()
+    var permissionGranted by remember { mutableStateOf(false) }
+    
+    // Request location permission on app start
+    if (authState is AuthUiState.Authenticated && !permissionGranted) {
+        com.ats.android.utils.RequestLocationPermission(
+            onPermissionGranted = { permissionGranted = true },
+            onPermissionDenied = { /* User can still use app, just can't check in */ }
+        )
+    }
     
     when (authState) {
         is AuthUiState.Loading -> {
@@ -270,9 +279,16 @@ fun MainScaffold(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     
+    // DEBUG: Log current employee and role
+    LaunchedEffect(currentEmployee) {
+        android.util.Log.d("MainScaffold", "Current Employee: ${currentEmployee?.displayName}")
+        android.util.Log.d("MainScaffold", "Role: ${currentEmployee?.role}")
+    }
+    
     // Match iOS navigation order exactly
     val items = buildList {
         currentEmployee?.role?.let { role ->
+            android.util.Log.d("MainScaffold", "Building nav items for role: $role")
             when (role) {
                 EmployeeRole.ADMIN -> {
                     // Admin: Dashboard, Map, Employees, Reports, Settings
@@ -281,21 +297,28 @@ fun MainScaffold(
                     add(Screen.EmployeeManagement)
                     add(Screen.Reports)
                     add(Screen.Settings)
+                    android.util.Log.d("MainScaffold", "Added 5 tabs for ADMIN")
                 }
                 EmployeeRole.SUPERVISOR -> {
-                    // Supervisor: Dashboard, Map, Check-In (with history), Reports, Settings
+                    // Supervisor: Dashboard, Map, Check-In, Reports, Settings
                     add(Screen.Dashboard)
                     add(Screen.Map)
                     add(Screen.CheckIn)
                     add(Screen.Reports)
                     add(Screen.Settings)
+                    android.util.Log.d("MainScaffold", "Added 5 tabs for SUPERVISOR (Dashboard, Map, CheckIn, Reports, Settings)")
                 }
                 EmployeeRole.EMPLOYEE -> {
-                    // Employee: Check-In (with history), Settings
+                    // Employee: Check-In, Settings
                     add(Screen.CheckIn)
                     add(Screen.Settings)
+                    android.util.Log.d("MainScaffold", "Added 2 tabs for EMPLOYEE")
                 }
             }
+        }
+        android.util.Log.d("MainScaffold", "Total items in nav: ${this.size}")
+        this.forEachIndexed { index, screen ->
+            android.util.Log.d("MainScaffold", "  Tab $index: ${screen.title} (${screen.route})")
         }
     }
     

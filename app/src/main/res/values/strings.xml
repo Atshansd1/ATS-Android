@@ -30,6 +30,8 @@
     <!-- Authentication -->
     <string name="sign_in">Sign In</string>
     <string name="sign_out">Sign Out</string>
+    <string name="login_subtitle">Attendance Tracking System</string>
+    <string name="login_instructions">Sign in with your email or employee ID</string>
     <string name="email_or_employee_id">Email or Employee ID</string>
     <string name="password">Password</string>
     <string name="enter_email_or_employee_id">Enter your email or employee ID</string>

@@ -13,12 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.ats.android.R
 import com.ats.android.viewmodels.AuthViewModel
 import com.ats.android.viewmodels.AuthUiState
 
@@ -60,7 +62,7 @@ fun LoginScreen(
             )
             
             Text(
-                text = "Attendance Tracking System",
+                text = stringResource(R.string.login_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -72,8 +74,8 @@ fun LoginScreen(
             OutlinedTextField(
                 value = emailOrEmployeeId,
                 onValueChange = { emailOrEmployeeId = it },
-                label = { Text("Email or Employee ID") },
-                placeholder = { Text("Enter your email or employee ID") },
+                label = { Text(stringResource(R.string.email_or_employee_id)) },
+                placeholder = { Text(stringResource(R.string.email_or_employee_id)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
@@ -92,8 +94,8 @@ fun LoginScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
-                placeholder = { Text("Enter your password") },
+                label = { Text(stringResource(R.string.password)) },
+                placeholder = { Text(stringResource(R.string.password)) },
                 singleLine = true,
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
@@ -112,7 +114,7 @@ fun LoginScreen(
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                            contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                            contentDescription = stringResource(if (passwordVisible) R.string.hide_password else R.string.show_password)
                         )
                     }
                 },
@@ -141,7 +143,7 @@ fun LoginScreen(
                     )
                 } else {
                     Text(
-                        text = "Sign In",
+                        text = stringResource(R.string.sign_in),
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
@@ -167,9 +169,9 @@ fun LoginScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Help Text
+            // Help Text  
             Text(
-                text = "Need help? Contact your administrator",
+                text = stringResource(R.string.login_instructions),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center

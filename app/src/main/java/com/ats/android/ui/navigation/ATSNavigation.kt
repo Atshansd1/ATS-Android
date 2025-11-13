@@ -120,21 +120,25 @@ fun ExpressiveNavigationBar(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
-    // Use compact mode when there are more than 5 items
-    val isCompact = items.size > 5
+    // Always use compact mode for 5+ items, or if screen is small
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val screenWidthDp = configuration.screenWidthDp
+    val isCompact = items.size >= 5 || screenWidthDp < 400
+    
+    android.util.Log.d("NavigationBar", "Items: ${items.size}, Screen: ${screenWidthDp}dp, Compact: $isCompact")
     
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .shadow(
-                elevation = 8.dp,  // M3 Standard elevation for navigation
+                elevation = 4.dp,
                 shape = ComponentShapes.NavigationBar,
                 spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                 ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
             ),
-        shape = ComponentShapes.NavigationBar,  // 32dp corners
+        shape = ComponentShapes.NavigationBar,
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp  // M3 Standard tonal elevation
+        tonalElevation = 2.dp
     ) {
         Column(
             modifier = Modifier
@@ -144,8 +148,11 @@ fun ExpressiveNavigationBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(if (isCompact) 76.dp else 84.dp)
-                    .padding(horizontal = if (isCompact) 4.dp else 8.dp, vertical = 12.dp),
+                    .height(if (isCompact) 64.dp else 80.dp)  // Reduced height for compact
+                    .padding(
+                        horizontal = if (isCompact) 2.dp else 8.dp,
+                        vertical = if (isCompact) 4.dp else 8.dp
+                    ),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -175,51 +182,34 @@ fun ExpressiveNavItem(
     onClick: () -> Unit,
     compact: Boolean = false
 ) {
-    val scale by animateFloatAsState(
-        targetValue = if (selected) 1.05f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "scale"
-    )
-    
-    val iconSize by animateDpAsState(
-        targetValue = if (compact) {
-            if (selected) 24.dp else 20.dp
-        } else {
-            if (selected) 28.dp else 24.dp
-        },
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "iconSize"
-    )
+    // Minimal animation for better performance
+    val iconSize = if (compact) {
+        if (selected) 22.dp else 20.dp
+    } else {
+        if (selected) 26.dp else 24.dp
+    }
     
     Surface(
         onClick = onClick,
         modifier = Modifier
-            .scale(scale)
             .clip(ComponentShapes.NavigationItem),
         color = Color.Transparent,
         shape = ComponentShapes.NavigationItem
     ) {
         Column(
-            modifier = Modifier.padding(
-                horizontal = if (compact) 8.dp else 16.dp,
-                vertical = 8.dp
-            ),
+            modifier = Modifier
+                .width(if (compact) 64.dp else 80.dp)  // Fixed width for consistency
+                .padding(
+                    horizontal = if (compact) 4.dp else 8.dp,
+                    vertical = if (compact) 4.dp else 6.dp
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            // Icon container
             Box(
                 modifier = Modifier
-                    .size(if (compact) {
-                        if (selected) 48.dp else 36.dp
-                    } else {
-                        if (selected) 64.dp else 40.dp
-                    })
+                    .size(if (compact) 40.dp else 48.dp)
                     .clip(ComponentShapes.NavigationItem)
                     .background(
                         if (selected) {
@@ -244,24 +234,23 @@ fun ExpressiveNavItem(
             
             Spacer(modifier = Modifier.height(2.dp))
             
+            // Label
             Text(
                 text = screen.title,
-                style = if (compact) {
-                    MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 10.sp,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                    )
-                } else {
-                    MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
-                    )
-                },
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = if (compact) 9.sp else 11.sp,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                    lineHeight = if (compact) 10.sp else 12.sp
+                ),
                 color = if (selected) {
                     MaterialTheme.colorScheme.onSecondaryContainer
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },
-                maxLines = 1
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }

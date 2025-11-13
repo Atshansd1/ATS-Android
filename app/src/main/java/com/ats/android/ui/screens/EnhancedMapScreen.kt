@@ -76,11 +76,46 @@ fun EnhancedMapScreen() {
     var selectedEmployeeId by remember { mutableStateOf<String?>(null) }
     
     val scope = rememberCoroutineScope()
+    val locationService = remember { com.ats.android.services.LocationService(context) }
     
-    // Default map center (Riyadh, Saudi Arabia)
-    val defaultCenter = LatLng(24.7136, 46.6753)
+    // Get user's current location for map center
+    var defaultCenter by remember { mutableStateOf<LatLng?>(null) }
+    
+    // Get user location on first load
+    LaunchedEffect(Unit) {
+        try {
+            android.util.Log.d("EnhancedMapScreen", "Getting user location for map center...")
+            val location = locationService.getCurrentLocation()
+            if (location != null) {
+                defaultCenter = LatLng(location.latitude, location.longitude)
+                android.util.Log.d("EnhancedMapScreen", "✅ Map centered on user location: ${location.latitude}, ${location.longitude}")
+            } else {
+                android.util.Log.w("EnhancedMapScreen", "⚠️ No location available, using default")
+                defaultCenter = LatLng(24.7136, 46.6753) // Fallback to Riyadh
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("EnhancedMapScreen", "❌ Error getting location: ${e.message}")
+            defaultCenter = LatLng(24.7136, 46.6753) // Fallback to Riyadh
+        }
+    }
+    
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(defaultCenter, 12f)
+        position = CameraPosition.fromLatLngZoom(
+            defaultCenter ?: LatLng(24.7136, 46.6753), 
+            12f
+        )
+    }
+    
+    // Update camera when location is loaded
+    LaunchedEffect(defaultCenter) {
+        defaultCenter?.let { center ->
+            cameraPositionState.animate(
+                CameraUpdateFactory.newCameraPosition(
+                    CameraPosition.fromLatLngZoom(center, 12f)
+                ),
+                durationMs = 1000
+            )
+        }
     }
     
     // Move camera to selected employee

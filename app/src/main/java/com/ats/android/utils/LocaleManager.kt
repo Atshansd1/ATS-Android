@@ -22,11 +22,40 @@ object LocaleManager {
     private const val ARABIC = "ar"
     
     /**
-     * Get current language from SharedPreferences
+     * Get device system language
+     */
+    fun getDeviceLanguage(): String {
+        val deviceLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            android.content.res.Resources.getSystem().configuration.locales[0]
+        } else {
+            @Suppress("DEPRECATION")
+            android.content.res.Resources.getSystem().configuration.locale
+        }
+        
+        val languageCode = deviceLocale.language
+        android.util.Log.d("LocaleManager", "📱 Device language: $languageCode")
+        
+        // Only support English and Arabic
+        return if (languageCode == "ar") ARABIC else ENGLISH
+    }
+    
+    /**
+     * Get current language from SharedPreferences, defaults to device language
      */
     fun getCurrentLanguage(context: Context): String {
-        return context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-            .getString(PREF_LANGUAGE, ENGLISH) ?: ENGLISH
+        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val savedLanguage = prefs.getString(PREF_LANGUAGE, null)
+        
+        // If no saved language, use device language
+        if (savedLanguage == null) {
+            val deviceLang = getDeviceLanguage()
+            android.util.Log.d("LocaleManager", "🌍 No saved language, using device language: $deviceLang")
+            // Save it for next time
+            setLanguage(context, deviceLang)
+            return deviceLang
+        }
+        
+        return savedLanguage
     }
     
     /**

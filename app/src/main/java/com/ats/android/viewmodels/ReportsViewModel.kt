@@ -138,10 +138,24 @@ class ReportsViewModel : ViewModel() {
     
     // Quick report generation (matching iOS)
     suspend fun generateQuickReport(days: Int) {
-        val end = Calendar.getInstance().time
-        val start = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, -days)
-        }.time
+        val calendar = Calendar.getInstance()
+        val end = calendar.time
+        
+        // For "Today" report (days = 0), set start to beginning of today
+        val start = if (days == 0) {
+            Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.time
+        } else {
+            Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_YEAR, -days)
+            }.time
+        }
+        
+        android.util.Log.d(TAG, "Quick report: days=$days, start=$start, end=$end")
         
         _startDate.value = start
         _endDate.value = end

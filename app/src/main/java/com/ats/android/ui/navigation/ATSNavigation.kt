@@ -200,16 +200,16 @@ fun ExpressiveNavItem(
             modifier = Modifier
                 .width(if (compact) 64.dp else 80.dp)  // Fixed width for consistency
                 .padding(
-                    horizontal = if (compact) 4.dp else 8.dp,
-                    vertical = if (compact) 4.dp else 6.dp
+                    horizontal = if (compact) 2.dp else 6.dp,
+                    vertical = if (compact) 2.dp else 4.dp  // Reduced vertical padding
                 ),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top  // Changed from Center to Top
         ) {
-            // Icon container
+            // Icon container - moved up
             Box(
                 modifier = Modifier
-                    .size(if (compact) 40.dp else 48.dp)
+                    .size(if (compact) 36.dp else 44.dp)  // Slightly smaller
                     .clip(ComponentShapes.NavigationItem)
                     .background(
                         if (selected) {
@@ -232,15 +232,15 @@ fun ExpressiveNavItem(
                 )
             }
             
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(1.dp))  // Reduced space
             
-            // Label
+            // Label - more space for text
             Text(
                 text = screen.title,
                 style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = if (compact) 9.sp else 11.sp,
+                    fontSize = if (compact) 10.sp else 11.sp,  // Slightly larger
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                    lineHeight = if (compact) 10.sp else 12.sp
+                    lineHeight = if (compact) 11.sp else 12.sp
                 ),
                 color = if (selected) {
                     MaterialTheme.colorScheme.onSecondaryContainer

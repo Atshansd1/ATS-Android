@@ -209,7 +209,7 @@
     <string name="tap_to_view_all">اضغط لعرض الكل</string>
     <string name="nearby_employees">الموظفون القريبون</string>
     <string name="km">كم</string>
-    <string name="since">منذ</string>
+    <string name="since">منذ %s</string>
     <string name="from">من:</string>
     <string name="search_error">خطأ في البحث</string>
     <string name="try_again">حاول مرة أخرى</string>

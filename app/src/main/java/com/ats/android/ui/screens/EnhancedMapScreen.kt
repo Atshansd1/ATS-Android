@@ -1082,8 +1082,9 @@ fun EmployeeListItem(
                 }
                 
                 employee.checkInTime?.let { time ->
+                    val context = androidx.compose.ui.platform.LocalContext.current
                     Text(
-                        text = "Since ${android.text.format.DateFormat.getTimeFormat(androidx.compose.ui.platform.LocalContext.current).format(time)}",
+                        text = context.getString(com.ats.android.R.string.since, android.text.format.DateFormat.getTimeFormat(context).format(time)),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -248,7 +248,7 @@ fun CheckInScreen(
                                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                             Text(
-                                text = "Since ${SimpleDateFormat("hh:mm a", Locale.getDefault()).format(activeRecord!!.checkInTime.toDate())}",
+                                text = stringResource(R.string.since, SimpleDateFormat("hh:mm a", Locale.getDefault()).format(activeRecord!!.checkInTime.toDate())),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = if (isCheckedIn)
                                     MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)

@@ -24,7 +24,7 @@ class UpdateManager(private val context: Context) {
     companion object {
         private const val TAG = "UpdateManager"
         private const val GITHUB_API_URL = "https://api.github.com/repos/Atshansd1/ATS-Android/releases/latest"
-        private const val CURRENT_VERSION = "1.3.6"
+        private const val CURRENT_VERSION = "1.3.7"
         private const val APK_FILENAME = "ATS-Update.apk"
     }
     

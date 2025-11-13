@@ -309,14 +309,14 @@ fun ReportPreviewSheet(
                 SummaryStatCard(
                     modifier = Modifier.weight(1f),
                     title = stringResource(R.string.total_hours),
-                    value = String.format("%.1f", summary.totalHours),
+                    value = String.format(java.util.Locale.US, "%.1f", summary.totalHours),
                     icon = Icons.Default.Timer,
                     color = ATSColors.OnLeaveOrange
                 )
                 SummaryStatCard(
                     modifier = Modifier.weight(1f),
                     title = stringResource(R.string.avg_day),
-                    value = String.format("%.1f", summary.averageHoursPerRecord),
+                    value = String.format(java.util.Locale.US, "%.1f", summary.averageHoursPerRecord),
                     icon = Icons.Default.BarChart,
                     color = ATSColors.AdminPurple
                 )
@@ -404,8 +404,9 @@ fun SummaryStatCard(
 
 @Composable
 fun PreviewRecordCard(record: com.ats.android.models.AttendanceRecord) {
-    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-    val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    // Always use English format for dates and numbers
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.US)
+    val timeFormat = SimpleDateFormat("HH:mm", Locale.US)
     
     Card(
         colors = CardDefaults.cardColors(
@@ -473,7 +474,7 @@ fun PreviewRecordCard(record: com.ats.android.models.AttendanceRecord) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = String.format("%.1fh", record.durationHours),
+                            text = String.format(Locale.US, "%.1fh", record.durationHours),
                             style = MaterialTheme.typography.bodyMedium,
                             color = ATSColors.SupervisorBlue
                         )
@@ -623,7 +624,8 @@ fun CustomReportSection(
                         )
                     },
                     supportingContent = {
-                        val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                        // Always use English format for dates
+                        val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.US)
                         Text(
                             text = "${formatter.format(startDate)} - ${formatter.format(endDate)}",
                             style = MaterialTheme.typography.bodyMedium,
@@ -862,7 +864,8 @@ fun DatePickerField(
     onDateSelected: (Date) -> Unit,
     context: android.content.Context
 ) {
-    val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    // Always use English format for dates
+    val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.US)
     
     OutlinedButton(
         onClick = {

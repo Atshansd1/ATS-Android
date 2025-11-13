@@ -104,6 +104,9 @@ class ReportsViewModel : ViewModel() {
                     _selectedEmployees.value.toList()
                 }
                 
+                // Create employee name lookup map
+                val employeeMap = _employees.value.associateBy { it.employeeId }
+                
                 val allRecords = mutableListOf<AttendanceRecord>()
                 
                 for (employeeId in employeeIds) {
@@ -113,7 +116,16 @@ class ReportsViewModel : ViewModel() {
                             startDate = _startDate.value,
                             endDate = _endDate.value
                         )
-                        allRecords.addAll(records)
+                        // Enrich records with employee names
+                        val enrichedRecords = records.map { record ->
+                            if (record.employeeName.isNullOrBlank()) {
+                                val employee = employeeMap[record.employeeId]
+                                record.copy(employeeName = employee?.displayName ?: record.employeeId)
+                            } else {
+                                record
+                            }
+                        }
+                        allRecords.addAll(enrichedRecords)
                     } catch (e: Exception) {
                         Log.e(TAG, "Error loading records for $employeeId: ${e.message}")
                     }
@@ -190,7 +202,8 @@ class ReportsViewModel : ViewModel() {
         return try {
             Log.d(TAG, "📄 Exporting and sharing CSV...")
             
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault())
+            // Always use English format for filenames
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US)
             val filename = "attendance_report_${dateFormat.format(Date())}.csv"
             val file = File(context.getExternalFilesDir(null), filename)
             
@@ -208,18 +221,19 @@ class ReportsViewModel : ViewModel() {
                 }
                 appendLine(headers)
                 
-                // Data rows
-                val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                // Data rows - ALWAYS use English format for dates and numbers
+                val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
                 
                 for (record in _reportData.value) {
                     val checkInTime = dateTimeFormat.format(record.checkInTime.toDate())
                     val checkOutTime = record.checkOutTime?.let { dateTimeFormat.format(it.toDate()) } ?: ""
                     val checkInPlace = record.checkInPlaceName ?: ""
                     val checkOutPlace = record.checkOutPlaceName ?: ""
+                    // Always use English number format (dot as decimal separator)
                     val duration = if (record.totalDuration != null || record.duration != null) {
-                        String.format("%.2f", record.durationHours)
+                        String.format(Locale.US, "%.2f", record.durationHours)
                     } else ""
-                    val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format((record.date ?: record.checkInTime).toDate())
+                    val date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format((record.date ?: record.checkInTime).toDate())
                     
                     // Translate status to Arabic if needed
                     val status = if (isArabic) {

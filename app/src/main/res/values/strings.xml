@@ -3,6 +3,9 @@
     <!-- App Name -->
     <string name="app_name">ATS</string>
     
+    <!-- Tab Labels -->
+    <string name="login">Login</string>
+    
     <!-- Attendance Management -->
     <string name="attendance_management">Attendance Management</string>
     <string name="configure_shifts_locations">Manage shifts and location restrictions</string>
@@ -55,6 +58,7 @@
     <string name="checked_in">Checked In</string>
     <string name="live_activity">Live Activity</string>
     <string name="live_activity_24h">Live Activity (24h)</string>
+    <string name="movements">Movements</string>
     <string name="employee_movements">Employee Movements</string>
     <string name="recent_activity">Recent Activity</string>
     <string name="no_recent_activity">No Recent Activity</string>

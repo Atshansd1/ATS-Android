@@ -194,11 +194,15 @@ class ReportsViewModel : ViewModel() {
             val filename = "attendance_report_${dateFormat.format(Date())}.csv"
             val file = File(context.getExternalFilesDir(null), filename)
             
+            // Check if Arabic language
+            val isArabic = LocaleManager.getCurrentLanguage(context) == "ar"
+            Log.d(TAG, "📝 Export language: ${if (isArabic) "Arabic (RTL)" else "English (LTR)"}")
+            
             val csvContent = buildString {
                 // Header - use Arabic if app language is Arabic
-                val isArabic = LocaleManager.getCurrentLanguage(context) == "ar"
                 val headers = if (isArabic) {
-                    "رقم الموظف,اسم الموظف,وقت تسجيل الحضور,وقت تسجيل الانصراف,موقع الحضور,موقع الانصراف,المدة (ساعات),التاريخ,الحالة"
+                    // Arabic headers in RTL order (from right to left)
+                    "الحالة,التاريخ,المدة (ساعات),موقع الانصراف,موقع الحضور,وقت تسجيل الانصراف,وقت تسجيل الحضور,اسم الموظف,رقم الموظف"
                 } else {
                     "Employee ID,Employee Name,Check-In Time,Check-Out Time,Check-In Location,Check-Out Location,Duration (hours),Date,Status"
                 }
@@ -216,13 +220,36 @@ class ReportsViewModel : ViewModel() {
                         String.format("%.2f", record.durationHours)
                     } else ""
                     val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format((record.date ?: record.checkInTime).toDate())
-                    val status = record.statusString.replace("_", " ")
                     
-                    appendLine("${record.employeeId},\"${record.employeeName}\",$checkInTime,$checkOutTime,\"$checkInPlace\",\"$checkOutPlace\",$duration,$date,$status")
+                    // Translate status to Arabic if needed
+                    val status = if (isArabic) {
+                        when (record.statusString) {
+                            "checked_in" -> "تم تسجيل الحضور"
+                            "checked_out" -> "تم تسجيل الانصراف"
+                            else -> record.statusString
+                        }
+                    } else {
+                        record.statusString.replace("_", " ")
+                    }
+                    
+                    // RTL order for Arabic (same order as headers)
+                    val row = if (isArabic) {
+                        "$status,$date,$duration,\"$checkOutPlace\",\"$checkInPlace\",$checkOutTime,$checkInTime,\"${record.employeeName}\",${record.employeeId}"
+                    } else {
+                        "${record.employeeId},\"${record.employeeName}\",$checkInTime,$checkOutTime,\"$checkInPlace\",\"$checkOutPlace\",$duration,$date,$status"
+                    }
+                    
+                    appendLine(row)
                 }
             }
             
-            file.writeText(csvContent)
+            // Write with UTF-8 BOM for proper Excel/Sheets display
+            file.outputStream().use { output ->
+                // UTF-8 BOM (Byte Order Mark) - helps Excel recognize UTF-8
+                output.write(byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()))
+                output.write(csvContent.toByteArray(Charsets.UTF_8))
+            }
+            
             Log.d(TAG, "✅ CSV exported to: ${file.absolutePath}")
             
             // Share the file

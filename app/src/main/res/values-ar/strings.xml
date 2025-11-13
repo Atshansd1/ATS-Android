@@ -3,7 +3,10 @@
     <!-- App Name -->
     <string name="app_name">نظام تتبع الحضور</string>
     
+    <!-- Tab Labels (non-duplicates) -->
+    
     <!-- Authentication -->
+    <string name="login">تسجيل الدخول</string>
     <string name="login_subtitle">نظام تتبع الحضور</string>
     <string name="email_or_employee_id">البريد الإلكتروني أو رقم الموظف</string>
     <string name="password">كلمة المرور</string>
@@ -51,6 +54,7 @@
     <string name="todays_checkins">تسجيلات اليوم</string>
     <string name="live_activity">النشاط المباشر</string>
     <string name="live_activity_24h">النشاط المباشر (24 ساعة)</string>
+    <string name="movements">الحركات</string>
     <string name="employee_movements">تحركات الموظفين</string>
     <string name="recent_activity">النشاط الحديث</string>
     <string name="no_recent_activity">لا يوجد نشاط حديث</string>

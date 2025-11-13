@@ -41,20 +41,20 @@ import com.ats.android.viewmodels.AuthUiState
 
 sealed class Screen(
     val route: String,
-    val title: String,
+    val titleResId: Int,  // Changed from String to resource ID
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val showInNav: Boolean = true,
     val roles: List<EmployeeRole> = listOf(EmployeeRole.EMPLOYEE, EmployeeRole.SUPERVISOR, EmployeeRole.ADMIN)
 ) {
-    object Login : Screen("login", "Login", Icons.Default.Login, showInNav = false)
-    object Dashboard : Screen("dashboard", "Dashboard", Icons.Default.Dashboard, roles = listOf(EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR))
-    object Map : Screen("map", "Map", Icons.Default.LocationOn, roles = listOf(EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR))
-    object CheckIn : Screen("checkin", "Check In", Icons.Default.CheckCircle, roles = listOf(EmployeeRole.EMPLOYEE, EmployeeRole.SUPERVISOR))
-    object History : Screen("history", "History", Icons.Default.CalendarToday, roles = listOf(EmployeeRole.EMPLOYEE, EmployeeRole.SUPERVISOR))
-    object Reports : Screen("reports", "Reports", Icons.Default.BarChart, roles = listOf(EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR))
-    object EmployeeManagement : Screen("employees", "Employees", Icons.Default.Groups, roles = listOf(EmployeeRole.ADMIN))
-    object Movements : Screen("movements", "Movements", Icons.Default.DirectionsWalk, showInNav = false, roles = listOf(EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR))
-    object Settings : Screen("settings", "Settings", Icons.Default.Settings)
+    object Login : Screen("login", com.ats.android.R.string.login, Icons.Default.Login, showInNav = false)
+    object Dashboard : Screen("dashboard", com.ats.android.R.string.dashboard, Icons.Default.Dashboard, roles = listOf(EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR))
+    object Map : Screen("map", com.ats.android.R.string.map, Icons.Default.LocationOn, roles = listOf(EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR))
+    object CheckIn : Screen("checkin", com.ats.android.R.string.check_in, Icons.Default.CheckCircle, roles = listOf(EmployeeRole.EMPLOYEE, EmployeeRole.SUPERVISOR))
+    object History : Screen("history", com.ats.android.R.string.history, Icons.Default.CalendarToday, roles = listOf(EmployeeRole.EMPLOYEE, EmployeeRole.SUPERVISOR))
+    object Reports : Screen("reports", com.ats.android.R.string.reports, Icons.Default.BarChart, roles = listOf(EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR))
+    object EmployeeManagement : Screen("employees", com.ats.android.R.string.employees, Icons.Default.Groups, roles = listOf(EmployeeRole.ADMIN))
+    object Movements : Screen("movements", com.ats.android.R.string.movements, Icons.Default.DirectionsWalk, showInNav = false, roles = listOf(EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR))
+    object Settings : Screen("settings", com.ats.android.R.string.settings, Icons.Default.Settings)
 }
 
 @Composable
@@ -222,7 +222,7 @@ fun ExpressiveNavItem(
             ) {
                 Icon(
                     imageVector = screen.icon,
-                    contentDescription = screen.title,
+                    contentDescription = stringResource(screen.titleResId),
                     modifier = Modifier.size(iconSize),
                     tint = if (selected) {
                         MaterialTheme.colorScheme.onSecondaryContainer
@@ -236,7 +236,7 @@ fun ExpressiveNavItem(
             
             // Label - more space for text
             Text(
-                text = screen.title,
+                text = stringResource(screen.titleResId),  // Use stringResource for translation
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontSize = if (compact) 10.sp else 11.sp,  // Slightly larger
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
@@ -307,7 +307,7 @@ fun MainScaffold(
         }
         android.util.Log.d("MainScaffold", "Total items in nav: ${this.size}")
         this.forEachIndexed { index, screen ->
-            android.util.Log.d("MainScaffold", "  Tab $index: ${screen.title} (${screen.route})")
+            android.util.Log.d("MainScaffold", "  Tab $index: ${screen.route}")
         }
     }
     

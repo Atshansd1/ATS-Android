@@ -4,11 +4,16 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
+import android.location.LocationManager
+import android.os.Build
 import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.*
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
@@ -22,62 +27,114 @@ class LocationService(private val context: Context) {
         private const val TAG = "LocationService"
         private const val UPDATE_INTERVAL = 30000L // 30 seconds
         private const val FASTEST_INTERVAL = 10000L // 10 seconds
+        private const val LOCATION_TIMEOUT = 8000L // 8 seconds timeout for real devices
     }
     
     fun hasLocationPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
+        val hasFine = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
+        
+        val hasCoarse = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        
+        return hasFine || hasCoarse
+    }
+    
+    fun isLocationEnabled(): Boolean {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+        return locationManager?.isProviderEnabled(LocationManager.GPS_PROVIDER) == true ||
+                locationManager?.isProviderEnabled(LocationManager.NETWORK_PROVIDER) == true
+    }
+    
+    fun isGooglePlayServicesAvailable(): Boolean {
+        val availability = GoogleApiAvailability.getInstance()
+        val resultCode = availability.isGooglePlayServicesAvailable(context)
+        return resultCode == ConnectionResult.SUCCESS
     }
     
     suspend fun getCurrentLocation(): Location? {
-        if (!hasLocationPermission()) {
-            Log.e(TAG, "❌ No location permission")
-            return null
-        }
-        
-        return try {
+        try {
+            // Check permissions
+            if (!hasLocationPermission()) {
+                Log.e(TAG, "❌ No location permission")
+                return null
+            }
+            
+            // Check if location is enabled
+            if (!isLocationEnabled()) {
+                Log.e(TAG, "❌ Location is disabled in device settings")
+                return null
+            }
+            
+            // Check Google Play Services
+            if (!isGooglePlayServicesAvailable()) {
+                Log.e(TAG, "❌ Google Play Services not available")
+                return null
+            }
+            
             Log.d(TAG, "📍 Getting current location...")
             
-            // Try to get last known location first (faster)
-            val lastLocation = fusedLocationClient.lastLocation.await()
-            if (lastLocation != null) {
-                Log.d(TAG, "✅ Got last location: ${lastLocation.latitude}, ${lastLocation.longitude}")
-                return lastLocation
+            // Strategy 1: Try last known location first (instant)
+            try {
+                val lastLocation = fusedLocationClient.lastLocation.await()
+                if (lastLocation != null && isLocationRecent(lastLocation)) {
+                    Log.d(TAG, "✅ Got recent last location: ${lastLocation.latitude}, ${lastLocation.longitude}, age: ${(System.currentTimeMillis() - lastLocation.time) / 1000}s")
+                    return lastLocation
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to get last location: ${e.message}")
             }
             
-            // If no last location, try a quick fresh request
-            Log.d(TAG, "📍 Requesting fresh location with 2s timeout...")
-            val request = com.google.android.gms.location.CurrentLocationRequest.Builder()
-                .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
-                .setDurationMillis(2000) // 2 second timeout
-                .setMaxUpdateAgeMillis(60000) // Accept location up to 1 minute old
-                .build()
+            // Strategy 2: Request fresh location with HIGH accuracy
+            Log.d(TAG, "📍 Requesting fresh location with ${LOCATION_TIMEOUT / 1000}s timeout...")
             
-            val location = kotlinx.coroutines.withTimeoutOrNull(2500L) {
-                fusedLocationClient.getCurrentLocation(request, null).await()
+            try {
+                val request = com.google.android.gms.location.CurrentLocationRequest.Builder()
+                    .setPriority(Priority.PRIORITY_HIGH_ACCURACY) // Use HIGH accuracy for real devices
+                    .setDurationMillis(LOCATION_TIMEOUT) // 8 second timeout
+                    .setMaxUpdateAgeMillis(30000) // Accept location up to 30 seconds old
+                    .build()
+                
+                val location = kotlinx.coroutines.withTimeoutOrNull(LOCATION_TIMEOUT + 1000) {
+                    fusedLocationClient.getCurrentLocation(request, null).await()
+                }
+                
+                if (location != null) {
+                    Log.d(TAG, "✅ Fresh location: ${location.latitude}, ${location.longitude}, accuracy: ${location.accuracy}m")
+                    return location
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Fresh location request failed: ${e.message}", e)
             }
             
-            if (location != null) {
-                Log.d(TAG, "✅ Fresh location: ${location.latitude}, ${location.longitude}")
-                return location
+            // Strategy 3: Try any last location as fallback
+            try {
+                val fallbackLocation = fusedLocationClient.lastLocation.await()
+                if (fallbackLocation != null) {
+                    val ageMinutes = (System.currentTimeMillis() - fallbackLocation.time) / 60000
+                    Log.w(TAG, "⚠️ Using old last location (${ageMinutes}min old): ${fallbackLocation.latitude}, ${fallbackLocation.longitude}")
+                    return fallbackLocation
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to get fallback location: ${e.message}")
             }
             
-            // If still no location, return a default (for emulator/testing)
-            Log.w(TAG, "⚠️ No location available, using default location")
-            return Location("default").apply {
-                latitude = 24.7136 // Riyadh
-                longitude = 46.6753
-            }
+            Log.e(TAG, "❌ Could not get location from any source")
+            return null
+            
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Location error: ${e.message}, using default location", e)
-            // Return default location on error (for emulator)
-            return Location("default").apply {
-                latitude = 24.7136
-                longitude = 46.6753
-            }
+            Log.e(TAG, "❌ Location error: ${e.message}", e)
+            return null
         }
+    }
+    
+    private fun isLocationRecent(location: Location): Boolean {
+        val ageMillis = System.currentTimeMillis() - location.time
+        return ageMillis < 60000 // Less than 1 minute old
     }
     
     fun getLocationUpdates(): Flow<Location> = callbackFlow {

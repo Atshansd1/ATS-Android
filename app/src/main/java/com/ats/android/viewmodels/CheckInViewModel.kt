@@ -68,16 +68,33 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
     
     private suspend fun getCurrentLocation() {
         try {
-            // Set location to null to show loading state in UI
-            _placeName.value = null
+            // Set to loading state
+            _placeName.value = "Locating..."
             
+            // Check permissions first
             if (!locationService.hasLocationPermission()) {
-                _placeName.value = "permission_required" // Special key for UI
+                _placeName.value = "Location permission required"
+                Log.e(TAG, "❌ No location permission")
                 return
             }
             
-            // Quick location fetch with 3 second timeout
-            val location = kotlinx.coroutines.withTimeoutOrNull(3000L) {
+            // Check if location is enabled
+            if (!locationService.isLocationEnabled()) {
+                _placeName.value = "Please enable location in settings"
+                Log.e(TAG, "❌ Location disabled")
+                return
+            }
+            
+            // Check Google Play Services
+            if (!locationService.isGooglePlayServicesAvailable()) {
+                _placeName.value = "Google Play Services required"
+                Log.e(TAG, "❌ Google Play Services not available")
+                return
+            }
+            
+            // Get location with extended timeout for real devices (10 seconds)
+            Log.d(TAG, "📍 Getting location...")
+            val location = kotlinx.coroutines.withTimeoutOrNull(10000L) {
                 locationService.getCurrentLocation()
             }
             
@@ -87,7 +104,7 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                 // Show coordinates immediately
                 val coords = "${String.format("%.4f", location.latitude)}, ${String.format("%.4f", location.longitude)}"
                 _placeName.value = coords
-                Log.d(TAG, "📍 Location: $coords")
+                Log.d(TAG, "✅ Location: $coords, accuracy: ${location.accuracy}m")
                 
                 // Try to get place name in background (don't block UI)
                 viewModelScope.launch {
@@ -105,12 +122,12 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                     }
                 }
             } else {
-                _placeName.value = "location_unavailable"
-                Log.w(TAG, "⚠️ Location is null after timeout")
+                _placeName.value = "Unable to get location. Please try again."
+                Log.e(TAG, "❌ Location is null")
             }
         } catch (e: Exception) {
             Log.e(TAG, "❌ Location error: ${e.message}", e)
-            _placeName.value = "location_error"
+            _placeName.value = "Location error. Please try again."
         }
     }
     
@@ -120,24 +137,42 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                 _uiState.value = CheckInUiState.Processing
                 Log.d(TAG, "⏱️ Checking in: ${employee.displayName}")
                 
-                // Get location quickly (with 2 second timeout)
+                // Check permissions
+                if (!locationService.hasLocationPermission()) {
+                    _uiState.value = CheckInUiState.Error("Location permission is required. Please grant permission in app settings.")
+                    return@launch
+                }
+                
+                // Check if location is enabled
+                if (!locationService.isLocationEnabled()) {
+                    _uiState.value = CheckInUiState.Error("Please enable location services in device settings.")
+                    return@launch
+                }
+                
+                // Get location (with extended timeout for check-in)
                 var location = _currentLocation.value
-                if (location == null) {
-                    Log.d(TAG, "Getting location for check-in...")
-                    location = kotlinx.coroutines.withTimeoutOrNull(2000L) {
+                if (location == null || !isLocationRecent(location)) {
+                    Log.d(TAG, "Getting fresh location for check-in...")
+                    _placeName.value = "Getting location..."
+                    
+                    location = kotlinx.coroutines.withTimeoutOrNull(10000L) {
                         locationService.getCurrentLocation()
                     }
                     _currentLocation.value = location
                 }
                 
                 if (location == null) {
-                    _uiState.value = CheckInUiState.Error("Location not available. Please try again.")
+                    _uiState.value = CheckInUiState.Error("Unable to get your location. Please ensure GPS is enabled and try again.")
                     return@launch
                 }
                 
                 // Use place name if available, otherwise use coordinates
                 var placeName = _placeName.value
-                if (placeName == null || placeName.startsWith("permission") || placeName.startsWith("location")) {
+                if (placeName == null || 
+                    placeName.contains("permission", ignoreCase = true) ||
+                    placeName.contains("unable", ignoreCase = true) ||
+                    placeName.contains("error", ignoreCase = true) ||
+                    placeName.contains("Locating", ignoreCase = true)) {
                     placeName = "${String.format("%.4f", location.latitude)}, ${String.format("%.4f", location.longitude)}"
                 }
                 
@@ -237,6 +272,11 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             getCurrentLocation()
         }
+    }
+    
+    private fun isLocationRecent(location: Location): Boolean {
+        val ageMillis = System.currentTimeMillis() - location.time
+        return ageMillis < 60000 // Less than 1 minute old
     }
     
     companion object {

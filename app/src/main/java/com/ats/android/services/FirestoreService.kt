@@ -379,7 +379,126 @@ class FirestoreService private constructor() {
         location: GeoPoint,
         placeName: String?
     ) {
+        // Get previous location to detect movement
+        val previousLocation = try {
+            db.collection(ACTIVE_LOCATIONS_COLLECTION)
+                .document(employeeId)
+                .get()
+                .await()
+        } catch (e: Exception) {
+            null
+        }
+        
+        // Update active location
         updateActiveLocation(employeeId, location, placeName)
+        
+        // Record movement if location changed significantly
+        if (previousLocation != null && previousLocation.exists()) {
+            try {
+                val prevLocationData = previousLocation.get("location") as? Map<*, *>
+                val prevLat = (prevLocationData?.get("latitude") as? Number)?.toDouble()
+                val prevLng = (prevLocationData?.get("longitude") as? Number)?.toDouble()
+                val prevPlace = previousLocation.getString("placeName")
+                val prevTimestamp = previousLocation.getTimestamp("lastUpdated")
+                
+                if (prevLat != null && prevLng != null && prevTimestamp != null) {
+                    val distance = calculateDistance(prevLat, prevLng, location.latitude, location.longitude)
+                    
+                    // Record movement if moved more than 100 meters
+                    if (distance > 0.1) { // 0.1 km = 100 meters
+                        recordMovement(
+                            employeeId = employeeId,
+                            fromLat = prevLat,
+                            fromLng = prevLng,
+                            fromPlace = prevPlace,
+                            toLat = location.latitude,
+                            toLng = location.longitude,
+                            toPlace = placeName,
+                            distance = distance,
+                            startTime = prevTimestamp,
+                            endTime = Timestamp.now()
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking for movement: ${e.message}")
+            }
+        }
+    }
+    
+    private suspend fun recordMovement(
+        employeeId: String,
+        fromLat: Double,
+        fromLng: Double,
+        fromPlace: String?,
+        toLat: Double,
+        toLng: Double,
+        toPlace: String?,
+        distance: Double,
+        startTime: Timestamp,
+        endTime: Timestamp
+    ) {
+        try {
+            // Get employee info
+            val employee = getEmployeeByEmployeeId(employeeId)
+            val employeeName = employee?.displayName ?: employeeId
+            
+            // Get check-in info
+            val activeCheckIn = getActiveCheckIn(employeeId)
+            val checkInLat = activeCheckIn?.checkInLocation?.latitude ?: 0.0
+            val checkInLng = activeCheckIn?.checkInLocation?.longitude ?: 0.0
+            val checkInId = activeCheckIn?.id ?: ""
+            
+            // Calculate duration in seconds
+            val durationSeconds = endTime.seconds - startTime.seconds
+            
+            // Determine movement type
+            val movementType = when {
+                distance > 1.0 -> MovementType.SIGNIFICANT_MOVE
+                durationSeconds > 900 -> MovementType.STATIONARY_STAY // 15 minutes
+                else -> MovementType.SIGNIFICANT_MOVE
+            }
+            
+            val movement = hashMapOf<String, Any?>(
+                "employeeId" to employeeId,
+                "employeeName" to employeeName,
+                "movementType" to movementType.value,
+                "fromLatitude" to fromLat,
+                "fromLongitude" to fromLng,
+                "fromAddress" to fromPlace,
+                "toLatitude" to toLat,
+                "toLongitude" to toLng,
+                "toAddress" to toPlace,
+                "distance" to distance,
+                "startTime" to startTime,
+                "endTime" to endTime,
+                "duration" to durationSeconds,
+                "checkInId" to checkInId,
+                "checkInLatitude" to checkInLat,
+                "checkInLongitude" to checkInLng,
+                "createdAt" to Timestamp.now()
+            )
+            
+            db.collection(MOVEMENTS_COLLECTION)
+                .add(movement)
+                .await()
+            
+            Log.d(TAG, "✅ Movement recorded: $employeeName moved ${String.format("%.2f", distance)}km from $fromPlace to $toPlace (${durationSeconds}s)")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error recording movement: ${e.message}", e)
+        }
+    }
+    
+    private fun calculateDistance(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
+        val r = 6371.0 // Earth radius in km
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLng = Math.toRadians(lng2 - lng1)
+        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2)
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        return r * c
     }
     
     private suspend fun updateActiveLocation(

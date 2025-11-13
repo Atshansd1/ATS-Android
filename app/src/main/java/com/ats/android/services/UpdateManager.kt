@@ -24,7 +24,6 @@ class UpdateManager(private val context: Context) {
     companion object {
         private const val TAG = "UpdateManager"
         private const val GITHUB_API_URL = "https://api.github.com/repos/Atshansd1/ATS-Android/releases/latest"
-        private const val CURRENT_VERSION = "1.3.7"
         private const val APK_FILENAME = "ATS-Update.apk"
     }
     
@@ -58,7 +57,18 @@ class UpdateManager(private val context: Context) {
     suspend fun checkForUpdates(): VersionInfo? {
         return withContext(Dispatchers.IO) {
             try {
-                Log.d(TAG, "Checking for updates from GitHub API")
+                // Get current version from BuildConfig
+                val currentVersion = try {
+                    val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                    packageInfo.versionName
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error getting current version: ${e.message}")
+                    "1.0.0"
+                }
+                
+                Log.d(TAG, "📱 Current app version: $currentVersion")
+                Log.d(TAG, "🔍 Checking for updates from GitHub API")
+                
                 val url = URL(GITHUB_API_URL)
                 val connection = url.openConnection()
                 connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
@@ -71,17 +81,24 @@ class UpdateManager(private val context: Context) {
                 val tagName = json.getString("tag_name").removePrefix("v")
                 val assets = json.getJSONArray("assets")
                 
+                // Look for app-release.apk (the actual filename in releases)
                 var apkUrl = ""
                 for (i in 0 until assets.length()) {
                     val asset = assets.getJSONObject(i)
                     val name = asset.getString("name")
-                    if (name.endsWith(".apk") && name.contains("signed")) {
+                    Log.d(TAG, "  Asset $i: $name")
+                    if (name.endsWith(".apk")) {
                         apkUrl = asset.getString("browser_download_url")
+                        Log.d(TAG, "✅ Found APK: $name")
                         break
                     }
                 }
                 
-                val isNewer = compareVersions(tagName, CURRENT_VERSION) > 0
+                if (apkUrl.isEmpty()) {
+                    Log.e(TAG, "❌ No APK file found in release assets")
+                }
+                
+                val isNewer = compareVersions(tagName, currentVersion) > 0
                 val versionInfo = VersionInfo(
                     latestVersion = tagName,
                     downloadUrl = apkUrl,
@@ -89,11 +106,11 @@ class UpdateManager(private val context: Context) {
                 )
                 
                 _versionInfo.value = versionInfo
-                Log.d(TAG, "Latest version: $tagName, Current: $CURRENT_VERSION, Update available: $isNewer")
+                Log.d(TAG, "📊 Latest: $tagName, Current: $currentVersion, Update available: $isNewer")
                 versionInfo
                 
             } catch (e: Exception) {
-                Log.e(TAG, "Error checking for updates: ${e.message}", e)
+                Log.e(TAG, "❌ Error checking for updates: ${e.message}", e)
                 null
             }
         }

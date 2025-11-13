@@ -5,6 +5,12 @@
     
     <!-- Tab Labels (non-duplicates) -->
     
+    <!-- Navigation -->
+    <string name="map">الخريطة</string>
+    <string name="history">السجل</string>
+    <string name="reports">التقارير</string>
+    <string name="settings">الإعدادات</string>
+    
     <!-- Authentication -->
     <string name="login">تسجيل الدخول</string>
     <string name="login_subtitle">نظام تتبع الحضور</string>

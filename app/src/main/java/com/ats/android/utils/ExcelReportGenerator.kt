@@ -4,6 +4,9 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
 import com.ats.android.models.AttendanceRecord
+import com.ats.android.services.GeocodingService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
@@ -26,7 +29,7 @@ object ExcelReportGenerator {
     /**
      * Generate professional Excel report with auto-sized columns
      */
-    fun generateExcelReport(
+    suspend fun generateExcelReport(
         context: Context,
         records: List<AttendanceRecord>,
         isArabic: Boolean = false
@@ -73,9 +76,19 @@ object ExcelReportGenerator {
             val summaryHeaderStyle: CellStyle = createSummaryHeaderStyle(workbook, isArabic)
             DebugLogger.d(TAG, "✅ Styles created")
             
+            // Re-geocode place names if Arabic
+            val enrichedRecords = if (isArabic) {
+                DebugLogger.d(TAG, "🔄 Re-geocoding place names to Arabic...")
+                withContext(Dispatchers.IO) {
+                    reGeocodeToArabic(context, records)
+                }
+            } else {
+                records
+            }
+            
             // Create Data sheet
             DebugLogger.d(TAG, "Creating data sheet...")
-            createDataSheet(workbook, records, headerStyle, titleStyle, dataStyle, 
+            createDataSheet(workbook, enrichedRecords, headerStyle, titleStyle, dataStyle, 
                            dateStyle, statusCompleteStyle, statusActiveStyle, isArabic)
             DebugLogger.d(TAG, "✅ Data sheet created")
             
@@ -140,6 +153,54 @@ object ExcelReportGenerator {
             } catch (e: Exception) {
                 DebugLogger.e(TAG, "Error cleaning up resources: ${e.message}")
             }
+        }
+    }
+    
+    /**
+     * Re-geocode place names to Arabic
+     */
+    private suspend fun reGeocodeToArabic(
+        context: Context,
+        records: List<AttendanceRecord>
+    ): List<AttendanceRecord> {
+        val geocodingService = GeocodingService(context)
+        
+        return records.map { record ->
+            var modified = record
+            
+            // Re-geocode check-in location
+            if (record.checkInLocation != null) {
+                try {
+                    val arabicCheckInPlace = geocodingService.getPlaceName(
+                        record.checkInLocation!!.latitude,
+                        record.checkInLocation!!.longitude
+                    )
+                    if (arabicCheckInPlace != null) {
+                        modified = modified.copy(checkInPlaceName = arabicCheckInPlace)
+                        DebugLogger.d(TAG, "✅ Check-in place: $arabicCheckInPlace")
+                    }
+                } catch (e: Exception) {
+                    DebugLogger.w(TAG, "Failed to re-geocode check-in: ${e.message}")
+                }
+            }
+            
+            // Re-geocode check-out location
+            if (record.checkOutLocation != null) {
+                try {
+                    val arabicCheckOutPlace = geocodingService.getPlaceName(
+                        record.checkOutLocation!!.latitude,
+                        record.checkOutLocation!!.longitude
+                    )
+                    if (arabicCheckOutPlace != null) {
+                        modified = modified.copy(checkOutPlaceName = arabicCheckOutPlace)
+                        DebugLogger.d(TAG, "✅ Check-out place: $arabicCheckOutPlace")
+                    }
+                } catch (e: Exception) {
+                    DebugLogger.w(TAG, "Failed to re-geocode check-out: ${e.message}")
+                }
+            }
+            
+            modified
         }
     }
     

@@ -153,17 +153,23 @@ fun IOSReportsScreen(
                             onClick = {
                                 scope.launch {
                                     try {
-                                        viewModel.generateReport(preview = false)
-                                        android.util.Log.d("IOSReportsScreen", "Starting Excel export...")
+                                        // Check if report data is available
+                                        if (reportData.isEmpty()) {
+                                            showMessage = "Please generate a report first"
+                                            com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Cannot export Excel - no report data. Generate report first.")
+                                            return@launch
+                                        }
+                                        
+                                        com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Starting Excel export with ${reportData.size} records...")
                                         val exported = viewModel.exportToExcel(context)
-                                        android.util.Log.d("IOSReportsScreen", "Excel export result: $exported")
+                                        com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Excel export result: $exported")
                                         if (exported) {
-                                            showMessage = "Excel exported successfully"
+                                            showMessage = "Excel exported successfully!"
                                         } else {
-                                            showMessage = "Excel export failed - check logs"
+                                            showMessage = "Excel export failed - check Debug Logs in Settings"
                                         }
                                     } catch (e: Exception) {
-                                        android.util.Log.e("IOSReportsScreen", "Excel export error", e)
+                                        com.ats.android.utils.DebugLogger.e("IOSReportsScreen", "Excel export error", e)
                                         showMessage = "Error: ${e.message}"
                                     }
                                 }
@@ -183,12 +189,18 @@ fun IOSReportsScreen(
                         Button(
                             onClick = {
                                 scope.launch {
-                                    viewModel.generateReport(preview = false)
+                                    // Check if report data is available
+                                    if (reportData.isEmpty()) {
+                                        showMessage = "Please generate a report first"
+                                        com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Cannot export PDF - no report data. Generate report first.")
+                                        return@launch
+                                    }
+                                    
                                     val exported = viewModel.exportToPDF(context)
                                     if (exported) {
-                                        showMessage = "PDF exported"
+                                        showMessage = "PDF exported successfully!"
                                     } else {
-                                        showMessage = reportExportFailed
+                                        showMessage = "PDF export failed - check Debug Logs in Settings"
                                     }
                                 }
                             },
@@ -207,12 +219,18 @@ fun IOSReportsScreen(
                         Button(
                             onClick = {
                                 scope.launch {
-                                    viewModel.generateReport(preview = false)
+                                    // Check if report data is available
+                                    if (reportData.isEmpty()) {
+                                        showMessage = "Please generate a report first"
+                                        com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Cannot export CSV - no report data. Generate report first.")
+                                        return@launch
+                                    }
+                                    
                                     val exported = viewModel.exportAndShare(context)
                                     if (exported) {
                                         showMessage = reportExported
                                     } else {
-                                        showMessage = reportExportFailed
+                                        showMessage = "CSV export failed - check Debug Logs in Settings"
                                     }
                                 }
                             },

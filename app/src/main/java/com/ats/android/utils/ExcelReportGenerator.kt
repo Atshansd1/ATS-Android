@@ -35,9 +35,16 @@ object ExcelReportGenerator {
         return try {
             Log.d(TAG, "📊 Creating Excel report with ${records.size} records...")
             
+            if (records.isEmpty()) {
+                Log.e(TAG, "❌ No records to export")
+                return false
+            }
+            
             val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US)
             val filename = "attendance_report_${dateFormat.format(Date())}.xlsx"
             val file = File(context.getExternalFilesDir(null), filename)
+            
+            Log.d(TAG, "📁 File path: ${file.absolutePath}")
             
             // Create workbook
             val workbook = XSSFWorkbook()
@@ -71,7 +78,8 @@ object ExcelReportGenerator {
             
             true
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error generating Excel report", e)
+            Log.e(TAG, "❌ Error generating Excel report: ${e.message}", e)
+            e.printStackTrace()
             false
         }
     }
@@ -135,7 +143,7 @@ object ExcelReportGenerator {
             
             // Employee ID
             row.createCell(0).apply {
-                setCellValue(record.employeeId)
+                setCellValue(record.employeeId ?: "N/A")
                 cellStyle = dataStyle
             }
             
@@ -147,8 +155,14 @@ object ExcelReportGenerator {
             
             // Check-In Time
             row.createCell(2).apply {
-                setCellValue(dateTimeFormat.format(record.checkInTime.toDate()))
-                cellStyle = dateStyle
+                try {
+                    setCellValue(dateTimeFormat.format(record.checkInTime.toDate()))
+                    cellStyle = dateStyle
+                } catch (e: Exception) {
+                    setCellValue("N/A")
+                    cellStyle = dataStyle
+                    Log.e(TAG, "Error formatting check-in time: ${e.message}")
+                }
             }
             
             // Check-In Location
@@ -159,12 +173,18 @@ object ExcelReportGenerator {
             
             // Check-Out Time
             row.createCell(4).apply {
-                if (record.checkOutTime != null) {
-                    setCellValue(dateTimeFormat.format(record.checkOutTime!!.toDate()))
-                    cellStyle = dateStyle
-                } else {
+                try {
+                    if (record.checkOutTime != null) {
+                        setCellValue(dateTimeFormat.format(record.checkOutTime!!.toDate()))
+                        cellStyle = dateStyle
+                    } else {
+                        setCellValue("--")
+                        cellStyle = dataStyle
+                    }
+                } catch (e: Exception) {
                     setCellValue("--")
                     cellStyle = dataStyle
+                    Log.e(TAG, "Error formatting check-out time: ${e.message}")
                 }
             }
             
@@ -204,11 +224,21 @@ object ExcelReportGenerator {
         }
         
         // Auto-size all columns for perfect fit
-        for (i in 0..7) {
-            sheet.autoSizeColumn(i)
-            // Add padding (20% extra width)
-            val currentWidth = sheet.getColumnWidth(i)
-            sheet.setColumnWidth(i, (currentWidth * 1.2).toInt())
+        try {
+            for (i in 0..7) {
+                sheet.autoSizeColumn(i)
+                // Add padding (20% extra width)
+                val currentWidth = sheet.getColumnWidth(i)
+                sheet.setColumnWidth(i, (currentWidth * 1.2).toInt())
+            }
+            Log.d(TAG, "✅ Columns auto-sized successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "⚠️ Auto-sizing columns failed, using default widths: ${e.message}")
+            // Fallback to fixed widths
+            val defaultWidths = intArrayOf(3000, 4000, 4000, 5000, 4000, 5000, 3000, 3000)
+            for (i in 0..7) {
+                sheet.setColumnWidth(i, defaultWidths[i])
+            }
         }
         
         // Freeze header rows
@@ -283,29 +313,34 @@ object ExcelReportGenerator {
      * Calculate summary statistics
      */
     private fun calculateStatistics(records: List<AttendanceRecord>): Statistics {
-        val total = records.size
-        val completed = records.count { it.statusString == "checked_out" }
-        val active = total - completed
-        
-        val durations = records.mapNotNull { it.totalDuration }.filter { it > 0 }
-        val avgDuration = if (durations.isNotEmpty()) {
-            val avgSeconds = durations.average()
-            val hours = (avgSeconds / 3600).toInt()
-            val minutes = ((avgSeconds % 3600) / 60).toInt()
-            "${hours}h ${minutes}m"
-        } else {
-            "N/A"
+        return try {
+            val total = records.size
+            val completed = records.count { it.statusString == "checked_out" }
+            val active = total - completed
+            
+            val durations = records.mapNotNull { it.totalDuration }.filter { it > 0 }
+            val avgDuration = if (durations.isNotEmpty()) {
+                val avgSeconds = durations.average()
+                val hours = (avgSeconds / 3600).toInt()
+                val minutes = ((avgSeconds % 3600) / 60).toInt()
+                "${hours}h ${minutes}m"
+            } else {
+                "N/A"
+            }
+            
+            val uniqueEmployees = records.mapNotNull { it.employeeId }.distinct().size
+            
+            Statistics(
+                totalRecords = total.toString(),
+                completedCount = completed.toString(),
+                activeCount = active.toString(),
+                avgDuration = avgDuration,
+                uniqueEmployees = uniqueEmployees.toString()
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calculating statistics: ${e.message}")
+            Statistics("0", "0", "0", "N/A", "0")
         }
-        
-        val uniqueEmployees = records.map { it.employeeId }.distinct().size
-        
-        return Statistics(
-            totalRecords = total.toString(),
-            completedCount = completed.toString(),
-            activeCount = active.toString(),
-            avgDuration = avgDuration,
-            uniqueEmployees = uniqueEmployees.toString()
-        )
     }
     
     /**
@@ -440,23 +475,32 @@ object ExcelReportGenerator {
      * Share the Excel file
      */
     private fun shareFile(context: Context, file: File) {
-        val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            file
-        )
-        
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        try {
+            if (!file.exists()) {
+                Log.e(TAG, "❌ File does not exist: ${file.absolutePath}")
+                return
+            }
+            
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+            
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            
+            val chooser = Intent.createChooser(intent, "Share Excel Report")
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(chooser)
+            
+            Log.d(TAG, "📤 Sharing Excel file: ${file.name}")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error sharing file: ${e.message}", e)
         }
-        
-        val chooser = Intent.createChooser(intent, "Share Excel Report")
-        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(chooser)
-        
-        Log.d(TAG, "📤 Sharing Excel file: ${file.name}")
     }
     
     /**

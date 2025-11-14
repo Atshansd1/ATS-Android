@@ -32,6 +32,9 @@ object ExcelReportGenerator {
         records: List<AttendanceRecord>,
         isArabic: Boolean = false
     ): Boolean {
+        var workbook: XSSFWorkbook? = null
+        var outputStream: FileOutputStream? = null
+        
         return try {
             Log.d(TAG, "📊 Creating Excel report with ${records.size} records...")
             
@@ -40,16 +43,25 @@ object ExcelReportGenerator {
                 return false
             }
             
+            // Verify external storage is available
+            val externalDir = context.getExternalFilesDir(null)
+            if (externalDir == null) {
+                Log.e(TAG, "❌ External storage not available")
+                return false
+            }
+            
             val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US)
             val filename = "attendance_report_${dateFormat.format(Date())}.xlsx"
-            val file = File(context.getExternalFilesDir(null), filename)
+            val file = File(externalDir, filename)
             
             Log.d(TAG, "📁 File path: ${file.absolutePath}")
+            Log.d(TAG, "📁 Parent dir exists: ${file.parentFile?.exists()}")
+            Log.d(TAG, "📁 Parent dir writable: ${file.parentFile?.canWrite()}")
             
             // Create workbook
             Log.d(TAG, "Creating workbook...")
-            val workbook = XSSFWorkbook()
-            Log.d(TAG, "✅ Workbook created")
+            workbook = XSSFWorkbook()
+            Log.d(TAG, "✅ Workbook created (${workbook.numberOfSheets} sheets)")
             
             // Create styles
             Log.d(TAG, "Creating styles...")
@@ -75,13 +87,23 @@ object ExcelReportGenerator {
             
             // Write to file
             Log.d(TAG, "Writing to file: ${file.absolutePath}")
-            FileOutputStream(file).use { outputStream ->
-                workbook.write(outputStream)
-                outputStream.flush()
-            }
+            Log.d(TAG, "Workbook sheets: ${workbook.numberOfSheets}")
+            
+            outputStream = FileOutputStream(file)
+            Log.d(TAG, "FileOutputStream created")
+            
+            workbook.write(outputStream)
+            Log.d(TAG, "Workbook written to stream")
+            
+            outputStream.flush()
+            Log.d(TAG, "Stream flushed")
+            
+            outputStream.close()
+            outputStream = null
             Log.d(TAG, "✅ File written successfully")
             
             workbook.close()
+            workbook = null
             Log.d(TAG, "✅ Workbook closed")
             
             Log.d(TAG, "✅ Excel generated successfully: ${file.absolutePath}")
@@ -104,10 +126,21 @@ object ExcelReportGenerator {
                 is java.io.IOException -> Log.e(TAG, "❌ IO Error - possibly storage permissions or disk space")
                 is SecurityException -> Log.e(TAG, "❌ Security Error - storage permissions required")
                 is OutOfMemoryError -> Log.e(TAG, "❌ Out of Memory - too many records")
+                is IllegalArgumentException -> Log.e(TAG, "❌ Illegal Argument - invalid data")
+                is NullPointerException -> Log.e(TAG, "❌ Null Pointer - missing data")
                 else -> Log.e(TAG, "❌ Unexpected error: ${e::class.java.name}")
             }
             
             false
+        } finally {
+            // Cleanup resources
+            try {
+                outputStream?.close()
+                workbook?.close()
+                Log.d(TAG, "Resources cleaned up")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error cleaning up resources: ${e.message}")
+            }
         }
     }
     

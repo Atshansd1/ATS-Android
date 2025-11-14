@@ -203,9 +203,19 @@ class ReportsViewModel : ViewModel() {
     /**
      * Export to professional Excel with auto-sized columns
      */
-    fun exportToExcel(context: Context): Boolean {
-        val isArabic = LocaleManager.getCurrentLanguage(context) == "ar"
-        return ExcelReportGenerator.generateExcelReport(context, _reportData.value, isArabic)
+    suspend fun exportToExcel(context: Context): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "📊 Starting Excel export from ViewModel...")
+                val isArabic = LocaleManager.getCurrentLanguage(context) == "ar"
+                val result = ExcelReportGenerator.generateExcelReport(context, _reportData.value, isArabic)
+                Log.d(TAG, "📊 Excel export result: $result")
+                result
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Excel export error in ViewModel: ${e.message}", e)
+                false
+            }
+        }
     }
     
     /**

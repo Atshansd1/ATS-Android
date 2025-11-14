@@ -47,9 +47,12 @@ object ExcelReportGenerator {
             Log.d(TAG, "📁 File path: ${file.absolutePath}")
             
             // Create workbook
+            Log.d(TAG, "Creating workbook...")
             val workbook = XSSFWorkbook()
+            Log.d(TAG, "✅ Workbook created")
             
             // Create styles
+            Log.d(TAG, "Creating styles...")
             val headerStyle: CellStyle = createHeaderStyle(workbook)
             val titleStyle: CellStyle = createTitleStyle(workbook)
             val dataStyle: CellStyle = createDataStyle(workbook)
@@ -57,29 +60,53 @@ object ExcelReportGenerator {
             val statusCompleteStyle: CellStyle = createStatusStyle(workbook, isComplete = true)
             val statusActiveStyle: CellStyle = createStatusStyle(workbook, isComplete = false)
             val summaryHeaderStyle: CellStyle = createSummaryHeaderStyle(workbook)
+            Log.d(TAG, "✅ Styles created")
             
             // Create Data sheet
+            Log.d(TAG, "Creating data sheet...")
             createDataSheet(workbook, records, headerStyle, titleStyle, dataStyle, 
                            dateStyle, statusCompleteStyle, statusActiveStyle, isArabic)
+            Log.d(TAG, "✅ Data sheet created")
             
             // Create Summary sheet
+            Log.d(TAG, "Creating summary sheet...")
             createSummarySheet(workbook, records, summaryHeaderStyle, dataStyle, isArabic)
+            Log.d(TAG, "✅ Summary sheet created")
             
             // Write to file
+            Log.d(TAG, "Writing to file: ${file.absolutePath}")
             FileOutputStream(file).use { outputStream ->
                 workbook.write(outputStream)
+                outputStream.flush()
             }
+            Log.d(TAG, "✅ File written successfully")
+            
             workbook.close()
+            Log.d(TAG, "✅ Workbook closed")
             
             Log.d(TAG, "✅ Excel generated successfully: ${file.absolutePath}")
+            Log.d(TAG, "File size: ${file.length()} bytes")
             
             // Share the file
+            Log.d(TAG, "Sharing file...")
             shareFile(context, file)
+            Log.d(TAG, "✅ Share intent sent")
             
             true
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error generating Excel report: ${e.message}", e)
+            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            Log.e(TAG, "❌ Stack trace:")
             e.printStackTrace()
+            
+            // Log specific error details
+            when (e) {
+                is java.io.IOException -> Log.e(TAG, "❌ IO Error - possibly storage permissions or disk space")
+                is SecurityException -> Log.e(TAG, "❌ Security Error - storage permissions required")
+                is OutOfMemoryError -> Log.e(TAG, "❌ Out of Memory - too many records")
+                else -> Log.e(TAG, "❌ Unexpected error: ${e::class.java.name}")
+            }
+            
             false
         }
     }

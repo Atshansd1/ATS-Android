@@ -152,12 +152,19 @@ fun IOSReportsScreen(
                         Button(
                             onClick = {
                                 scope.launch {
-                                    viewModel.generateReport(preview = false)
-                                    val exported = viewModel.exportToExcel(context)
-                                    if (exported) {
-                                        showMessage = "Excel exported"
-                                    } else {
-                                        showMessage = reportExportFailed
+                                    try {
+                                        viewModel.generateReport(preview = false)
+                                        android.util.Log.d("IOSReportsScreen", "Starting Excel export...")
+                                        val exported = viewModel.exportToExcel(context)
+                                        android.util.Log.d("IOSReportsScreen", "Excel export result: $exported")
+                                        if (exported) {
+                                            showMessage = "Excel exported successfully"
+                                        } else {
+                                            showMessage = "Excel export failed - check logs"
+                                        }
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("IOSReportsScreen", "Excel export error", e)
+                                        showMessage = "Error: ${e.message}"
                                     }
                                 }
                             },

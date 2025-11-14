@@ -283,23 +283,23 @@ object ExcelReportGenerator {
             }
         }
         
-        // Auto-size all columns for perfect fit
-        try {
-            for (i in 0..7) {
-                sheet.autoSizeColumn(i)
-                // Add padding (20% extra width)
-                val currentWidth = sheet.getColumnWidth(i)
-                sheet.setColumnWidth(i, (currentWidth * 1.2).toInt())
-            }
-            Log.d(TAG, "✅ Columns auto-sized successfully")
-        } catch (e: Exception) {
-            Log.e(TAG, "⚠️ Auto-sizing columns failed, using default widths: ${e.message}")
-            // Fallback to fixed widths
-            val defaultWidths = intArrayOf(3000, 4000, 4000, 5000, 4000, 5000, 3000, 3000)
-            for (i in 0..7) {
-                sheet.setColumnWidth(i, defaultWidths[i])
-            }
+        // Set fixed column widths (autoSizeColumn requires AWT which is not available on Android)
+        // Widths are in 1/256th of a character width
+        val columnWidths = intArrayOf(
+            3000,  // Employee ID
+            5000,  // Employee Name
+            4500,  // Check-In Time
+            6000,  // Check-In Location
+            4500,  // Check-Out Time
+            6000,  // Check-Out Location
+            3500,  // Duration
+            3500   // Status
+        )
+        
+        for (i in 0..7) {
+            sheet.setColumnWidth(i, columnWidths[i])
         }
+        Log.d(TAG, "✅ Columns sized with fixed widths")
         
         // Freeze header rows
         sheet.createFreezePane(0, 4)
@@ -362,11 +362,9 @@ object ExcelReportGenerator {
             }
         }
         
-        // Auto-size columns
-        sheet.autoSizeColumn(0)
-        sheet.autoSizeColumn(1)
-        sheet.setColumnWidth(0, (sheet.getColumnWidth(0) * 1.3).toInt())
-        sheet.setColumnWidth(1, (sheet.getColumnWidth(1) * 1.3).toInt())
+        // Set fixed column widths (autoSizeColumn not available on Android)
+        sheet.setColumnWidth(0, 6000)  // Label column
+        sheet.setColumnWidth(1, 4000)  // Value column
     }
     
     /**

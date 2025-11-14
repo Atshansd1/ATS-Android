@@ -231,12 +231,12 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                 
                 // Try current location first
                 var location = _currentLocation.value
-                var placeName = _placeName.value
+                var placeName: String? = null
                 
                 // If no current location, try quick fetch
                 if (location == null) {
                     Log.d(TAG, "Getting location for check-out...")
-                    location = kotlinx.coroutines.withTimeoutOrNull(2000L) {
+                    location = kotlinx.coroutines.withTimeoutOrNull(5000L) {
                         locationService.getCurrentLocation()
                     }
                     _currentLocation.value = location
@@ -258,8 +258,22 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                     return@launch
                 }
                 
+                // If we got a fresh location, try to get the place name
+                if (placeName == null) {
+                    Log.d(TAG, "🔍 Fetching place name for checkout location...")
+                    placeName = kotlinx.coroutines.withTimeoutOrNull(3000L) {
+                        geocodingService.getPlaceName(location.latitude, location.longitude)
+                    }
+                    
+                    if (placeName != null) {
+                        Log.d(TAG, "✅ Checkout place name: $placeName")
+                    } else {
+                        Log.w(TAG, "⚠️ Could not get place name, using coordinates")
+                    }
+                }
+                
                 // Use place name if available, otherwise use coordinates
-                if (placeName == null || placeName.startsWith("permission") || placeName.startsWith("location")) {
+                if (placeName == null) {
                     placeName = "${String.format("%.4f", location.latitude)}, ${String.format("%.4f", location.longitude)}"
                 }
                 

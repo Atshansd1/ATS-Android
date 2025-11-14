@@ -470,7 +470,7 @@ fun CompactAttendanceCard(record: AttendanceRecord) {
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = SimpleDateFormat("MMM dd", Locale.getDefault())
+                    text = SimpleDateFormat("MMM dd", java.util.Locale.US)
                         .format((record.date ?: record.checkInTime).toDate()),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold
@@ -480,7 +480,7 @@ fun CompactAttendanceCard(record: AttendanceRecord) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = SimpleDateFormat("hh:mm a", Locale.getDefault())
+                        text = SimpleDateFormat("hh:mm a", java.util.Locale.US)
                             .format(record.checkInTime.toDate()),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -492,7 +492,7 @@ fun CompactAttendanceCard(record: AttendanceRecord) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = SimpleDateFormat("hh:mm a", Locale.getDefault())
+                            text = SimpleDateFormat("hh:mm a", java.util.Locale.US)
                                 .format(record.checkOutTime!!.toDate()),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -549,7 +549,7 @@ fun AttendanceRecordCard(record: AttendanceRecord) {
             ) {
                 // Date
                 Text(
-                    text = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                    text = SimpleDateFormat("MMM dd, yyyy", java.util.Locale.US)
                         .format((record.date ?: record.checkInTime).toDate()),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
@@ -571,7 +571,7 @@ fun AttendanceRecordCard(record: AttendanceRecord) {
                     tint = Color.Green
                 )
                 Text(
-                    text = "In: ${SimpleDateFormat("hh:mm a", Locale.getDefault())
+                    text = "In: ${SimpleDateFormat("hh:mm a", java.util.Locale.US)
                         .format(record.checkInTime.toDate())}",
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -590,7 +590,7 @@ fun AttendanceRecordCard(record: AttendanceRecord) {
                         tint = Color(0xFFFF9800)
                     )
                     Text(
-                        text = "Out: ${SimpleDateFormat("hh:mm a", Locale.getDefault())
+                        text = "Out: ${SimpleDateFormat("hh:mm a", java.util.Locale.US)
                             .format(checkOut.toDate())}",
                         style = MaterialTheme.typography.bodySmall
                     )

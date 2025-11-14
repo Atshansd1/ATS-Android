@@ -68,18 +68,43 @@ class GeocodingService(private val context: Context) {
     private fun formatAddress(address: Address): String {
         val parts = mutableListOf<String>()
         
-        // Street
-        address.thoroughfare?.let { parts.add(it) }
-        
-        // City/Locality
-        address.locality?.let { parts.add(it) }
-        ?: address.subAdminArea?.let { parts.add(it) }
-        
-        // Admin area if no locality
-        if (parts.size == 1) {
-            address.adminArea?.let { parts.add(it) }
+        // Priority 1: Feature name (building, landmark, business)
+        address.featureName?.let { featureName ->
+            // Only add if it's not a numeric value (street number)
+            if (!featureName.matches(Regex("^\\d+$"))) {
+                parts.add(featureName)
+            }
         }
         
+        // Priority 2: Street with number
+        val street = buildString {
+            address.subThoroughfare?.let { append("$it ") } // Street number
+            address.thoroughfare?.let { append(it) } // Street name
+        }.trim()
+        if (street.isNotEmpty() && !parts.contains(street)) {
+            parts.add(street)
+        }
+        
+        // Priority 3: Sublocality or neighborhood
+        address.subLocality?.let { 
+            if (!parts.contains(it)) parts.add(it) 
+        }
+        
+        // Priority 4: City/Locality
+        address.locality?.let { 
+            if (!parts.contains(it)) parts.add(it)
+        } ?: address.subAdminArea?.let { 
+            if (!parts.contains(it)) parts.add(it)
+        }
+        
+        // Priority 5: Admin area (state/province) - only if we don't have enough detail
+        if (parts.size <= 2) {
+            address.adminArea?.let { 
+                if (!parts.contains(it)) parts.add(it)
+            }
+        }
+        
+        // Fallback: Use coordinates if no address parts found
         return parts.joinToString(", ").ifEmpty {
             "${String.format("%.4f", address.latitude)}, ${String.format("%.4f", address.longitude)}"
         }

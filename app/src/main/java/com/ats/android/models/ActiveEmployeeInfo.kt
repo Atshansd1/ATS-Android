@@ -32,6 +32,6 @@ fun formatDuration(startTime: Date, endTime: Date = Date()): String {
 }
 
 fun formatTime(date: Date): String {
-    val formatter = SimpleDateFormat("h:mm a", Locale.getDefault())
+    val formatter = SimpleDateFormat("h:mm a", Locale.US)
     return formatter.format(date)
 }

@@ -37,9 +37,9 @@ data class LocationMovement(
 ) {
     fun formattedDistance(): String {
         return if (distance < 1.0) {
-            String.format("%.0f m", distance * 1000)
+            String.format(Locale.US, "%.0f m", distance * 1000)
         } else {
-            String.format("%.2f km", distance)
+            String.format(Locale.US, "%.2f km", distance)
         }
     }
     
@@ -50,9 +50,9 @@ data class LocationMovement(
             val mins = minutes % 60
             
             return if (hours > 0) {
-                "${hours}h ${mins}m"
+                String.format(Locale.US, "%dh %dm", hours, mins)
             } else {
-                "${mins}m"
+                String.format(Locale.US, "%dm", mins)
             }
         }
         return null
@@ -67,9 +67,9 @@ data class LocationMovement(
         val days = hours / 24
         
         return when {
-            days > 0 -> "${days}d ago"
-            hours > 0 -> "${hours}h ago"
-            minutes > 0 -> "${minutes}m ago"
+            days > 0 -> String.format(Locale.US, "%dd ago", days)
+            hours > 0 -> String.format(Locale.US, "%dh ago", hours)
+            minutes > 0 -> String.format(Locale.US, "%dm ago", minutes)
             else -> "Just now"
         }
     }

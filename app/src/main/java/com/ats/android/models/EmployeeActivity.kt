@@ -32,9 +32,9 @@ data class EmployeeActivity(
                 diffInMinutes < 1 -> "Just now"
                 diffInMinutes < 60 -> "${diffInMinutes}m ago"
                 diffInHours < 24 -> "${diffInHours}h ago"
-                diffInDays < 7 -> "${diffInDays}d ago"
+                diffInDays < 7 -> String.format(Locale.US, "%dd ago", diffInDays)
                 else -> {
-                    val formatter = SimpleDateFormat("MMM d", Locale.getDefault())
+                    val formatter = SimpleDateFormat("MMM d", Locale.US)
                     formatter.format(activityDate)
                 }
             }

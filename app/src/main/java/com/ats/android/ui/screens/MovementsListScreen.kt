@@ -21,8 +21,10 @@ import com.ats.android.R
 import com.ats.android.models.LocationMovement
 import com.ats.android.models.MovementType
 import com.ats.android.ui.theme.ComponentShapes
+import com.ats.android.utils.NumberFormatter
 import com.ats.android.viewmodels.MovementsViewModel
 import com.ats.android.viewmodels.MovementsUiState
+import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,10 +88,9 @@ fun MovementsListScreen(
 @Composable
 fun MovementCard(
     movement: LocationMovement,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onViewRoute: (LocationMovement) -> Unit = {}
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = ComponentShapes.Card,
@@ -110,12 +111,13 @@ fun MovementCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
                     // Movement type icon
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(48.dp)
                             .clip(CircleShape)
                             .background(getMovementColor(movement.movementType).copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
@@ -128,16 +130,17 @@ fun MovementCard(
                         )
                     }
                     
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = movement.employeeName,
+                            text = movement.employeeName.ifEmpty { stringResource(R.string.unknown) },
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = movement.movementType.displayName,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = getMovementColor(movement.movementType)
+                            text = getLocalizedMovementType(movement.movementType),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = getMovementColor(movement.movementType),
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -145,100 +148,102 @@ fun MovementCard(
                 Column(
                     horizontalAlignment = Alignment.End
                 ) {
+                    // Time ago with English digits
                     Text(
-                        text = movement.timeAgo(),
+                        text = formatTimeAgoEnglish(movement.startTime.toDate()),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    // Distance with English digits
                     if (movement.distance > 0) {
                         Text(
-                            text = movement.formattedDistance(),
+                            text = NumberFormatter.formatDistance(movement.distance),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
             }
             
             // Location details
-            if (movement.fromAddress != null || movement.toAddress != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                movement.fromAddress?.let { address ->
-                    LocationRow(
-                        icon = Icons.Default.North,
-                        label = "From",
-                        address = address,
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
-                }
-                
-                movement.toAddress?.let { address ->
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LocationRow(
-                        icon = Icons.Default.South,
-                        label = "To",
-                        address = address,
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            movement.fromAddress?.let { address ->
+                LocationRow(
+                    icon = Icons.Default.LocationOn,
+                    label = stringResource(R.string.movement_from),
+                    address = address,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
+            
+            if (movement.toAddress != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                LocationRow(
+                    icon = Icons.Default.LocationOn,
+                    label = stringResource(R.string.movement_to),
+                    address = movement.toAddress!!,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            
+            // Additional info with English digits
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                // Duration
+                if (movement.duration != null && movement.duration > 0) {
+                    InfoChip(
+                        icon = Icons.Default.Timer,
+                        label = stringResource(R.string.movement_duration),
+                        value = NumberFormatter.formatDuration(movement.duration),
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-            }
-            
-            // Additional info
-            if (movement.movementType == MovementType.STATIONARY_STAY && movement.duration != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Timer,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = stringResource(R.string.stayed_for, movement.formattedDuration() ?: ""),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                
+                // Distance from check-in
+                if (movement.distanceFromCheckIn() > 0.1) {
+                    InfoChip(
+                        icon = Icons.Default.MyLocation,
+                        label = stringResource(R.string.distance_from_checkin, ""),
+                        value = NumberFormatter.formatDistance(movement.distanceFromCheckIn()),
+                        color = if (movement.distanceFromCheckIn() > 1.0) 
+                            MaterialTheme.colorScheme.error 
+                        else 
+                            MaterialTheme.colorScheme.tertiary
                     )
                 }
             }
             
-            // Distance from check-in
-            if (movement.distanceFromCheckIn() > 1.0) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                    Text(
-                        text = String.format("%.2f km from check-in", movement.distanceFromCheckIn()),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            // View route button
+            Spacer(modifier = Modifier.height(12.dp))
             
-            // View on map button
-            Spacer(modifier = Modifier.height(8.dp))
-            TextButton(
-                onClick = { /* TODO: Navigate to map */ },
-                modifier = Modifier.align(Alignment.End)
+            Button(
+                onClick = { onViewRoute(movement) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             ) {
                 Icon(
                     imageVector = Icons.Default.Map,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(18.dp)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("View on Map")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.view_route),
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
@@ -330,6 +335,69 @@ fun ErrorView(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@Composable
+fun InfoChip(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+        }
+        if (label.isNotEmpty()) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+fun getLocalizedMovementType(type: MovementType): String {
+    return when (type) {
+        MovementType.SIGNIFICANT_MOVE -> stringResource(R.string.movement_significant_move)
+        MovementType.STATIONARY_STAY -> stringResource(R.string.movement_stationary_stay)
+        MovementType.RETURNED_TO_CHECKIN -> stringResource(R.string.movement_returned_to_checkin)
+        MovementType.LEFT_CHECKIN_AREA -> stringResource(R.string.movement_left_checkin_area)
+    }
+}
+
+fun formatTimeAgoEnglish(date: Date): String {
+    val now = System.currentTimeMillis()
+    val then = date.time
+    val diffSeconds = (now - then) / 1000
+    
+    return when {
+        diffSeconds < 60 -> "now"
+        diffSeconds < 3600 -> "${diffSeconds / 60}m"
+        diffSeconds < 86400 -> "${diffSeconds / 3600}h"
+        else -> "${diffSeconds / 86400}d"
     }
 }
 

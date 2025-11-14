@@ -232,6 +232,18 @@
     <string name="error_loading_movements">خطأ في تحميل التحركات</string>
     <string name="time_ago">منذ</string>
     <string name="just_now">الآن</string>
+    <string name="movement_from">من</string>
+    <string name="movement_to">إلى</string>
+    <string name="distance_from_checkin">%s من موقع الحضور</string>
+    <string name="view_on_map">عرض على الخريطة</string>
+    <string name="view_route">عرض المسار</string>
+    <string name="movement_significant_move">انتقل</string>
+    <string name="movement_stationary_stay">بقي</string>
+    <string name="movement_returned_to_checkin">عاد</string>
+    <string name="movement_left_checkin_area">غادر المنطقة</string>
+    <string name="employee_route">مسار الموظف</string>
+    <string name="total_distance">المسافة الكلية</string>
+    <string name="movement_duration">المدة</string>
     
     <!-- Movement Types -->
     <string name="movement_moved">تحرك</string>
@@ -247,7 +259,6 @@
     <string name="from_location">من</string>
     <string name="to_location">إلى</string>
     <string name="distance">المسافة</string>
-    <string name="view_on_map">عرض على الخريطة</string>
     <string name="from_checkin">من موقع الحضور</string>
     <string name="check_in_location">موقع الحضور</string>
     

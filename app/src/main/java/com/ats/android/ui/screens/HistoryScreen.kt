@@ -218,7 +218,7 @@ fun HistoryScreen(
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         Text(
-                                            text = String.format("%.1f", totalHours),
+                                            text = String.format(java.util.Locale.US, "%.1f", totalHours),
                                             style = MaterialTheme.typography.displaySmall.copy(
                                                 fontWeight = FontWeight.Bold
                                             ),
@@ -295,8 +295,8 @@ fun HistoryScreen(
 
 @Composable
 fun HistoryAttendanceRecordCard(record: AttendanceRecord) {
-    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-    val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy", java.util.Locale.US)
+    val timeFormat = SimpleDateFormat("hh:mm a", java.util.Locale.US)
     
     val dateStr = dateFormat.format(record.checkInTime.toDate())
     val checkInTimeStr = timeFormat.format(record.checkInTime.toDate())
@@ -306,7 +306,7 @@ fun HistoryAttendanceRecordCard(record: AttendanceRecord) {
         val totalSeconds = (record.totalDuration ?: record.duration?.toDouble() ?: 0.0).toLong()
         val hours = TimeUnit.SECONDS.toHours(totalSeconds)
         val minutes = TimeUnit.SECONDS.toMinutes(totalSeconds) % 60
-        String.format("%dh %dm", hours, minutes)
+        String.format(java.util.Locale.US, "%dh %dm", hours, minutes)
     } else {
         stringResource(R.string.in_progress)
     }

@@ -2,6 +2,7 @@
 <resources>
     <!-- App Name -->
     <string name="app_name">ATS</string>
+    <string name="unknown">Unknown</string>
     
     <!-- Tab Labels -->
     <string name="login">Login</string>
@@ -88,7 +89,6 @@
     <string name="map_description">Live employee locations will be displayed here</string>
     <string name="loading_locations">Loading locations...</string>
     <string name="retry">Retry</string>
-    <string name="unknown">Unknown</string>
     <string name="refresh">Refresh</string>
     <string name="filter">Filter</string>
     <string name="search_places">Search places</string>
@@ -132,6 +132,18 @@
     <string name="movements_will_appear">Movements will appear here when employees move locations</string>
     <string name="stayed_for">Stayed for %s</string>
     <string name="error_loading_movements">Error Loading Movements</string>
+    <string name="movement_from">From</string>
+    <string name="movement_to">To</string>
+    <string name="distance_from_checkin">%s from check-in</string>
+    <string name="view_on_map">View on Map</string>
+    <string name="view_route">View Route</string>
+    <string name="movement_significant_move">Moved</string>
+    <string name="movement_stationary_stay">Stayed</string>
+    <string name="movement_returned_to_checkin">Returned</string>
+    <string name="movement_left_checkin_area">Left Area</string>
+    <string name="employee_route">Employee Route</string>
+    <string name="total_distance">Total Distance</string>
+    <string name="movement_duration">Duration</string>
     
     <!-- Employee Management -->
     <string name="employee_management">Employee Management</string>

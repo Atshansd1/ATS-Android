@@ -14,8 +14,8 @@ android {
         applicationId = "com.ats.android"
         minSdk = 26
         targetSdk = 34
-        versionCode = 31
-        versionName = "1.9.2"
+        versionCode = 32
+        versionName = "1.9.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         

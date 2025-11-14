@@ -159,15 +159,22 @@ fun IOSReportsScreen(
                                             showMessage = "Generating report..."
                                             viewModel.generateReport(preview = false)
                                             
-                                            // Wait a bit for report to generate
-                                            kotlinx.coroutines.delay(1000)
+                                            // Wait for report to generate (poll for data)
+                                            var attempts = 0
+                                            while (reportData.isEmpty() && attempts < 10) {
+                                                kotlinx.coroutines.delay(500)
+                                                attempts++
+                                                com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Waiting for report data... attempt $attempts")
+                                            }
                                             
                                             // Check if we have data now
                                             if (reportData.isEmpty()) {
                                                 showMessage = "No data available for selected filters"
-                                                com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Report generated but no data available")
+                                                com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Report generation timed out or no data available")
                                                 return@launch
                                             }
+                                            
+                                            com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Report generated with ${reportData.size} records after ${attempts * 500}ms")
                                         }
                                         
                                         com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Starting Excel export with ${reportData.size} records...")
@@ -207,15 +214,22 @@ fun IOSReportsScreen(
                                         showMessage = "Generating report..."
                                         viewModel.generateReport(preview = false)
                                         
-                                        // Wait a bit for report to generate
-                                        kotlinx.coroutines.delay(1000)
+                                        // Wait for report to generate (poll for data)
+                                        var attempts = 0
+                                        while (reportData.isEmpty() && attempts < 10) {
+                                            kotlinx.coroutines.delay(500)
+                                            attempts++
+                                            com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Waiting for report data... attempt $attempts")
+                                        }
                                         
                                         // Check if we have data now
                                         if (reportData.isEmpty()) {
                                             showMessage = "No data available for selected filters"
-                                            com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Report generated but no data available")
+                                            com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Report generation timed out or no data available")
                                             return@launch
                                         }
+                                        
+                                        com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Report generated with ${reportData.size} records after ${attempts * 500}ms")
                                     }
                                     
                                     showMessage = "Exporting to PDF..."
@@ -248,15 +262,22 @@ fun IOSReportsScreen(
                                         showMessage = "Generating report..."
                                         viewModel.generateReport(preview = false)
                                         
-                                        // Wait a bit for report to generate
-                                        kotlinx.coroutines.delay(1000)
+                                        // Wait for report to generate (poll for data)
+                                        var attempts = 0
+                                        while (reportData.isEmpty() && attempts < 10) {
+                                            kotlinx.coroutines.delay(500)
+                                            attempts++
+                                            com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Waiting for report data... attempt $attempts")
+                                        }
                                         
                                         // Check if we have data now
                                         if (reportData.isEmpty()) {
                                             showMessage = "No data available for selected filters"
-                                            com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Report generated but no data available")
+                                            com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Report generation timed out or no data available")
                                             return@launch
                                         }
+                                        
+                                        com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Report generated with ${reportData.size} records after ${attempts * 500}ms")
                                     }
                                     
                                     showMessage = "Exporting to CSV..."

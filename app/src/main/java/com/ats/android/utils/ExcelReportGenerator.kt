@@ -529,7 +529,7 @@ object ExcelReportGenerator {
     }
     
     /**
-     * Share the Excel file
+     * Share the Excel file with option to save to internal storage
      */
     private fun shareFile(context: Context, file: File) {
         try {
@@ -544,17 +544,28 @@ object ExcelReportGenerator {
                 file
             )
             
-            val intent = Intent(Intent.ACTION_SEND).apply {
+            // Create multiple intent options
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             
-            val chooser = Intent.createChooser(intent, "Share Excel Report")
+            val viewIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            
+            // Create chooser with both share and view/save options
+            val chooser = Intent.createChooser(shareIntent, "Excel Report - Share or Save")
+            chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(viewIntent))
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            
             context.startActivity(chooser)
             
-            DebugLogger.d(TAG, "📤 Sharing Excel file: ${file.name}")
+            DebugLogger.d(TAG, "📤 Showing Excel file options: ${file.name}")
+            DebugLogger.d(TAG, "📁 File location: ${file.absolutePath}")
         } catch (e: Exception) {
             DebugLogger.e(TAG, "❌ Error sharing file: ${e.message}", e)
         }

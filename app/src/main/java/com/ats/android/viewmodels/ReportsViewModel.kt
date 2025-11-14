@@ -98,13 +98,17 @@ class ReportsViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 _uiState.value = ReportsUiState.Generating
-                Log.d(TAG, "📊 Generating report (preview=$preview)...")
+                com.ats.android.utils.DebugLogger.d(TAG, "📊 Generating report (preview=$preview)...")
                 
                 val employeeIds = if (_selectedEmployees.value.isEmpty()) {
                     _employees.value.map { it.employeeId }
                 } else {
                     _selectedEmployees.value.toList()
                 }
+                
+                com.ats.android.utils.DebugLogger.d(TAG, "🔍 Date range: ${_startDate.value} to ${_endDate.value}")
+                com.ats.android.utils.DebugLogger.d(TAG, "🔍 Employee IDs: ${employeeIds.joinToString()}")
+                com.ats.android.utils.DebugLogger.d(TAG, "🔍 Selected employees: ${_selectedEmployees.value.size}, All employees: ${_employees.value.size}")
                 
                 // Create employee name lookup map
                 val employeeMap = _employees.value.associateBy { it.employeeId }
@@ -113,11 +117,14 @@ class ReportsViewModel : ViewModel() {
                 
                 for (employeeId in employeeIds) {
                     try {
+                        com.ats.android.utils.DebugLogger.d(TAG, "📥 Fetching records for employee: $employeeId")
                         val records = firestoreService.getAttendanceHistory(
                             employeeId = employeeId,
                             startDate = _startDate.value,
                             endDate = _endDate.value
                         )
+                        com.ats.android.utils.DebugLogger.d(TAG, "✅ Got ${records.size} records for $employeeId")
+                        
                         // Enrich records with employee names
                         val enrichedRecords = records.map { record ->
                             if (record.employeeName.isNullOrBlank()) {
@@ -129,7 +136,7 @@ class ReportsViewModel : ViewModel() {
                         }
                         allRecords.addAll(enrichedRecords)
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error loading records for $employeeId: ${e.message}")
+                        com.ats.android.utils.DebugLogger.e(TAG, "❌ Error loading records for $employeeId: ${e.message}", e)
                     }
                 }
                 
@@ -141,10 +148,10 @@ class ReportsViewModel : ViewModel() {
                     _uiState.value = ReportsUiState.Success(allRecords.size)
                 }
                 
-                Log.d(TAG, "✅ Report generated with ${allRecords.size} records")
+                com.ats.android.utils.DebugLogger.d(TAG, "✅ Report generated with ${allRecords.size} total records")
                 
             } catch (e: Exception) {
-                Log.e(TAG, "❌ Error generating report: ${e.message}", e)
+                com.ats.android.utils.DebugLogger.e(TAG, "❌ Error generating report: ${e.message}", e)
                 _uiState.value = ReportsUiState.Error(e.message ?: "Failed to generate report")
             }
         }

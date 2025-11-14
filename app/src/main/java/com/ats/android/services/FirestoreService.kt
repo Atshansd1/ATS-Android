@@ -261,7 +261,10 @@ class FirestoreService private constructor() {
         startDate: Date,
         endDate: Date
     ): List<AttendanceRecord> {
-        Log.d(TAG, "📥 Fetching attendance history for $employeeId (iOS-compatible query)")
+        com.ats.android.utils.DebugLogger.d(TAG, "📥 Fetching attendance history for $employeeId")
+        com.ats.android.utils.DebugLogger.d(TAG, "🔍 Query range: $startDate to $endDate")
+        com.ats.android.utils.DebugLogger.d(TAG, "🔍 Query timestamps: ${Timestamp(startDate)} to ${Timestamp(endDate)}")
+        
         // Use checkInTime for filtering (like iOS) instead of date field
         // This uses the existing employeeId + checkInTime index that already exists
         val snapshot = db.collection(ATTENDANCE_COLLECTION)
@@ -272,17 +275,21 @@ class FirestoreService private constructor() {
             .get()
             .await()
         
+        com.ats.android.utils.DebugLogger.d(TAG, "📦 Query returned ${snapshot.documents.size} documents")
+        
         // Handle both GeoPoint and GeoPointData formats
         val records = snapshot.documents.mapNotNull { doc ->
             try {
-                doc.toObject<AttendanceRecord>()
+                val record = doc.toObject<AttendanceRecord>()
+                com.ats.android.utils.DebugLogger.d(TAG, "📄 Record: ${doc.id} - ${record?.checkInTime}")
+                record
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to deserialize record ${doc.id}, attempting manual conversion")
+                com.ats.android.utils.DebugLogger.w(TAG, "Failed to deserialize record ${doc.id}, attempting manual conversion")
                 convertDocumentToAttendanceRecord(doc)
             }
         }
         
-        Log.d(TAG, "✅ Fetched ${records.size} attendance records")
+        com.ats.android.utils.DebugLogger.d(TAG, "✅ Fetched ${records.size} attendance records for $employeeId")
         return records
     }
     

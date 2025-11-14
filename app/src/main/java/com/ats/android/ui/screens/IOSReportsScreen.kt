@@ -126,25 +126,28 @@ fun IOSReportsScreen(
                 
                 // Generate Buttons (Preview and Export)
                 item {
+                    // Preview button
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.generateReport(preview = true)
+                            showPreview = true
+                        },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating
+                    ) {
+                        Icon(Icons.Default.Visibility, null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.preview))
+                    }
+                }
+                
+                // Export Options
+                item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Preview button
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.generateReport(preview = true)
-                                showPreview = true
-                            },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating
-                        ) {
-                            Icon(Icons.Default.Visibility, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.preview))
-                        }
-                        
-                        // Export button
+                        // CSV Export
                         Button(
                             onClick = {
                                 scope.launch {
@@ -158,12 +161,17 @@ fun IOSReportsScreen(
                                 }
                             },
                             modifier = Modifier.weight(1f).height(48.dp),
-                            enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating
+                            enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating,
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = androidx.compose.ui.graphics.Color(0xFF217346)
+                            )
                         ) {
-                            Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.export_csv))
+                            Icon(Icons.Default.TableChart, null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("CSV")
                         }
+                        
+
                     }
                 }
                 

@@ -198,6 +198,9 @@ class ReportsViewModel : ViewModel() {
         )
     }
     
+    /**
+     * CSV export with UTF-8 support
+     */
     fun exportAndShare(context: Context): Boolean {
         return try {
             Log.d(TAG, "📄 Exporting and sharing CSV...")

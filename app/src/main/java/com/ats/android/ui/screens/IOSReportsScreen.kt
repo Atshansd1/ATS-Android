@@ -153,14 +153,26 @@ fun IOSReportsScreen(
                             onClick = {
                                 scope.launch {
                                     try {
-                                        // Check if report data is available
+                                        // Auto-generate report if not already done
                                         if (reportData.isEmpty()) {
-                                            showMessage = "Please generate a report first"
-                                            com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Cannot export Excel - no report data. Generate report first.")
-                                            return@launch
+                                            com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Auto-generating report for Excel export...")
+                                            showMessage = "Generating report..."
+                                            viewModel.generateReport(preview = false)
+                                            
+                                            // Wait a bit for report to generate
+                                            kotlinx.coroutines.delay(1000)
+                                            
+                                            // Check if we have data now
+                                            if (reportData.isEmpty()) {
+                                                showMessage = "No data available for selected filters"
+                                                com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Report generated but no data available")
+                                                return@launch
+                                            }
                                         }
                                         
                                         com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Starting Excel export with ${reportData.size} records...")
+                                        showMessage = "Exporting to Excel..."
+                                        
                                         val exported = viewModel.exportToExcel(context)
                                         com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Excel export result: $exported")
                                         if (exported) {
@@ -189,13 +201,24 @@ fun IOSReportsScreen(
                         Button(
                             onClick = {
                                 scope.launch {
-                                    // Check if report data is available
+                                    // Auto-generate report if not already done
                                     if (reportData.isEmpty()) {
-                                        showMessage = "Please generate a report first"
-                                        com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Cannot export PDF - no report data. Generate report first.")
-                                        return@launch
+                                        com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Auto-generating report for PDF export...")
+                                        showMessage = "Generating report..."
+                                        viewModel.generateReport(preview = false)
+                                        
+                                        // Wait a bit for report to generate
+                                        kotlinx.coroutines.delay(1000)
+                                        
+                                        // Check if we have data now
+                                        if (reportData.isEmpty()) {
+                                            showMessage = "No data available for selected filters"
+                                            com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Report generated but no data available")
+                                            return@launch
+                                        }
                                     }
                                     
+                                    showMessage = "Exporting to PDF..."
                                     val exported = viewModel.exportToPDF(context)
                                     if (exported) {
                                         showMessage = "PDF exported successfully!"
@@ -219,13 +242,24 @@ fun IOSReportsScreen(
                         Button(
                             onClick = {
                                 scope.launch {
-                                    // Check if report data is available
+                                    // Auto-generate report if not already done
                                     if (reportData.isEmpty()) {
-                                        showMessage = "Please generate a report first"
-                                        com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Cannot export CSV - no report data. Generate report first.")
-                                        return@launch
+                                        com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Auto-generating report for CSV export...")
+                                        showMessage = "Generating report..."
+                                        viewModel.generateReport(preview = false)
+                                        
+                                        // Wait a bit for report to generate
+                                        kotlinx.coroutines.delay(1000)
+                                        
+                                        // Check if we have data now
+                                        if (reportData.isEmpty()) {
+                                            showMessage = "No data available for selected filters"
+                                            com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Report generated but no data available")
+                                            return@launch
+                                        }
                                     }
                                     
+                                    showMessage = "Exporting to CSV..."
                                     val exported = viewModel.exportAndShare(context)
                                     if (exported) {
                                         showMessage = reportExported

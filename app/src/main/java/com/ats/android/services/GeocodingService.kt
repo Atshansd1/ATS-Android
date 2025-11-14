@@ -73,45 +73,83 @@ class GeocodingService(private val context: Context) {
     private fun formatAddress(address: Address): String {
         val parts = mutableListOf<String>()
         
-        // Priority 1: Feature name (building, landmark, business)
+        // Priority 1: Premises (specific building/place name)
+        address.premises?.let { premises ->
+            if (premises.isNotBlank() && !premises.matches(Regex("^\\d+$"))) {
+                parts.add(premises)
+                Log.d(TAG, "✅ Premises: $premises")
+            }
+        }
+        
+        // Priority 2: Feature name (Civil Defense Center, hospital, mall, etc.)
         address.featureName?.let { featureName ->
-            // Only add if it's not a numeric value (street number)
-            if (!featureName.matches(Regex("^\\d+$"))) {
+            // Only add if it's not a numeric value (street number) and not already added
+            if (!featureName.matches(Regex("^\\d+$")) && !parts.contains(featureName)) {
                 parts.add(featureName)
+                Log.d(TAG, "✅ Feature: $featureName")
             }
         }
         
-        // Priority 2: Street with number
-        val street = buildString {
-            address.subThoroughfare?.let { append("$it ") } // Street number
-            address.thoroughfare?.let { append(it) } // Street name
-        }.trim()
-        if (street.isNotEmpty() && !parts.contains(street)) {
-            parts.add(street)
+        // Priority 3: Sub-thoroughfare (building number with street name if feature/premises not found)
+        if (parts.isEmpty()) {
+            val street = buildString {
+                address.subThoroughfare?.let { append("$it ") } // Street number
+                address.thoroughfare?.let { append(it) } // Street name
+            }.trim()
+            if (street.isNotEmpty()) {
+                parts.add(street)
+                Log.d(TAG, "✅ Street: $street")
+            }
         }
         
-        // Priority 3: Sublocality or neighborhood
-        address.subLocality?.let { 
-            if (!parts.contains(it)) parts.add(it) 
+        // Priority 4: Just thoroughfare (street name) if we still don't have anything
+        if (parts.isEmpty()) {
+            address.thoroughfare?.let { 
+                parts.add(it)
+                Log.d(TAG, "✅ Thoroughfare: $it")
+            }
         }
         
-        // Priority 4: City/Locality
+        // Priority 5: Sublocality or neighborhood (only if we have a place name already)
+        if (parts.isNotEmpty()) {
+            address.subLocality?.let { 
+                if (!parts.contains(it)) {
+                    parts.add(it)
+                    Log.d(TAG, "✅ SubLocality: $it")
+                }
+            }
+        }
+        
+        // Priority 6: City/Locality (always add for context)
         address.locality?.let { 
-            if (!parts.contains(it)) parts.add(it)
+            if (!parts.contains(it)) {
+                parts.add(it)
+                Log.d(TAG, "✅ Locality: $it")
+            }
         } ?: address.subAdminArea?.let { 
-            if (!parts.contains(it)) parts.add(it)
-        }
-        
-        // Priority 5: Admin area (state/province) - only if we don't have enough detail
-        if (parts.size <= 2) {
-            address.adminArea?.let { 
-                if (!parts.contains(it)) parts.add(it)
+            if (!parts.contains(it)) {
+                parts.add(it)
+                Log.d(TAG, "✅ SubAdminArea: $it")
             }
         }
         
-        // Fallback: Use coordinates if no address parts found
-        return parts.joinToString(", ").ifEmpty {
-            "${String.format("%.4f", address.latitude)}, ${String.format("%.4f", address.longitude)}"
+        // Priority 7: Admin area (state/province) - only if we don't have enough detail
+        if (parts.size < 2) {
+            address.adminArea?.let { 
+                if (!parts.contains(it)) {
+                    parts.add(it)
+                    Log.d(TAG, "✅ AdminArea: $it")
+                }
+            }
         }
+        
+        val result = if (parts.isNotEmpty()) {
+            parts.joinToString(", ")
+        } else {
+            "Unknown Location"
+        }
+        
+        Log.d(TAG, "📍 Final formatted address: $result")
+        return result
     }
 }

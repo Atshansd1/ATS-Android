@@ -159,6 +159,12 @@ object ExcelReportGenerator {
     ) {
         val sheet = workbook.createSheet(if (isArabic) "البيانات" else "Attendance Data")
         
+        // Enable RTL for Arabic
+        if (isArabic) {
+            sheet.isRightToLeft = true
+            DebugLogger.d(TAG, "✅ RTL enabled for Arabic data sheet")
+        }
+        
         var rowNum = 0
         
         // Title
@@ -315,6 +321,12 @@ object ExcelReportGenerator {
         isArabic: Boolean
     ) {
         val sheet = workbook.createSheet(if (isArabic) "الملخص" else "Summary")
+        
+        // Enable RTL for Arabic
+        if (isArabic) {
+            sheet.isRightToLeft = true
+            DebugLogger.d(TAG, "✅ RTL enabled for Arabic summary sheet")
+        }
         
         var rowNum = 0
         

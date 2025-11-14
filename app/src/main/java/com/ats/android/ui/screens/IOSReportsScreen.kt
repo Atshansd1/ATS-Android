@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ats.android.R
 import com.ats.android.models.Employee
 import com.ats.android.ui.theme.*
@@ -145,8 +146,56 @@ fun IOSReportsScreen(
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        // Excel Export
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    viewModel.generateReport(preview = false)
+                                    val exported = viewModel.exportToExcel(context)
+                                    if (exported) {
+                                        showMessage = "Excel exported"
+                                    } else {
+                                        showMessage = reportExportFailed
+                                    }
+                                }
+                            },
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating,
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = androidx.compose.ui.graphics.Color(0xFF217346)
+                            )
+                        ) {
+                            Icon(Icons.Default.TableChart, null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("Excel", fontSize = 13.sp)
+                        }
+                        
+                        // PDF Export
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    viewModel.generateReport(preview = false)
+                                    val exported = viewModel.exportToPDF(context)
+                                    if (exported) {
+                                        showMessage = "PDF exported"
+                                    } else {
+                                        showMessage = reportExportFailed
+                                    }
+                                }
+                            },
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating,
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = androidx.compose.ui.graphics.Color(0xFFD32F2F)
+                            )
+                        ) {
+                            Icon(Icons.Default.PictureAsPdf, null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("PDF", fontSize = 13.sp)
+                        }
+                        
                         // CSV Export
                         Button(
                             onClick = {
@@ -163,36 +212,12 @@ fun IOSReportsScreen(
                             modifier = Modifier.weight(1f).height(48.dp),
                             enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating,
                             colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                containerColor = androidx.compose.ui.graphics.Color(0xFF217346)
+                                containerColor = androidx.compose.ui.graphics.Color(0xFF1976D2)
                             )
                         ) {
-                            Icon(Icons.Default.TableChart, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("CSV")
-                        }
-                        
-                        // PDF Export
-                        Button(
-                            onClick = {
-                                scope.launch {
-                                    viewModel.generateReport(preview = false)
-                                    val exported = viewModel.exportToPDF(context)
-                                    if (exported) {
-                                        showMessage = "PDF report exported"
-                                    } else {
-                                        showMessage = reportExportFailed
-                                    }
-                                }
-                            },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating,
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                containerColor = androidx.compose.ui.graphics.Color(0xFFD32F2F)
-                            )
-                        ) {
-                            Icon(Icons.Default.PictureAsPdf, null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("PDF")
+                            Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("CSV", fontSize = 13.sp)
                         }
                     }
                 }

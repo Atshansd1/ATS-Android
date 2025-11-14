@@ -29,8 +29,8 @@ object PdfReportGenerator {
     // Page dimensions (A4 Landscape: 842 x 595 points)
     private const val PAGE_WIDTH = 842
     private const val PAGE_HEIGHT = 595
-    private const val MARGIN = 40f
-    private const val LINE_HEIGHT = 20f
+    private const val MARGIN = 30f
+    private const val LINE_HEIGHT = 18f
     
     // Colors
     private val COLOR_PRIMARY = Color.rgb(33, 150, 243) // Blue
@@ -58,8 +58,8 @@ object PdfReportGenerator {
             // Create PDF document
             val document = PdfDocument()
             
-            // Calculate pages needed (approximately 15 records per page)
-            val recordsPerPage = 15
+            // Calculate pages needed (approximately 20 records per page with compact layout)
+            val recordsPerPage = 20
             val totalPages = (records.size + recordsPerPage - 1) / recordsPerPage
             
             records.chunked(recordsPerPage).forEachIndexed { pageIndex, pageRecords ->
@@ -253,24 +253,25 @@ object PdfReportGenerator {
         // Draw header text
         val headerTextPaint = Paint().apply {
             color = Color.WHITE
-            textSize = 10f
+            textSize = 8f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
         
+        // Draw headers with text wrapping if needed
         for (i in headers.indices) {
-            canvas.drawText(headers[i], colX[i] + 5f, y + 17f, headerTextPaint)
+            drawTextInCell(canvas, headers[i], colX[i] + 3f, y + 12f, 
+                          colWidths[i] - 6f, headerTextPaint)
         }
         
         y += 25f
         
-        // Data rows
+        // Data rows with improved text fitting
         val dataPaint = Paint().apply {
             color = COLOR_TEXT
-            textSize = 9f
+            textSize = 7.5f
         }
         
         val dateTimeFormat = SimpleDateFormat("MM/dd HH:mm", Locale.US)
-        val dateOnlyFormat = SimpleDateFormat("MM/dd", Locale.US)
         
         records.forEachIndexed { index, record ->
             // Alternating row colors
@@ -279,7 +280,7 @@ object PdfReportGenerator {
                     color = COLOR_LIGHT_GRAY
                     style = Paint.Style.FILL
                 }
-                canvas.drawRect(MARGIN, y - 15f, PAGE_WIDTH - MARGIN, y + 10f, rowBgPaint)
+                canvas.drawRect(MARGIN, y - 12f, PAGE_WIDTH - MARGIN, y + 6f, rowBgPaint)
             }
             
             // Draw row border
@@ -288,36 +289,46 @@ object PdfReportGenerator {
                 style = Paint.Style.STROKE
                 strokeWidth = 0.5f
             }
-            canvas.drawRect(MARGIN, y - 15f, PAGE_WIDTH - MARGIN, y + 10f, borderPaint)
+            canvas.drawRect(MARGIN, y - 12f, PAGE_WIDTH - MARGIN, y + 6f, borderPaint)
             
-            // Draw data
-            canvas.drawText(truncate(record.employeeId, 10), colX[0] + 5f, y, dataPaint)
-            canvas.drawText(truncate(record.employeeName ?: "N/A", 15), colX[1] + 5f, y, dataPaint)
-            canvas.drawText(dateTimeFormat.format(record.checkInTime.toDate()), colX[2] + 5f, y, dataPaint)
-            canvas.drawText(truncate(record.checkInPlaceName ?: "N/A", 15), colX[3] + 5f, y, dataPaint)
+            // Draw data with smart fitting (no cutoff)
+            drawTextInCell(canvas, record.employeeId, colX[0] + 2f, y, colWidths[0] - 4f, dataPaint)
+            drawTextInCell(canvas, record.employeeName ?: "N/A", colX[1] + 2f, y, colWidths[1] - 4f, dataPaint)
+            drawTextInCell(canvas, dateTimeFormat.format(record.checkInTime.toDate()), colX[2] + 2f, y, colWidths[2] - 4f, dataPaint)
+            drawTextInCell(canvas, record.checkInPlaceName ?: "N/A", colX[3] + 2f, y, colWidths[3] - 4f, dataPaint)
             
             if (record.checkOutTime != null) {
-                canvas.drawText(dateTimeFormat.format(record.checkOutTime!!.toDate()), colX[4] + 5f, y, dataPaint)
+                drawTextInCell(canvas, dateTimeFormat.format(record.checkOutTime!!.toDate()), colX[4] + 2f, y, colWidths[4] - 4f, dataPaint)
             } else {
-                canvas.drawText("--", colX[4] + 5f, y, dataPaint)
+                drawTextInCell(canvas, "--", colX[4] + 2f, y, colWidths[4] - 4f, dataPaint)
             }
             
-            canvas.drawText(truncate(record.checkOutPlaceName ?: "--", 15), colX[5] + 5f, y, dataPaint)
+            drawTextInCell(canvas, record.checkOutPlaceName ?: "--", colX[5] + 2f, y, colWidths[5] - 4f, dataPaint)
+            
+            // Duration
+            val duration = if (record.totalDuration != null && record.totalDuration!! > 0) {
+                val hours = (record.totalDuration!! / 3600).toInt()
+                val minutes = ((record.totalDuration!! % 3600) / 60).toInt()
+                if (isArabic) "${hours}س ${minutes}د" else "${hours}h ${minutes}m"
+            } else {
+                "--"
+            }
+            drawTextInCell(canvas, duration, colX[6] + 2f, y, colWidths[6] - 4f, dataPaint)
             
             // Status with color
             val status = when (record.statusString) {
-                "checked_out" -> if (isArabic) "منصرف" else "Complete"
+                "checked_out" -> if (isArabic) "منصرف" else "Done"
                 else -> if (isArabic) "حاضر" else "Active"
             }
             val statusColor = if (record.statusString == "checked_out") COLOR_SUCCESS else COLOR_WARNING
             val statusPaint = Paint().apply {
                 color = statusColor
-                textSize = 9f
+                textSize = 7.5f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             }
-            canvas.drawText(status, colX[6] + 5f, y, statusPaint)
+            drawTextInCell(canvas, status, colX[7] + 2f, y, colWidths[7] - 4f, statusPaint)
             
-            y += 25f
+            y += 18f
         }
         
         return y
@@ -354,14 +365,38 @@ object PdfReportGenerator {
     }
     
     /**
-     * Truncate text to fit column width
+     * Draw text in cell with smart truncation (no cutoff, adds ellipsis if needed)
      */
-    private fun truncate(text: String, maxLength: Int): String {
-        return if (text.length > maxLength) {
-            text.substring(0, maxLength - 2) + ".."
-        } else {
-            text
+    private fun drawTextInCell(canvas: Canvas, text: String, x: Float, y: Float, maxWidth: Float, paint: Paint) {
+        var displayText = text
+        var textWidth = paint.measureText(displayText)
+        
+        // If text is too wide, truncate with ellipsis
+        if (textWidth > maxWidth) {
+            val ellipsis = "..."
+            val ellipsisWidth = paint.measureText(ellipsis)
+            
+            // Binary search for best fit
+            var left = 0
+            var right = displayText.length
+            while (left < right) {
+                val mid = (left + right + 1) / 2
+                val testText = displayText.substring(0, mid) + ellipsis
+                if (paint.measureText(testText) <= maxWidth) {
+                    left = mid
+                } else {
+                    right = mid - 1
+                }
+            }
+            
+            displayText = if (left > 0) {
+                displayText.substring(0, left) + ellipsis
+            } else {
+                ellipsis
+            }
         }
+        
+        canvas.drawText(displayText, x, y, paint)
     }
     
     /**

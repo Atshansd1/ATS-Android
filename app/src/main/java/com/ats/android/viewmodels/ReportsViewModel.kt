@@ -9,6 +9,7 @@ import com.ats.android.models.Employee
 import com.ats.android.services.FirestoreService
 import com.ats.android.utils.LocaleManager
 import com.ats.android.utils.PdfReportGenerator
+import com.ats.android.utils.ExcelReportGenerator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -197,6 +198,14 @@ class ReportsViewModel : ViewModel() {
             totalHours = totalHours,
             averageHoursPerRecord = avgHoursPerRecord
         )
+    }
+    
+    /**
+     * Export to professional Excel with auto-sized columns
+     */
+    fun exportToExcel(context: Context): Boolean {
+        val isArabic = LocaleManager.getCurrentLanguage(context) == "ar"
+        return ExcelReportGenerator.generateExcelReport(context, _reportData.value, isArabic)
     }
     
     /**

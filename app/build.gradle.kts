@@ -14,8 +14,8 @@ android {
         applicationId = "com.ats.android"
         minSdk = 26
         targetSdk = 34
-        versionCode = 23
-        versionName = "1.8.0"
+        versionCode = 24
+        versionName = "1.8.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -120,6 +120,10 @@ dependencies {
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")
     
+    // Apache POI for Excel export
+    implementation("org.apache.poi:poi-ooxml:5.2.5") {
+        exclude(group = "com.github.virtuald", module = "curvesapi")
+    }
     
     // Google Maps
     implementation("com.google.maps.android:maps-compose:4.3.0")

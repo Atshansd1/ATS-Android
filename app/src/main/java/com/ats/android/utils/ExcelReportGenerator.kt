@@ -64,13 +64,13 @@ object ExcelReportGenerator {
             
             // Create styles
             DebugLogger.d(TAG, "Creating styles...")
-            val headerStyle: CellStyle = createHeaderStyle(workbook)
-            val titleStyle: CellStyle = createTitleStyle(workbook)
-            val dataStyle: CellStyle = createDataStyle(workbook)
-            val dateStyle: CellStyle = createDateStyle(workbook)
-            val statusCompleteStyle: CellStyle = createStatusStyle(workbook, isComplete = true)
-            val statusActiveStyle: CellStyle = createStatusStyle(workbook, isComplete = false)
-            val summaryHeaderStyle: CellStyle = createSummaryHeaderStyle(workbook)
+            val headerStyle: CellStyle = createHeaderStyle(workbook, isArabic)
+            val titleStyle: CellStyle = createTitleStyle(workbook, isArabic)
+            val dataStyle: CellStyle = createDataStyle(workbook, isArabic)
+            val dateStyle: CellStyle = createDateStyle(workbook, isArabic)
+            val statusCompleteStyle: CellStyle = createStatusStyle(workbook, isComplete = true, isArabic)
+            val statusActiveStyle: CellStyle = createStatusStyle(workbook, isComplete = false, isArabic)
+            val summaryHeaderStyle: CellStyle = createSummaryHeaderStyle(workbook, isArabic)
             DebugLogger.d(TAG, "✅ Styles created")
             
             // Create Data sheet
@@ -415,7 +415,7 @@ object ExcelReportGenerator {
     /**
      * Create header style (blue background, white bold text)
      */
-    private fun createHeaderStyle(workbook: Workbook): CellStyle {
+    private fun createHeaderStyle(workbook: Workbook, isArabic: Boolean = false): CellStyle {
         val style = workbook.createCellStyle()
         val font = workbook.createFont()
         
@@ -442,7 +442,7 @@ object ExcelReportGenerator {
     /**
      * Create title style
      */
-    private fun createTitleStyle(workbook: Workbook): CellStyle {
+    private fun createTitleStyle(workbook: Workbook, isArabic: Boolean = false): CellStyle {
         val style = workbook.createCellStyle()
         val font = workbook.createFont()
         
@@ -460,10 +460,11 @@ object ExcelReportGenerator {
     /**
      * Create data style with borders and text wrapping
      */
-    private fun createDataStyle(workbook: Workbook): CellStyle {
+    private fun createDataStyle(workbook: Workbook, isArabic: Boolean = false): CellStyle {
         val style = workbook.createCellStyle()
         
-        style.alignment = HorizontalAlignment.LEFT
+        // RTL alignment for Arabic
+        style.alignment = if (isArabic) HorizontalAlignment.RIGHT else HorizontalAlignment.LEFT
         style.verticalAlignment = VerticalAlignment.CENTER
         style.wrapText = true
         
@@ -483,8 +484,8 @@ object ExcelReportGenerator {
     /**
      * Create date/time style
      */
-    private fun createDateStyle(workbook: Workbook): CellStyle {
-        val style = createDataStyle(workbook)
+    private fun createDateStyle(workbook: Workbook, isArabic: Boolean = false): CellStyle {
+        val style = createDataStyle(workbook, isArabic)
         style.alignment = HorizontalAlignment.CENTER
         return style
     }
@@ -492,7 +493,7 @@ object ExcelReportGenerator {
     /**
      * Create status style (green for complete, orange for active)
      */
-    private fun createStatusStyle(workbook: Workbook, isComplete: Boolean): CellStyle {
+    private fun createStatusStyle(workbook: Workbook, isComplete: Boolean, isArabic: Boolean = false): CellStyle {
         val style = workbook.createCellStyle()
         val font = workbook.createFont()
         
@@ -518,7 +519,7 @@ object ExcelReportGenerator {
     /**
      * Create summary header style (yellow background)
      */
-    private fun createSummaryHeaderStyle(workbook: Workbook): CellStyle {
+    private fun createSummaryHeaderStyle(workbook: Workbook, isArabic: Boolean = false): CellStyle {
         val style = workbook.createCellStyle()
         val font = workbook.createFont()
         
@@ -528,7 +529,8 @@ object ExcelReportGenerator {
         style.setFont(font)
         style.fillForegroundColor = IndexedColors.LIGHT_YELLOW.index
         style.fillPattern = FillPatternType.SOLID_FOREGROUND
-        style.alignment = HorizontalAlignment.LEFT
+        // RTL alignment for Arabic
+        style.alignment = if (isArabic) HorizontalAlignment.RIGHT else HorizontalAlignment.LEFT
         style.verticalAlignment = VerticalAlignment.CENTER
         
         // Borders

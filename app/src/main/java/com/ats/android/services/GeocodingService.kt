@@ -13,12 +13,16 @@ import kotlin.coroutines.suspendCoroutine
 
 class GeocodingService(private val context: Context) {
     
-    private val geocoder = Geocoder(context, Locale.getDefault())
     private val cache = mutableMapOf<String, Pair<String, Long>>()
     
     companion object {
         private const val TAG = "GeocodingService"
         private const val CACHE_DURATION = 3600000L // 1 hour
+    }
+    
+    // Get geocoder with current locale
+    private fun getGeocoder(): Geocoder {
+        return Geocoder(context, Locale.getDefault())
     }
     
     suspend fun getPlaceName(latitude: Double, longitude: Double): String? {
@@ -34,8 +38,9 @@ class GeocodingService(private val context: Context) {
                     }
                 }
                 
-                Log.d(TAG, "🔍 Geocoding: $latitude, $longitude")
+                Log.d(TAG, "🔍 Geocoding: $latitude, $longitude (Locale: ${Locale.getDefault().language})")
                 
+                val geocoder = getGeocoder() // Get geocoder with current locale
                 val placeName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     // New API for Android 13+
                     suspendCoroutine { continuation ->

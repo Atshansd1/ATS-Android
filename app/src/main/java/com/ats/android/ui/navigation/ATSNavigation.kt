@@ -374,6 +374,9 @@ fun MainScaffold(
                     onNavigateToLanguageSettings = {
                         navController.navigate("language_settings")
                     },
+                    onNavigateToDebugLogs = {
+                        navController.navigate("debug_logs")
+                    },
                     onSignOut = onSignOut
                 )
             }
@@ -391,6 +394,15 @@ fun MainScaffold(
             composable("language_settings") {
                 LanguageSettingsScreen(
                     onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+            
+            // Debug Logs Screen
+            composable("debug_logs") {
+                com.ats.android.ui.screens.DebugLogsScreen(
+                    onBack = {
                         navController.popBackStack()
                     }
                 )

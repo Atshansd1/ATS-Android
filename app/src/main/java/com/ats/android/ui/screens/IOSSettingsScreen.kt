@@ -40,6 +40,7 @@ fun IOSSettingsScreen(
     currentEmployee: Employee?,
     onNavigateToAttendanceManagement: () -> Unit = {},
     onNavigateToLanguageSettings: () -> Unit = {},
+    onNavigateToDebugLogs: () -> Unit = {},
     onSignOut: () -> Unit
 ) {
     val context = LocalContext.current
@@ -124,6 +125,16 @@ fun IOSSettingsScreen(
                             title = stringResource(com.ats.android.R.string.language),
                             value = languageDisplayName,
                             onClick = onNavigateToLanguageSettings
+                        )
+                        
+                        Divider(color = ATSColors.DividerColor)
+                        
+                        IOSSettingsRow(
+                            icon = Icons.Default.BugReport,
+                            title = "Debug Logs",
+                            subtitle = "View app logs for troubleshooting",
+                            value = "${com.ats.android.utils.DebugLogger.getLogCount()} entries",
+                            onClick = onNavigateToDebugLogs
                         )
                         
                         Divider(color = ATSColors.DividerColor)

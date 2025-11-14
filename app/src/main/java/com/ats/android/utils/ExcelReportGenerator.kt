@@ -2,7 +2,6 @@ package com.ats.android.utils
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import androidx.core.content.FileProvider
 import com.ats.android.models.AttendanceRecord
 import org.apache.poi.ss.usermodel.*
@@ -36,17 +35,17 @@ object ExcelReportGenerator {
         var outputStream: FileOutputStream? = null
         
         return try {
-            Log.d(TAG, "📊 Creating Excel report with ${records.size} records...")
+            DebugLogger.d(TAG, "📊 Creating Excel report with ${records.size} records...")
             
             if (records.isEmpty()) {
-                Log.e(TAG, "❌ No records to export")
+                DebugLogger.e(TAG, "❌ No records to export")
                 return false
             }
             
             // Verify external storage is available
             val externalDir = context.getExternalFilesDir(null)
             if (externalDir == null) {
-                Log.e(TAG, "❌ External storage not available")
+                DebugLogger.e(TAG, "❌ External storage not available")
                 return false
             }
             
@@ -54,17 +53,17 @@ object ExcelReportGenerator {
             val filename = "attendance_report_${dateFormat.format(Date())}.xlsx"
             val file = File(externalDir, filename)
             
-            Log.d(TAG, "📁 File path: ${file.absolutePath}")
-            Log.d(TAG, "📁 Parent dir exists: ${file.parentFile?.exists()}")
-            Log.d(TAG, "📁 Parent dir writable: ${file.parentFile?.canWrite()}")
+            DebugLogger.d(TAG, "📁 File path: ${file.absolutePath}")
+            DebugLogger.d(TAG, "📁 Parent dir exists: ${file.parentFile?.exists()}")
+            DebugLogger.d(TAG, "📁 Parent dir writable: ${file.parentFile?.canWrite()}")
             
             // Create workbook
-            Log.d(TAG, "Creating workbook...")
+            DebugLogger.d(TAG, "Creating workbook...")
             workbook = XSSFWorkbook()
-            Log.d(TAG, "✅ Workbook created (${workbook.numberOfSheets} sheets)")
+            DebugLogger.d(TAG, "✅ Workbook created (${workbook.numberOfSheets} sheets)")
             
             // Create styles
-            Log.d(TAG, "Creating styles...")
+            DebugLogger.d(TAG, "Creating styles...")
             val headerStyle: CellStyle = createHeaderStyle(workbook)
             val titleStyle: CellStyle = createTitleStyle(workbook)
             val dataStyle: CellStyle = createDataStyle(workbook)
@@ -72,63 +71,63 @@ object ExcelReportGenerator {
             val statusCompleteStyle: CellStyle = createStatusStyle(workbook, isComplete = true)
             val statusActiveStyle: CellStyle = createStatusStyle(workbook, isComplete = false)
             val summaryHeaderStyle: CellStyle = createSummaryHeaderStyle(workbook)
-            Log.d(TAG, "✅ Styles created")
+            DebugLogger.d(TAG, "✅ Styles created")
             
             // Create Data sheet
-            Log.d(TAG, "Creating data sheet...")
+            DebugLogger.d(TAG, "Creating data sheet...")
             createDataSheet(workbook, records, headerStyle, titleStyle, dataStyle, 
                            dateStyle, statusCompleteStyle, statusActiveStyle, isArabic)
-            Log.d(TAG, "✅ Data sheet created")
+            DebugLogger.d(TAG, "✅ Data sheet created")
             
             // Create Summary sheet
-            Log.d(TAG, "Creating summary sheet...")
+            DebugLogger.d(TAG, "Creating summary sheet...")
             createSummarySheet(workbook, records, summaryHeaderStyle, dataStyle, isArabic)
-            Log.d(TAG, "✅ Summary sheet created")
+            DebugLogger.d(TAG, "✅ Summary sheet created")
             
             // Write to file
-            Log.d(TAG, "Writing to file: ${file.absolutePath}")
-            Log.d(TAG, "Workbook sheets: ${workbook.numberOfSheets}")
+            DebugLogger.d(TAG, "Writing to file: ${file.absolutePath}")
+            DebugLogger.d(TAG, "Workbook sheets: ${workbook.numberOfSheets}")
             
             outputStream = FileOutputStream(file)
-            Log.d(TAG, "FileOutputStream created")
+            DebugLogger.d(TAG, "FileOutputStream created")
             
             workbook.write(outputStream)
-            Log.d(TAG, "Workbook written to stream")
+            DebugLogger.d(TAG, "Workbook written to stream")
             
             outputStream.flush()
-            Log.d(TAG, "Stream flushed")
+            DebugLogger.d(TAG, "Stream flushed")
             
             outputStream.close()
             outputStream = null
-            Log.d(TAG, "✅ File written successfully")
+            DebugLogger.d(TAG, "✅ File written successfully")
             
             workbook.close()
             workbook = null
-            Log.d(TAG, "✅ Workbook closed")
+            DebugLogger.d(TAG, "✅ Workbook closed")
             
-            Log.d(TAG, "✅ Excel generated successfully: ${file.absolutePath}")
-            Log.d(TAG, "File size: ${file.length()} bytes")
+            DebugLogger.d(TAG, "✅ Excel generated successfully: ${file.absolutePath}")
+            DebugLogger.d(TAG, "File size: ${file.length()} bytes")
             
             // Share the file
-            Log.d(TAG, "Sharing file...")
+            DebugLogger.d(TAG, "Sharing file...")
             shareFile(context, file)
-            Log.d(TAG, "✅ Share intent sent")
+            DebugLogger.d(TAG, "✅ Share intent sent")
             
             true
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error generating Excel report: ${e.message}", e)
-            Log.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
-            Log.e(TAG, "❌ Stack trace:")
+            DebugLogger.e(TAG, "❌ Error generating Excel report: ${e.message}", e)
+            DebugLogger.e(TAG, "❌ Exception type: ${e.javaClass.simpleName}")
+            DebugLogger.e(TAG, "❌ Stack trace:")
             e.printStackTrace()
             
             // Log specific error details
             when (e) {
-                is java.io.IOException -> Log.e(TAG, "❌ IO Error - possibly storage permissions or disk space")
-                is SecurityException -> Log.e(TAG, "❌ Security Error - storage permissions required")
-                is OutOfMemoryError -> Log.e(TAG, "❌ Out of Memory - too many records")
-                is IllegalArgumentException -> Log.e(TAG, "❌ Illegal Argument - invalid data")
-                is NullPointerException -> Log.e(TAG, "❌ Null Pointer - missing data")
-                else -> Log.e(TAG, "❌ Unexpected error: ${e::class.java.name}")
+                is java.io.IOException -> DebugLogger.e(TAG, "❌ IO Error - possibly storage permissions or disk space")
+                is SecurityException -> DebugLogger.e(TAG, "❌ Security Error - storage permissions required")
+                is OutOfMemoryError -> DebugLogger.e(TAG, "❌ Out of Memory - too many records")
+                is IllegalArgumentException -> DebugLogger.e(TAG, "❌ Illegal Argument - invalid data")
+                is NullPointerException -> DebugLogger.e(TAG, "❌ Null Pointer - missing data")
+                else -> DebugLogger.e(TAG, "❌ Unexpected error: ${e::class.java.name}")
             }
             
             false
@@ -137,9 +136,9 @@ object ExcelReportGenerator {
             try {
                 outputStream?.close()
                 workbook?.close()
-                Log.d(TAG, "Resources cleaned up")
+                DebugLogger.d(TAG, "Resources cleaned up")
             } catch (e: Exception) {
-                Log.e(TAG, "Error cleaning up resources: ${e.message}")
+                DebugLogger.e(TAG, "Error cleaning up resources: ${e.message}")
             }
         }
     }
@@ -221,7 +220,7 @@ object ExcelReportGenerator {
                 } catch (e: Exception) {
                     setCellValue("N/A")
                     cellStyle = dataStyle
-                    Log.e(TAG, "Error formatting check-in time: ${e.message}")
+                    DebugLogger.e(TAG, "Error formatting check-in time: ${e.message}")
                 }
             }
             
@@ -244,7 +243,7 @@ object ExcelReportGenerator {
                 } catch (e: Exception) {
                     setCellValue("--")
                     cellStyle = dataStyle
-                    Log.e(TAG, "Error formatting check-out time: ${e.message}")
+                    DebugLogger.e(TAG, "Error formatting check-out time: ${e.message}")
                 }
             }
             
@@ -299,7 +298,7 @@ object ExcelReportGenerator {
         for (i in 0..7) {
             sheet.setColumnWidth(i, columnWidths[i])
         }
-        Log.d(TAG, "✅ Columns sized with fixed widths")
+        DebugLogger.d(TAG, "✅ Columns sized with fixed widths")
         
         // Freeze header rows
         sheet.createFreezePane(0, 4)
@@ -396,7 +395,7 @@ object ExcelReportGenerator {
                 uniqueEmployees = uniqueEmployees.toString()
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error calculating statistics: ${e.message}")
+            DebugLogger.e(TAG, "Error calculating statistics: ${e.message}")
             Statistics("0", "0", "0", "N/A", "0")
         }
     }
@@ -535,7 +534,7 @@ object ExcelReportGenerator {
     private fun shareFile(context: Context, file: File) {
         try {
             if (!file.exists()) {
-                Log.e(TAG, "❌ File does not exist: ${file.absolutePath}")
+                DebugLogger.e(TAG, "❌ File does not exist: ${file.absolutePath}")
                 return
             }
             
@@ -555,9 +554,9 @@ object ExcelReportGenerator {
             chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(chooser)
             
-            Log.d(TAG, "📤 Sharing Excel file: ${file.name}")
+            DebugLogger.d(TAG, "📤 Sharing Excel file: ${file.name}")
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error sharing file: ${e.message}", e)
+            DebugLogger.e(TAG, "❌ Error sharing file: ${e.message}", e)
         }
     }
     

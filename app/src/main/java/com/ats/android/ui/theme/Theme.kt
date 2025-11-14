@@ -13,100 +13,100 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 /**
- * Material 3 Expressive Light Color Scheme
+ * Professional Light Color Scheme (iOS-style)
  */
-private val ExpressiveLightColorScheme = lightColorScheme(
-    // Primary - Vibrant Blue
-    primary = ExpressiveLightPrimary,
-    onPrimary = ExpressiveLightOnPrimary,
-    primaryContainer = ExpressiveLightPrimaryContainer,
-    onPrimaryContainer = ExpressiveLightOnPrimaryContainer,
+private val ProfessionalLightColorScheme = lightColorScheme(
+    // Primary - iOS Blue (minimal)
+    primary = ProfessionalLightColors.Primary,
+    onPrimary = ProfessionalLightColors.OnPrimary,
+    primaryContainer = ProfessionalLightColors.PrimaryContainer,
+    onPrimaryContainer = ProfessionalLightColors.OnPrimaryContainer,
     
-    // Secondary - Vibrant Purple
-    secondary = ExpressiveLightSecondary,
-    onSecondary = ExpressiveLightOnSecondary,
-    secondaryContainer = ExpressiveLightSecondaryContainer,
-    onSecondaryContainer = ExpressiveLightOnSecondaryContainer,
+    // Secondary - Neutral Gray
+    secondary = ProfessionalLightColors.Secondary,
+    onSecondary = ProfessionalLightColors.OnSecondary,
+    secondaryContainer = ProfessionalLightColors.SecondaryContainer,
+    onSecondaryContainer = ProfessionalLightColors.OnSecondaryContainer,
     
-    // Tertiary - Vibrant Pink
-    tertiary = ExpressiveLightTertiary,
-    onTertiary = ExpressiveLightOnTertiary,
-    tertiaryContainer = ExpressiveLightTertiaryContainer,
-    onTertiaryContainer = ExpressiveLightOnTertiaryContainer,
+    // Tertiary - Minimal (rarely used)
+    tertiary = ProfessionalLightColors.Tertiary,
+    onTertiary = ProfessionalLightColors.OnTertiary,
+    tertiaryContainer = ProfessionalLightColors.TertiaryContainer,
+    onTertiaryContainer = ProfessionalLightColors.OnTertiaryContainer,
     
     // Error
-    error = ExpressiveError,
-    errorContainer = ExpressiveErrorContainer,
-    onError = ExpressiveOnError,
-    onErrorContainer = ExpressiveOnErrorContainer,
+    error = ProfessionalLightColors.Error,
+    errorContainer = ProfessionalLightColors.ErrorContainer,
+    onError = ProfessionalLightColors.OnError,
+    onErrorContainer = ProfessionalLightColors.OnErrorContainer,
     
-    // Background & Surface
-    background = Color(0xFFFCFCFF),
-    onBackground = Color(0xFF1A1C1E),
-    surface = ExpressiveLightSurface,
-    onSurface = ExpressiveLightOnSurface,
-    surfaceVariant = ExpressiveLightSurfaceVariant,
-    onSurfaceVariant = ExpressiveLightOnSurfaceVariant,
-    surfaceTint = ExpressiveLightSurfaceTint,
+    // Background & Surface - Clean neutrals
+    background = ProfessionalLightColors.Background,
+    onBackground = ProfessionalLightColors.OnBackground,
+    surface = ProfessionalLightColors.Surface,
+    onSurface = ProfessionalLightColors.OnSurface,
+    surfaceVariant = ProfessionalLightColors.SurfaceVariant,
+    onSurfaceVariant = ProfessionalLightColors.OnSurfaceVariant,
+    surfaceTint = ProfessionalLightColors.Primary,
     
-    // Outline
-    outline = Color(0xFF74777F),
-    outlineVariant = ExpressiveLightOutlineVariant,
+    // Outline - Subtle
+    outline = ProfessionalLightColors.Outline,
+    outlineVariant = ProfessionalLightColors.OutlineVariant,
     
     // Inverse
-    inverseSurface = Color(0xFF2F3033),
-    inverseOnSurface = Color(0xFFF1F0F4),
-    inversePrimary = ExpressiveDarkPrimary,
+    inverseSurface = ProfessionalDarkColors.Surface,
+    inverseOnSurface = ProfessionalDarkColors.OnSurface,
+    inversePrimary = ProfessionalDarkColors.Primary,
     
     // Scrim
     scrim = Color(0xFF000000)
 )
 
 /**
- * Material 3 Expressive Dark Color Scheme
+ * Professional Dark Color Scheme (iOS-style)
  */
-private val ExpressiveDarkColorScheme = darkColorScheme(
-    // Primary - Soft Blue
-    primary = ExpressiveDarkPrimary,
-    onPrimary = ExpressiveDarkOnPrimary,
-    primaryContainer = ExpressiveDarkPrimaryContainer,
-    onPrimaryContainer = ExpressiveDarkOnPrimaryContainer,
+private val ProfessionalDarkColorScheme = darkColorScheme(
+    // Primary - Lighter Blue for dark theme
+    primary = ProfessionalDarkColors.Primary,
+    onPrimary = ProfessionalDarkColors.OnPrimary,
+    primaryContainer = ProfessionalDarkColors.PrimaryContainer,
+    onPrimaryContainer = ProfessionalDarkColors.OnPrimaryContainer,
     
-    // Secondary - Soft Purple
-    secondary = ExpressiveDarkSecondary,
-    onSecondary = ExpressiveDarkOnSecondary,
-    secondaryContainer = ExpressiveDarkSecondaryContainer,
-    onSecondaryContainer = ExpressiveDarkOnSecondaryContainer,
+    // Secondary - Light Gray
+    secondary = ProfessionalDarkColors.Secondary,
+    onSecondary = ProfessionalDarkColors.OnSecondary,
+    secondaryContainer = ProfessionalDarkColors.SecondaryContainer,
+    onSecondaryContainer = ProfessionalDarkColors.OnSecondaryContainer,
     
-    // Tertiary - Soft Pink
-    tertiary = ExpressiveDarkTertiary,
-    onTertiary = ExpressiveDarkOnTertiary,
-    tertiaryContainer = ExpressiveDarkTertiaryContainer,
-    onTertiaryContainer = ExpressiveDarkOnTertiaryContainer,
+    // Tertiary - Subtle
+    tertiary = ProfessionalDarkColors.Tertiary,
+    onTertiary = ProfessionalDarkColors.OnTertiary,
+    tertiaryContainer = ProfessionalDarkColors.TertiaryContainer,
+    onTertiaryContainer = ProfessionalDarkColors.OnTertiaryContainer,
     
     // Error
-    error = ExpressiveError,
-    errorContainer = Color(0xFF601410),
-    onError = Color(0xFF690005),
-    onErrorContainer = Color(0xFFF9DEDC),
+    error = ProfessionalDarkColors.Error,
+    errorContainer = ProfessionalDarkColors.ErrorContainer,
+    onError = ProfessionalDarkColors.OnError,
+    onErrorContainer = ProfessionalDarkColors.OnErrorContainer,
     
-    // Background & Surface
-    background = Color(0xFF1A1C1E),
-    onBackground = Color(0xFFE3E2E6),
-    surface = ExpressiveDarkSurface,
-    onSurface = ExpressiveDarkOnSurface,
-    surfaceVariant = ExpressiveDarkSurfaceVariant,
-    onSurfaceVariant = ExpressiveDarkOnSurfaceVariant,
-    surfaceTint = ExpressiveDarkSurfaceTint,
+    // Background & Surface - iOS dark style
+    background = ProfessionalDarkColors.Background,
+    onBackground = ProfessionalDarkColors.OnBackground,
+    surface = ProfessionalDarkColors.Surface,
+    onSurface = ProfessionalDarkColors.OnSurface,
+    surfaceVariant = ProfessionalDarkColors.SurfaceVariant,
+    onSurfaceVariant = ProfessionalDarkColors.OnSurfaceVariant,
+    surfaceTint = ProfessionalDarkColors.Primary,
     
-    // Outline
-    outline = Color(0xFF8E9099),
-    outlineVariant = ExpressiveDarkOutlineVariant,
+    // Outline - Subtle
+    outline = ProfessionalDarkColors.Outline,
+    outlineVariant = ProfessionalDarkColors.OutlineVariant,
     
     // Inverse
-    inverseSurface = Color(0xFFE3E2E6),
-    inverseOnSurface = Color(0xFF2F3033),
-    inversePrimary = ExpressiveLightPrimary,
+    inverseSurface = ProfessionalLightColors.Surface,
+    inverseOnSurface = ProfessionalLightColors.OnSurface,
+    inversePrimary = ProfessionalLightColors.Primary,
     
     // Scrim
     scrim = Color(0xFF000000)
@@ -128,8 +128,8 @@ fun ATSTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        darkTheme -> ExpressiveDarkColorScheme
-        else -> ExpressiveLightColorScheme
+        darkTheme -> ProfessionalDarkColorScheme
+        else -> ProfessionalLightColorScheme
     }
     
     val view = LocalView.current
@@ -146,7 +146,7 @@ fun ATSTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = ExpressiveTypography,
-        shapes = ExpressiveShapes,
+        shapes = ProfessionalShapes,
         content = content
     )
 }

@@ -18,13 +18,20 @@ import androidx.compose.ui.unit.dp
  * - Extra Extra Large: 48dp (NEW in M3 Expressive)
  * - Full: CircleShape or 50% (fully rounded)
  */
-val ExpressiveShapes = Shapes(
-    extraSmall = RoundedCornerShape(4.dp),    // Extra Small
-    small = RoundedCornerShape(8.dp),         // Small
-    medium = RoundedCornerShape(12.dp),       // Medium
-    large = RoundedCornerShape(20.dp),        // Large - M3 Expressive
-    extraLarge = RoundedCornerShape(32.dp)    // Extra Large - M3 Expressive
+/**
+ * Professional Shapes (iOS-style)
+ * Consistent rounded corners for a clean, professional look
+ */
+val ProfessionalShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),   // Small elements
+    small = RoundedCornerShape(12.dp),       // Buttons, chips
+    medium = RoundedCornerShape(16.dp),      // Cards (iOS standard)
+    large = RoundedCornerShape(20.dp),       // Sheets, dialogs
+    extraLarge = RoundedCornerShape(28.dp)   // Large cards
 )
+
+// Keep old name for compatibility
+val ExpressiveShapes = ProfessionalShapes
 
 /**
  * Component-specific shapes following M3 Expressive guidelines

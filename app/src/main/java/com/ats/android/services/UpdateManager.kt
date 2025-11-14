@@ -15,6 +15,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import org.json.JSONObject
 import java.io.File
 import java.net.URL
@@ -42,12 +48,15 @@ class UpdateManager(private val context: Context) {
     private var downloadId: Long = -1
     private var downloadManager: DownloadManager? = null
     private var latestDownloadUrl: String = ""
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var progressJob: Job? = null
     
     private val downloadReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
             if (id == downloadId) {
                 Log.d(TAG, "Download completed: $id")
+                progressJob?.cancel()
                 _downloadProgress.value = DownloadProgress.Completed
                 installUpdate()
             }
@@ -186,6 +195,9 @@ class UpdateManager(private val context: Context) {
             
             Log.d(TAG, "Download started with ID: $downloadId")
             
+            // Start monitoring progress
+            startProgressMonitoring()
+            
         } catch (e: Exception) {
             Log.e(TAG, "Error starting download: ${e.message}", e)
             _downloadProgress.value = DownloadProgress.Error(e.message ?: "Download failed")
@@ -232,7 +244,20 @@ class UpdateManager(private val context: Context) {
         }
     }
     
-    fun getDownloadProgress(): Int {
+    private fun startProgressMonitoring() {
+        progressJob?.cancel()
+        progressJob = scope.launch {
+            while (true) {
+                val progress = getDownloadProgress()
+                if (progress >= 100) {
+                    break
+                }
+                delay(500) // Update every 500ms
+            }
+        }
+    }
+    
+    private fun getDownloadProgress(): Int {
         if (downloadId == -1L) return 0
         
         try {
@@ -240,23 +265,48 @@ class UpdateManager(private val context: Context) {
             val cursor = downloadManager?.query(query)
             
             if (cursor?.moveToFirst() == true) {
-                val bytesDownloaded = cursor.getLong(
-                    cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
-                )
-                val bytesTotal = cursor.getLong(
-                    cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
-                )
+                val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                val status = cursor.getInt(statusIndex)
                 
-                cursor.close()
-                
-                if (bytesTotal > 0) {
-                    val progress = ((bytesDownloaded * 100) / bytesTotal).toInt()
-                    _downloadProgress.value = DownloadProgress.Downloading(progress)
-                    return progress
+                when (status) {
+                    DownloadManager.STATUS_FAILED -> {
+                        val reason = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON))
+                        cursor.close()
+                        progressJob?.cancel()
+                        _downloadProgress.value = DownloadProgress.Error("Download failed (code: $reason)")
+                        return 0
+                    }
+                    DownloadManager.STATUS_PAUSED -> {
+                        cursor.close()
+                        return -1
+                    }
+                    DownloadManager.STATUS_PENDING -> {
+                        cursor.close()
+                        _downloadProgress.value = DownloadProgress.Downloading(0)
+                        return 0
+                    }
+                    DownloadManager.STATUS_RUNNING, DownloadManager.STATUS_SUCCESSFUL -> {
+                        val bytesDownloaded = cursor.getLong(
+                            cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                        )
+                        val bytesTotal = cursor.getLong(
+                            cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                        )
+                        
+                        cursor.close()
+                        
+                        if (bytesTotal > 0) {
+                            val progress = ((bytesDownloaded * 100) / bytesTotal).toInt()
+                            Log.d(TAG, "Download progress: $progress% ($bytesDownloaded / $bytesTotal bytes)")
+                            _downloadProgress.value = DownloadProgress.Downloading(progress)
+                            return progress
+                        }
+                    }
                 }
+                cursor.close()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting download progress: ${e.message}")
+            Log.e(TAG, "Error getting download progress: ${e.message}", e)
         }
         
         return 0
@@ -268,6 +318,8 @@ class UpdateManager(private val context: Context) {
         } catch (e: Exception) {
             // Receiver not registered
         }
+        progressJob?.cancel()
+        scope.cancel()
     }
     
     sealed class DownloadProgress {

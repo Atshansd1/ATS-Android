@@ -29,7 +29,8 @@ import java.util.Date
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovementsListScreen(
-    viewModel: MovementsViewModel = viewModel()
+    viewModel: MovementsViewModel = viewModel(),
+    onViewRoute: (LocationMovement) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val movements by viewModel.movements.collectAsState()
@@ -76,7 +77,10 @@ fun MovementsListScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(movements) { movement ->
-                            MovementCard(movement = movement)
+                            MovementCard(
+                                movement = movement,
+                                onViewRoute = onViewRoute
+                            )
                         }
                     }
                 }

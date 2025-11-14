@@ -38,6 +38,7 @@ import com.ats.android.ui.screens.EnhancedMapScreen
 import com.ats.android.ui.theme.ComponentShapes
 import com.ats.android.viewmodels.AuthViewModel
 import com.ats.android.viewmodels.AuthUiState
+import com.ats.android.viewmodels.MovementNavigationManager
 
 sealed class Screen(
     val route: String,
@@ -345,7 +346,12 @@ fun MainScaffold(
                 EnhancedMapScreen()
             }
             composable(Screen.Movements.route) {
-                MovementsListScreen()
+                MovementsListScreen(
+                    onViewRoute = { movement ->
+                        MovementNavigationManager.setMovement(movement)
+                        navController.navigate("movement_route_map")
+                    }
+                )
             }
             composable(Screen.CheckIn.route) {
                 CheckInScreen(currentEmployee)
@@ -390,9 +396,23 @@ fun MainScaffold(
                 )
             }
             
-            // Movements Screen (Admin/Supervisor only)
-            composable(Screen.Movements.route) {
-                MovementsListScreen()
+            // Movement Route Map Screen
+            composable("movement_route_map") {
+                val movement = MovementNavigationManager.getMovement()
+                if (movement != null) {
+                    EmployeeRouteMapScreen(
+                        movement = movement,
+                        onBack = {
+                            MovementNavigationManager.clearMovement()
+                            navController.popBackStack()
+                        }
+                    )
+                } else {
+                    // If movement is null, go back
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack()
+                    }
+                }
             }
         }
         

@@ -144,6 +144,8 @@
     <string name="employee_route">Employee Route</string>
     <string name="total_distance">Total Distance</string>
     <string name="movement_duration">Duration</string>
+    <string name="from_checkin">From Check-in</string>
+    <string name="distance">Distance</string>
     
     <!-- Employee Management -->
     <string name="employee_management">Employee Management</string>

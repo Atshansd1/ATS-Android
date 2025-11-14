@@ -244,6 +244,7 @@
     <string name="employee_route">مسار الموظف</string>
     <string name="total_distance">المسافة الكلية</string>
     <string name="movement_duration">المدة</string>
+    <string name="from_checkin">من موقع الحضور</string>
     
     <!-- Movement Types -->
     <string name="movement_moved">تحرك</string>
@@ -258,8 +259,6 @@
     <!-- Movement Details -->
     <string name="from_location">من</string>
     <string name="to_location">إلى</string>
-    <string name="distance">المسافة</string>
-    <string name="from_checkin">من موقع الحضور</string>
     <string name="check_in_location">موقع الحضور</string>
     
     <!-- Time Units -->

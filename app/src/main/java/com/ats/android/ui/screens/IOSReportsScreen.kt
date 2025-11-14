@@ -171,7 +171,29 @@ fun IOSReportsScreen(
                             Text("CSV")
                         }
                         
-
+                        // PDF Export
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    viewModel.generateReport(preview = false)
+                                    val exported = viewModel.exportToPDF(context)
+                                    if (exported) {
+                                        showMessage = "PDF report exported"
+                                    } else {
+                                        showMessage = reportExportFailed
+                                    }
+                                }
+                            },
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating,
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = androidx.compose.ui.graphics.Color(0xFFD32F2F)
+                            )
+                        ) {
+                            Icon(Icons.Default.PictureAsPdf, null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("PDF")
+                        }
                     }
                 }
                 

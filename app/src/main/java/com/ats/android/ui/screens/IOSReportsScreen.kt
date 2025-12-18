@@ -1,8 +1,10 @@
 package com.ats.android.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -10,13 +12,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ats.android.R
 import com.ats.android.models.Employee
+import com.ats.android.ui.components.GlassCard
 import com.ats.android.ui.theme.*
+import com.ats.android.ui.theme.CornerRadius // Import from ui.theme
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -47,116 +53,121 @@ fun IOSReportsScreen(
     val scope = rememberCoroutineScope()
     
     Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.reports),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+        containerColor = MaterialTheme.colorScheme.background,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            stringResource(R.string.reports),
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color.Transparent
                     )
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
                 )
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
             ) {
-                // Quick Reports Section
-                item {
-                    QuickReportsSection(
-                        onGenerateToday = {
-                            scope.launch {
-                                viewModel.generateQuickReport(days = 0)
-                                val exported = viewModel.exportAndShare(context)
-                                if (exported) {
-                                    showMessage = todayReportGenerated
-                                } else {
-                                    showMessage = reportExportFailed
-                                }
-                            }
-                        },
-                        onGenerateWeek = {
-                            scope.launch {
-                                viewModel.generateQuickReport(days = 7)
-                                val exported = viewModel.exportAndShare(context)
-                                if (exported) {
-                                    showMessage = weeklyReportGenerated
-                                } else {
-                                    showMessage = reportExportFailed
-                                }
-                            }
-                        },
-                        onGenerateMonth = {
-                            scope.launch {
-                                viewModel.generateQuickReport(days = 30)
-                                val exported = viewModel.exportAndShare(context)
-                                if (exported) {
-                                    showMessage = monthlyReportGenerated
-                                } else {
-                                    showMessage = reportExportFailed
-                                }
-                            }
-                        }
-                    )
-                }
-                
-                // Custom Report Section
-                item {
-                    val startDate by viewModel.startDate.collectAsState()
-                    val endDate by viewModel.endDate.collectAsState()
-                    val selectedEmployees by viewModel.selectedEmployees.collectAsState()
-                    
-                    CustomReportSection(
-                        startDate = startDate,
-                        endDate = endDate,
-                        selectedEmployeeCount = selectedEmployees.size,
-                        onClick = { showConfigDialog = true }
-                    )
-                }
-                
-                // Generate Buttons (Preview and Export)
-                item {
-                    // Preview button
-                    OutlinedButton(
-                        onClick = {
-                            viewModel.generateReport(preview = true)
-                            showPreview = true
-                        },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating
-                    ) {
-                        Icon(Icons.Default.Visibility, null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.preview))
-                    }
-                }
-                
-                // Export Options
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // Excel Export
-                        Button(
-                            onClick = {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    // Quick Reports Section
+                    item {
+                        QuickReportsSection(
+                            onGenerateToday = {
                                 scope.launch {
-                                    try {
+                                    viewModel.generateQuickReport(days = 0)
+                                    val exported = viewModel.exportAndShare(context)
+                                    if (exported) {
+                                        showMessage = todayReportGenerated
+                                    } else {
+                                        showMessage = reportExportFailed
+                                    }
+                                }
+                            },
+                            onGenerateWeek = {
+                                scope.launch {
+                                    viewModel.generateQuickReport(days = 7)
+                                    val exported = viewModel.exportAndShare(context)
+                                    if (exported) {
+                                        showMessage = weeklyReportGenerated
+                                    } else {
+                                        showMessage = reportExportFailed
+                                    }
+                                }
+                            },
+                            onGenerateMonth = {
+                                scope.launch {
+                                    viewModel.generateQuickReport(days = 30)
+                                    val exported = viewModel.exportAndShare(context)
+                                    if (exported) {
+                                        showMessage = monthlyReportGenerated
+                                    } else {
+                                        showMessage = reportExportFailed
+                                    }
+                                }
+                            }
+                        )
+                    }
+                    
+                    // Custom Report Section
+                    item {
+                        val startDate by viewModel.startDate.collectAsState()
+                        val endDate by viewModel.endDate.collectAsState()
+                        val selectedEmployees by viewModel.selectedEmployees.collectAsState()
+                        
+                        CustomReportSection(
+                            startDate = startDate,
+                            endDate = endDate,
+                            selectedEmployeeCount = selectedEmployees.size,
+                            onClick = { showConfigDialog = true }
+                        )
+                    }
+                    
+                    // Generate Buttons (Preview and Export)
+                    item {
+                        // Preview button
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.generateReport(preview = true)
+                                showPreview = true
+                            },
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating,
+                            shape = ComponentShapes.Button,
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.primary
+                            ),
+                             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                        ) {
+                            Icon(Icons.Default.Visibility, null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.preview), style = MaterialTheme.typography.titleMedium)
+                        }
+                    }
+                    
+                    // Export Options
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // CSV Export
+                            Button(
+                                onClick = {
+                                    scope.launch {
                                         // Auto-generate report if not already done
                                         if (reportData.isEmpty()) {
-                                            com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Auto-generating report for Excel export...")
-                                            showMessage = "Generating report..."
+                                            com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Auto-generating report for CSV export...")
+                                            showMessage = context.getString(R.string.generating_report_ellipses)
                                             viewModel.generateReport(preview = false)
                                             
                                             // Wait for report to generate (poll for data)
@@ -169,7 +180,7 @@ fun IOSReportsScreen(
                                             
                                             // Check if we have data now
                                             if (reportData.isEmpty()) {
-                                                showMessage = "No data available for selected filters"
+                                                showMessage = context.getString(R.string.no_data_available)
                                                 com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Report generation timed out or no data available")
                                                 return@launch
                                             }
@@ -177,163 +188,127 @@ fun IOSReportsScreen(
                                             com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Report generated with ${reportData.size} records after ${attempts * 500}ms")
                                         }
                                         
-                                        com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Starting Excel export with ${reportData.size} records...")
-                                        showMessage = "Exporting to Excel..."
-                                        
-                                        val exported = viewModel.exportToExcel(context)
-                                        com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Excel export result: $exported")
+                                        showMessage = context.getString(R.string.exporting_csv)
+                                        val exported = viewModel.exportAndShare(context)
                                         if (exported) {
-                                            showMessage = "Excel exported successfully!"
+                                            showMessage = reportExported
                                         } else {
-                                            showMessage = "Excel export failed - check Debug Logs in Settings"
+                                            showMessage = context.getString(R.string.export_failed_check_logs)
                                         }
-                                    } catch (e: Exception) {
-                                        com.ats.android.utils.DebugLogger.e("IOSReportsScreen", "Excel export error", e)
-                                        showMessage = "Error: ${e.message}"
                                     }
-                                }
-                            },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating,
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                containerColor = androidx.compose.ui.graphics.Color(0xFF217346)
-                            )
-                        ) {
-                            Icon(Icons.Default.TableChart, null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text("Excel", fontSize = 13.sp)
+                                },
+                                modifier = Modifier.weight(1f).height(56.dp),
+                                enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF4CAF50).copy(alpha = 0.1f),
+                                    contentColor = Color(0xFF4CAF50)
+                                ),
+                                shape = ComponentShapes.Button
+                            ) {
+                                Icon(Icons.Default.Description, null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(stringResource(R.string.csv_export), style = MaterialTheme.typography.titleSmall)
+                            }
+
+                            // Excel Export
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            // Auto-generate report if not already done
+                                            if (reportData.isEmpty()) {
+                                                com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Auto-generating report for Excel export...")
+                                                showMessage = context.getString(R.string.generating_report_ellipses)
+                                                viewModel.generateReport(preview = false)
+                                                
+                                                // Wait for report to generate (poll for data)
+                                                var attempts = 0
+                                                while (reportData.isEmpty() && attempts < 10) {
+                                                    kotlinx.coroutines.delay(500)
+                                                    attempts++
+                                                    com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Waiting for report data... attempt $attempts")
+                                                }
+                                                
+                                                // Check if we have data now
+                                                if (reportData.isEmpty()) {
+                                                    showMessage = context.getString(R.string.no_data_available)
+                                                    com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Report generation timed out or no data available")
+                                                    return@launch
+                                                }
+                                                
+                                                com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Report generated with ${reportData.size} records after ${attempts * 500}ms")
+                                            }
+                                            
+                                            com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Starting Excel export with ${reportData.size} records...")
+                                            showMessage = context.getString(R.string.exporting_excel)
+                                            
+                                            val exported = viewModel.exportToExcel(context)
+                                            com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Excel export result: $exported")
+                                            if (exported) {
+                                                showMessage = context.getString(R.string.excel_export_success)
+                                            } else {
+                                                showMessage = context.getString(R.string.export_failed_check_logs)
+                                            }
+                                        } catch (e: Exception) {
+                                            com.ats.android.utils.DebugLogger.e("IOSReportsScreen", "Excel export error", e)
+                                            showMessage = context.getString(R.string.error_generating_report) + ": ${e.message}"
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f).height(56.dp),
+                                enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFFF9800).copy(alpha = 0.1f),
+                                    contentColor = Color(0xFFFF9800)
+                                ),
+                                shape = ComponentShapes.Button
+                            ) {
+                                Icon(Icons.Default.TableChart, null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(stringResource(R.string.excel_export), style = MaterialTheme.typography.titleSmall)
+                            }
                         }
-                        
-                        // PDF Export
-                        Button(
-                            onClick = {
-                                scope.launch {
-                                    // Auto-generate report if not already done
-                                    if (reportData.isEmpty()) {
-                                        com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Auto-generating report for PDF export...")
-                                        showMessage = "Generating report..."
-                                        viewModel.generateReport(preview = false)
-                                        
-                                        // Wait for report to generate (poll for data)
-                                        var attempts = 0
-                                        while (reportData.isEmpty() && attempts < 10) {
-                                            kotlinx.coroutines.delay(500)
-                                            attempts++
-                                            com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Waiting for report data... attempt $attempts")
-                                        }
-                                        
-                                        // Check if we have data now
-                                        if (reportData.isEmpty()) {
-                                            showMessage = "No data available for selected filters"
-                                            com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Report generation timed out or no data available")
-                                            return@launch
-                                        }
-                                        
-                                        com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Report generated with ${reportData.size} records after ${attempts * 500}ms")
-                                    }
-                                    
-                                    showMessage = "Exporting to PDF..."
-                                    val exported = viewModel.exportToPDF(context)
-                                    if (exported) {
-                                        showMessage = "PDF exported successfully!"
-                                    } else {
-                                        showMessage = "PDF export failed - check Debug Logs in Settings"
-                                    }
-                                }
-                            },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating,
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                containerColor = androidx.compose.ui.graphics.Color(0xFFD32F2F)
-                            )
-                        ) {
-                            Icon(Icons.Default.PictureAsPdf, null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text("PDF", fontSize = 13.sp)
-                        }
-                        
-                        // CSV Export
-                        Button(
-                            onClick = {
-                                scope.launch {
-                                    // Auto-generate report if not already done
-                                    if (reportData.isEmpty()) {
-                                        com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Auto-generating report for CSV export...")
-                                        showMessage = "Generating report..."
-                                        viewModel.generateReport(preview = false)
-                                        
-                                        // Wait for report to generate (poll for data)
-                                        var attempts = 0
-                                        while (reportData.isEmpty() && attempts < 10) {
-                                            kotlinx.coroutines.delay(500)
-                                            attempts++
-                                            com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Waiting for report data... attempt $attempts")
-                                        }
-                                        
-                                        // Check if we have data now
-                                        if (reportData.isEmpty()) {
-                                            showMessage = "No data available for selected filters"
-                                            com.ats.android.utils.DebugLogger.w("IOSReportsScreen", "Report generation timed out or no data available")
-                                            return@launch
-                                        }
-                                        
-                                        com.ats.android.utils.DebugLogger.d("IOSReportsScreen", "Report generated with ${reportData.size} records after ${attempts * 500}ms")
-                                    }
-                                    
-                                    showMessage = "Exporting to CSV..."
-                                    val exported = viewModel.exportAndShare(context)
-                                    if (exported) {
-                                        showMessage = reportExported
-                                    } else {
-                                        showMessage = "CSV export failed - check Debug Logs in Settings"
-                                    }
-                                }
-                            },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            enabled = uiState !is com.ats.android.viewmodels.ReportsUiState.Generating,
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                containerColor = androidx.compose.ui.graphics.Color(0xFF1976D2)
-                            )
-                        ) {
-                            Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text("CSV", fontSize = 13.sp)
-                        }
+                    }
+                    
+                    // Info Section
+                    item {
+                        InfoSection()
                     }
                 }
                 
-                // Info Section
-                item {
-                    InfoSection()
-                }
-            }
-            
-            // Loading overlay
-            if (uiState is com.ats.android.viewmodels.ReportsUiState.Generating) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
+                // Loading overlay
+                if (uiState is com.ats.android.viewmodels.ReportsUiState.Generating) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.3f))
+                            .clickable(enabled = false) {},
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            modifier = Modifier.padding(24.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        GlassCard(
+                            modifier = Modifier.padding(32.dp),
+                            cornerRadius = CornerRadius.large
                         ) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                            Text(stringResource(R.string.generating_report))
+                            Row(
+                                modifier = Modifier.padding(24.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    stringResource(R.string.generating_report),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-    }
+
     
     // Success message
     showMessage?.let { message ->
@@ -342,16 +317,35 @@ fun IOSReportsScreen(
             showMessage = null
         }
         
-        Snackbar(
-            modifier = Modifier.padding(16.dp),
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 80.dp),
+            contentAlignment = Alignment.BottomCenter
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            GlassCard(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                backgroundColor = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.9f)
             ) {
-                Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(20.dp))
-                Text(message)
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.CheckCircle, 
+                        null, 
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.inverseOnSurface
+                    )
+                    Text(
+                        message,
+                        color = MaterialTheme.colorScheme.inverseOnSurface,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }
     }
@@ -389,7 +383,8 @@ fun ReportPreviewSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        modifier = Modifier.fillMaxHeight(0.9f)
+        modifier = Modifier.fillMaxHeight(0.9f),
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
@@ -404,7 +399,7 @@ fun ReportPreviewSheet(
             ) {
                 Text(
                     text = stringResource(R.string.report_preview),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
                 IconButton(onClick = onDismiss) {
@@ -412,7 +407,7 @@ fun ReportPreviewSheet(
                 }
             }
             
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             // Summary cards
             Row(
@@ -435,7 +430,7 @@ fun ReportPreviewSheet(
                 )
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -457,7 +452,7 @@ fun ReportPreviewSheet(
                 )
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
             // Records list
             Text(
@@ -470,7 +465,7 @@ fun ReportPreviewSheet(
             
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(reportData.size) { index ->
                     val record = reportData[index]
@@ -483,7 +478,8 @@ fun ReportPreviewSheet(
             // Export button
             Button(
                 onClick = onExport,
-                modifier = Modifier.fillMaxWidth().height(48.dp)
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = ComponentShapes.Button
             ) {
                 Icon(Icons.Default.Download, null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -501,14 +497,12 @@ fun SummaryStatCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     color: androidx.compose.ui.graphics.Color
 ) {
-    Card(
+    GlassCard(
         modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
+        cornerRadius = CornerRadius.medium
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
@@ -520,11 +514,11 @@ fun SummaryStatCard(
                     imageVector = icon,
                     contentDescription = null,
                     tint = color,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(24.dp)
                 )
                 Text(
                     text = value,
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -543,15 +537,13 @@ fun PreviewRecordCard(record: com.ats.android.models.AttendanceRecord) {
     val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.US)
     val timeFormat = SimpleDateFormat("HH:mm", Locale.US)
     
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+    GlassCard(
+        cornerRadius = CornerRadius.medium
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
+                .padding(16.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -559,8 +551,8 @@ fun PreviewRecordCard(record: com.ats.android.models.AttendanceRecord) {
             ) {
                 Text(
                     text = record.employeeName ?: record.employeeId,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = dateFormat.format((record.date ?: record.checkInTime).toDate()),
@@ -569,11 +561,11 @@ fun PreviewRecordCard(record: com.ats.android.models.AttendanceRecord) {
                 )
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -583,7 +575,8 @@ fun PreviewRecordCard(record: com.ats.android.models.AttendanceRecord) {
                     )
                     Text(
                         text = timeFormat.format(record.checkInTime.toDate()),
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
                     )
                 }
                 
@@ -596,7 +589,8 @@ fun PreviewRecordCard(record: com.ats.android.models.AttendanceRecord) {
                         )
                         Text(
                             text = timeFormat.format(checkOut.toDate()),
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -611,6 +605,7 @@ fun PreviewRecordCard(record: com.ats.android.models.AttendanceRecord) {
                         Text(
                             text = String.format(Locale.US, "%.1fh", record.durationHours),
                             style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
                             color = ATSColors.SupervisorBlue
                         )
                     }
@@ -633,7 +628,7 @@ fun QuickReportsSection(
         Text(
             text = stringResource(R.string.quick_reports),
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.Bold
         )
         
         Row(
@@ -644,6 +639,7 @@ fun QuickReportsSection(
                 modifier = Modifier.weight(1f),
                 title = stringResource(R.string.today),
                 icon = Icons.Default.CalendarToday,
+                color = Color(0xFF2196F3), // Blue
                 onClick = onGenerateToday
             )
             
@@ -651,6 +647,7 @@ fun QuickReportsSection(
                 modifier = Modifier.weight(1f),
                 title = stringResource(R.string.this_week),
                 icon = Icons.Default.CalendarMonth,
+                color = Color(0xFF4CAF50), // Green
                 onClick = onGenerateWeek
             )
             
@@ -658,6 +655,7 @@ fun QuickReportsSection(
                 modifier = Modifier.weight(1f),
                 title = stringResource(R.string.this_month),
                 icon = Icons.Default.Event,
+                color = Color(0xFFFF9800), // Orange
                 onClick = onGenerateMonth
             )
         }
@@ -669,32 +667,40 @@ fun QuickReportButton(
     modifier: Modifier = Modifier,
     title: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    color: Color,
     onClick: () -> Unit
 ) {
-    Card(
+    GlassCard(
         modifier = modifier.clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        cornerRadius = CornerRadius.medium
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(24.dp)
-            )
+            // Icon container implementation...
+             Surface(
+                shape = CircleShape,
+                color = color.copy(alpha = 0.1f),
+                modifier = Modifier.size(48.dp)
+            ) {
+                 Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = color,
+                        modifier = Modifier.size(24.dp)
+                    )
+                 }
+            }
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -714,18 +720,16 @@ fun CustomReportSection(
         Text(
             text = stringResource(R.string.custom_report),
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.Bold
         )
         
-        Card(
+        GlassCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+            cornerRadius = CornerRadius.medium
         ) {
-            Column {
+            Column(modifier = Modifier.padding(8.dp)) {
                 // Employee Selection
                 ListItem(
                     headlineContent = {
@@ -738,16 +742,20 @@ fun CustomReportSection(
                     supportingContent = {
                         Text(
                             text = if (selectedEmployeeCount == 0) stringResource(R.string.all_employees) else stringResource(R.string.employees_selected, selectedEmployeeCount),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
                     },
                     trailingContent = {
                         Icon(Icons.Default.ChevronRight, null)
-                    }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
                 
-                Divider()
+                Divider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f),
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
                 
                 // Date Range
                 ListItem(
@@ -763,48 +771,16 @@ fun CustomReportSection(
                         val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.US)
                         Text(
                             text = "${formatter.format(startDate)} - ${formatter.format(endDate)}",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
                     },
                     trailingContent = {
                         Icon(Icons.Default.ChevronRight, null)
-                    }
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
             }
-        }
-    }
-}
-
-/**
- * Generate Report Button
- */
-@Composable
-fun GenerateReportButton(
-    enabled: Boolean,
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        shape = RoundedCornerShape(CornerRadius.medium),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary
-        )
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.Description, "Generate Report")
-            Text(
-                text = "Generate & Export Report",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
         }
     }
 }
@@ -832,7 +808,8 @@ fun ConfigureReportDialog(
     
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        modifier = Modifier.fillMaxHeight(0.95f)
+        modifier = Modifier.fillMaxHeight(0.95f),
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
@@ -842,11 +819,11 @@ fun ConfigureReportDialog(
             // Header
             Text(
                 text = stringResource(R.string.configure_report),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
             // Date Range Section
             Text(
@@ -855,12 +832,13 @@ fun ConfigureReportDialog(
                 fontWeight = FontWeight.SemiBold
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     // Start Date
@@ -871,7 +849,7 @@ fun ConfigureReportDialog(
                         context = context
                     )
                     
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     
                     // End Date
                     DatePickerField(
@@ -883,7 +861,7 @@ fun ConfigureReportDialog(
                 }
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
             // Employee Selection Section
             Row(
@@ -943,10 +921,15 @@ fun ConfigureReportDialog(
                         }
                     }
                 },
-                singleLine = true
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                )
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             // Employee List
             val filteredEmployees = remember(allEmployees, searchQuery) {
@@ -963,7 +946,7 @@ fun ConfigureReportDialog(
             
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(filteredEmployees.size) { index ->
                     val employee = filteredEmployees[index]
@@ -982,9 +965,10 @@ fun ConfigureReportDialog(
                 onClick = onDismiss,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    .height(56.dp),
+                shape = ComponentShapes.Button
             ) {
-                Text(stringResource(R.string.done))
+                Text(stringResource(R.string.done), style = MaterialTheme.typography.titleMedium)
             }
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -1020,21 +1004,24 @@ fun DatePickerField(
             )
             datePickerDialog.show()
         },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().height(56.dp),
+        shape = RoundedCornerShape(8.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(label)
+            Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = formatter.format(date),
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Icon(Icons.Default.CalendarToday, null, modifier = Modifier.size(16.dp))
             }
@@ -1054,33 +1041,38 @@ fun EmployeeCheckItem(
             .clickable(onClick = onToggle),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) 
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
             else 
-                MaterialTheme.colorScheme.surface
-        )
+                MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        shape = RoundedCornerShape(12.dp)
+        // No elevation for clean list look
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.Circle,
                 contentDescription = null,
-                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                 modifier = Modifier.size(24.dp)
             )
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = employee.displayName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = employee.employeeId,
@@ -1096,7 +1088,7 @@ fun EmployeeCheckItem(
                 }
             }
         }
-    }
+}
 }
 
 /**
@@ -1104,55 +1096,35 @@ fun EmployeeCheckItem(
  */
 @Composable
 fun InfoSection() {
-    Card(
+    GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-        )
+        cornerRadius = CornerRadius.medium
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(20.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.size(20.dp)
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
             )
             
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     text = stringResource(R.string.about_reports),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = stringResource(R.string.reports_info_text),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 18.sp
                 )
             }
         }
     }
-}
-
-/**
- * Simulate report generation (In production, this would call a ViewModel/Service)
- */
-private suspend fun generateQuickReport(days: Int) {
-    // Simulate API call
-    kotlinx.coroutines.delay(1500)
-    // In production: Call ReportService to generate CSV
-}
-
-private suspend fun generateCustomReport(
-    startDate: Date,
-    endDate: Date,
-    selectedEmployees: Set<String>
-) {
-    // Simulate API call
-    kotlinx.coroutines.delay(2000)
-    // In production: Call ReportService with parameters
 }

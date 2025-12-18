@@ -20,6 +20,8 @@ import com.ats.android.ui.theme.ATSColors
 import com.ats.android.ui.theme.Spacing
 import com.ats.android.viewmodels.ShiftManagementViewModel
 import java.util.*
+import androidx.compose.ui.res.stringResource
+import com.ats.android.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,13 +44,13 @@ fun ShiftManagementScreen(
             CenterAlignedTopAppBar(
                 title = { 
                     Text(
-                        "Shift Management",
+                        stringResource(R.string.shift_management),
                         style = MaterialTheme.typography.titleMedium
                     ) 
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "Back")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.navigate_back))
                     }
                 },
                 actions = {
@@ -63,7 +65,7 @@ fun ShiftManagementScreen(
                         IconButton(
                             onClick = { viewModel.saveShiftConfig() }
                         ) {
-                            Icon(Icons.Default.Save, "Save")
+                            Icon(Icons.Default.Save, stringResource(R.string.save))
                         }
                     }
                 },
@@ -84,51 +86,22 @@ fun ShiftManagementScreen(
             item {
                 Spacer(modifier = Modifier.height(Spacing.sm))
                 Text(
-                    text = "Configure Work Schedule",
+                    text = stringResource(R.string.configure_work_schedule),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(Spacing.xs))
                 Text(
-                    text = "Set working days and hours for your organization",
+                    text = stringResource(R.string.set_working_days_hours),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            
-            // Error message
-            errorMessage?.let { error ->
-                item {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(Spacing.md),
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
-                        ) {
-                            Icon(
-                                Icons.Default.Error,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                            Text(
-                                text = error,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                    }
-                }
-            }
-            
+
             // Work Days Section
             item {
                 Text(
-                    text = "Work Days",
+                    text = stringResource(R.string.work_days),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -146,18 +119,12 @@ fun ShiftManagementScreen(
                     day = day,
                     schedule = schedule,
                     isWorkDay = isWorkDay,
-                    onToggleWorkDay = { enabled ->
-                        viewModel.toggleWorkDay(day, enabled)
-                    },
-                    onEditStartTime = {
-                        showTimePicker = Pair(day, true)
-                    },
-                    onEditEndTime = {
-                        showTimePicker = Pair(day, false)
-                    }
+                    onToggleWorkDay = { viewModel.toggleWorkDay(day, it) },
+                    onEditStartTime = { showTimePicker = day to true },
+                    onEditEndTime = { showTimePicker = day to false }
                 )
             }
-            
+
             // Save button at bottom
             item {
                 Spacer(modifier = Modifier.height(Spacing.md))
@@ -177,7 +144,7 @@ fun ShiftManagementScreen(
                     } else {
                         Icon(Icons.Default.Save, contentDescription = null)
                         Spacer(modifier = Modifier.width(Spacing.sm))
-                        Text("Save Changes")
+                        Text(stringResource(R.string.save))
                     }
                 }
                 Spacer(modifier = Modifier.height(Spacing.xl))
@@ -192,7 +159,11 @@ fun ShiftManagementScreen(
         val (hour, minute) = currentTime.split(":").map { it.toInt() }
         
         TimePickerDialog(
-            title = "${if (isStartTime) "Start" else "End"} Time - ${day.displayName}",
+            title = stringResource(
+                R.string.time_picker_title, 
+                stringResource(if (isStartTime) R.string.start_time else R.string.end_time), 
+                stringResource(day.labelResId)
+            ),
             initialHour = hour,
             initialMinute = minute,
             onConfirm = { selectedHour, selectedMinute ->
@@ -232,12 +203,12 @@ fun DayScheduleCard(
             ) {
                 Column {
                     Text(
-                        text = day.displayName,
+                        text = stringResource(day.labelResId),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = if (isWorkDay) "Work Day" else "Day Off",
+                        text = stringResource(if (isWorkDay) R.string.work_day else R.string.day_off),
                         style = MaterialTheme.typography.bodySmall,
                         color = if (isWorkDay) ATSColors.CheckInGreen else MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -247,12 +218,11 @@ fun DayScheduleCard(
                     checked = isWorkDay,
                     onCheckedChange = onToggleWorkDay,
                     colors = SwitchDefaults.colors(
-                        checkedTrackColor = ATSColors.CheckInGreen,
-                        checkedThumbColor = MaterialTheme.colorScheme.surface
+                        checkedThumbColor = ATSColors.CheckInGreen,
+                        checkedTrackColor = ATSColors.CheckInGreen.copy(alpha = 0.5f)
                     )
                 )
             }
-            
             // Time selection (only if work day)
             if (isWorkDay) {
                 Spacer(modifier = Modifier.height(Spacing.md))
@@ -265,7 +235,7 @@ fun DayScheduleCard(
                 ) {
                     // Start time
                     TimeButton(
-                        label = "Start Time",
+                        label = stringResource(R.string.start_time),
                         time = schedule.startTime,
                         onClick = onEditStartTime,
                         modifier = Modifier.weight(1f)
@@ -273,7 +243,7 @@ fun DayScheduleCard(
                     
                     // End time
                     TimeButton(
-                        label = "End Time",
+                        label = stringResource(R.string.end_time),
                         time = schedule.endTime,
                         onClick = onEditEndTime,
                         modifier = Modifier.weight(1f)
@@ -295,7 +265,7 @@ fun DayScheduleCard(
                     )
                     Spacer(modifier = Modifier.width(Spacing.xs))
                     Text(
-                        text = "$duration hours",
+                        text = stringResource(R.string.duration_hours, duration),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -305,34 +275,7 @@ fun DayScheduleCard(
     }
 }
 
-@Composable
-fun TimeButton(
-    label: String,
-    time: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(72.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(Spacing.xs))
-            Text(
-                text = formatTime12Hour(time),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -359,7 +302,7 @@ fun TimePickerDialog(
                 ) {
                     // Hour picker
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Hour", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.hour_label), style = MaterialTheme.typography.labelSmall)
                         Spacer(modifier = Modifier.height(Spacing.sm))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { selectedHour = (selectedHour - 1 + 24) % 24 }) {
@@ -381,7 +324,7 @@ fun TimePickerDialog(
                     
                     // Minute picker
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Minute", style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.minute_label), style = MaterialTheme.typography.labelSmall)
                         Spacer(modifier = Modifier.height(Spacing.sm))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { selectedMinute = (selectedMinute - 15 + 60) % 60 }) {
@@ -403,47 +346,65 @@ fun TimePickerDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(selectedHour, selectedMinute) }) {
-                Text("OK")
+                Text(stringResource(R.string.confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
 }
 
-private fun formatTime12Hour(time24: String): String {
-    val (hour, minute) = time24.split(":").map { it.toInt() }
-    val period = if (hour < 12) "AM" else "PM"
-    val hour12 = when {
-        hour == 0 -> 12
-        hour > 12 -> hour - 12
-        else -> hour
+@Composable
+fun TimeButton(
+    label: String,
+    time: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(Spacing.xs))
+        OutlinedButton(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.small,
+            contentPadding = PaddingValues(horizontal = Spacing.sm, vertical = Spacing.xs)
+        ) {
+            Text(
+                text = time,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
     }
-    return "$hour12:${String.format("%02d", minute)} $period"
 }
 
-private fun calculateDuration(startTime: String, endTime: String): String {
-    val (startHour, startMin) = startTime.split(":").map { it.toInt() }
-    val (endHour, endMin) = endTime.split(":").map { it.toInt() }
-    
-    val startMinutes = startHour * 60 + startMin
-    val endMinutes = endHour * 60 + endMin
-    
-    val durationMinutes = if (endMinutes > startMinutes) {
-        endMinutes - startMinutes
-    } else {
-        (24 * 60) - startMinutes + endMinutes
-    }
-    
-    val hours = durationMinutes / 60
-    val minutes = durationMinutes % 60
-    
-    return if (minutes == 0) {
-        hours.toString()
-    } else {
-        "$hours.${(minutes * 100) / 60}"
+fun calculateDuration(startTime: String, endTime: String): String {
+    try {
+        val startParts = startTime.split(":").map { it.toInt() }
+        val endParts = endTime.split(":").map { it.toInt() }
+        
+        val startMinutes = startParts[0] * 60 + startParts[1]
+        val endMinutes = endParts[0] * 60 + endParts[1]
+        
+        var diffMinutes = endMinutes - startMinutes
+        if (diffMinutes < 0) diffMinutes += 24 * 60
+        
+        val hours = diffMinutes / 60
+        val minutes = diffMinutes % 60
+        
+        return if (minutes > 0) {
+            String.format("%dh %02dm", hours, minutes)
+        } else {
+            String.format("%dh", hours)
+        }
+    } catch (e: Exception) {
+        return "0h"
     }
 }

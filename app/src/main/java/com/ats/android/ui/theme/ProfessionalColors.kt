@@ -82,13 +82,13 @@ object ProfessionalDarkColors {
     val TertiaryContainer = Color(0xFF524266)
     val OnTertiaryContainer = Color(0xFFF9E9FF)
     
-    // Backgrounds - Dark but not black
-    val Background = Color(0xFF1C1C1E)  // iOS dark gray
-    val OnBackground = Color(0xFFE4E4E7)
-    val Surface = Color(0xFF2C2C2E)  // iOS card background
-    val OnSurface = Color(0xFFE4E4E7)
-    val SurfaceVariant = Color(0xFF3A3A3C)  // iOS elevated
-    val OnSurfaceVariant = Color(0xFFC4C7CC)
+    // Backgrounds - iOS Standard Dark Mode
+    val Background = Color(0xFF000000)  // Pure Black (Standard iOS Background)
+    val OnBackground = Color(0xFFFFFFFF)
+    val Surface = Color(0xFF1C1C1E)  // iOS Secondary System Background (Cards)
+    val OnSurface = Color(0xFFFFFFFF)
+    val SurfaceVariant = Color(0xFF2C2C2E)  // iOS Tertiary System Background
+    val OnSurfaceVariant = Color(0xFF8E8E93)
     
     // Outline - Subtle in dark theme
     val Outline = Color(0xFF48484A)

@@ -31,6 +31,7 @@ object ATSColors {
     // UI Elements
     val GlassBackground = Color(0xFFFAFAFA).copy(alpha = 0.95f)
     val DividerColor = Color(0xFFE0E0E0)
+    val TimelineRed = Color(0xFFF44336)
 }
 
 /**

@@ -141,4 +141,36 @@ object TestDataHelper {
             Result.failure(e)
         }
     }
+
+
+    suspend fun cleanupTestEmployees(db: FirebaseFirestore = FirebaseFirestore.getInstance()): Result<String> {
+        return try {
+            Log.d(TAG, "🧹 Cleaning up test employees...")
+            val testIds = listOf("EMP001", "EMP002", "EMP003", "EMP004")
+            
+            var count = 0
+            testIds.forEach { id ->
+                db.collection("companies/$COMPANY_ID/employees")
+                    .document(id)
+                    .delete()
+                    .await()
+                Log.d(TAG, "🗑️ Deleted test employee: $id")
+                count++
+            }
+            
+            // Also clean up locations
+            testIds.forEach { id ->
+                db.collection("companies/$COMPANY_ID/activeLocations")
+                    .document(id)
+                    .delete()
+                    .await()
+            }
+            
+            Log.d(TAG, "🎉 Cleanup complete. Removed $count employees.")
+            Result.success("Cleaned up $count test employees")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error cleaning up test employees: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
 }

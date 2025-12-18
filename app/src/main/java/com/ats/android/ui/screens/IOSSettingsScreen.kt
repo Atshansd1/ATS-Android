@@ -41,253 +41,211 @@ fun IOSSettingsScreen(
     onNavigateToAttendanceManagement: () -> Unit = {},
     onNavigateToLanguageSettings: () -> Unit = {},
     onNavigateToDebugLogs: () -> Unit = {},
+    onNavigateToChangePassword: () -> Unit = {},
+    onNavigateToNotificationSettings: () -> Unit = {},
+    onNavigateToPrivacyCenter: () -> Unit = {},
+    onNavigateToLocationSettings: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToLeaveApproval: () -> Unit = {},
+    onNavigateToLeaves: () -> Unit = {},
+    onNavigateToAnalytics: () -> Unit = {},
+    onNavigateToShiftManagement: () -> Unit = {},
     onSignOut: () -> Unit
 ) {
-    val context = LocalContext.current
-    val updateManager = remember { UpdateManager(context) }
-    val downloadProgress by updateManager.downloadProgress.collectAsState()
-    val versionInfo by updateManager.versionInfo.collectAsState()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var isLoading by remember { mutableStateOf(false) }
+    var showMessage by remember { mutableStateOf<String?>(null) }
+    var showSignOutDialog by remember { mutableStateOf(false) }
     
-    // Get current app version dynamically
-    val currentAppVersion = remember {
-        try {
-            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            packageInfo.versionName
-        } catch (e: Exception) {
-            "1.0.0"
-        }
-    }
-    
-    // Check for updates on screen load
+    // Auto-cleanup test entities on first load of Settings
     LaunchedEffect(Unit) {
-        updateManager.checkForUpdates()
-    }
-    
-    val settingsViewModel: SettingsViewModel = viewModel(
-        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                return SettingsViewModel(context) as T
+        // Run silently in background
+        launch {
+            try {
+                TestDataHelper.cleanupTestEmployees()
+            } catch (e: Exception) {
+                // Ignore
             }
         }
-    )
-    
-    val currentLanguage by settingsViewModel.language.collectAsState()
-    val languageDisplayName = when (currentLanguage) {
-        "ar" -> "العربية"
-        else -> "English"
     }
     
-    var showSignOutDialog by remember { mutableStateOf(false) }
-    var showMessage by remember { mutableStateOf<String?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
+    // Get ViewModel
+    val settingsViewModel: SettingsViewModel = viewModel()
+    val updateManager = remember { UpdateManager(context) }
+    val versionInfo by updateManager.versionInfo.collectAsState()
+    val downloadProgress by updateManager.downloadProgress.collectAsState()
+    val currentAppVersion = updateManager.getCurrentVersion()
+    
+    // UI State
+    val language by settingsViewModel.language.collectAsState()
     
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        stringResource(com.ats.android.R.string.settings_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
+                title = { Text(stringResource(com.ats.android.R.string.settings_title), fontWeight = FontWeight.SemiBold) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         }
     ) { paddingValues ->
-        Box(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .statusBarsPadding()
+                .background(MaterialTheme.colorScheme.background),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(Spacing.lg),
-                verticalArrangement = Arrangement.spacedBy(Spacing.xl)
-            ) {
-                // Profile Section (if employee exists)
+            // Profile Section
+            item {
                 currentEmployee?.let { employee ->
-                    item {
-                        ProfileSection(employee = employee)
-                    }
-                }
-                
-                // Preferences Section
-                item {
-                    SettingsGroupCard(title = stringResource(com.ats.android.R.string.preferences)) {
+                    SettingsGroupCard(title = stringResource(com.ats.android.R.string.profile_title)) { // Ensure string resource exists or use "Profile"
+                        // Name
                         IOSSettingsRow(
-                            icon = Icons.Default.Language,
-                            title = stringResource(com.ats.android.R.string.language),
-                            value = languageDisplayName,
-                            onClick = onNavigateToLanguageSettings
+                            title = stringResource(com.ats.android.R.string.name_label),
+                            value = employee.displayName,
+                            showChevron = false
                         )
                         
                         Divider(color = ATSColors.DividerColor)
                         
+                        // Employee ID
                         IOSSettingsRow(
-                            icon = Icons.Default.BugReport,
-                            title = "Debug Logs",
-                            subtitle = "View app logs for troubleshooting",
-                            value = "${com.ats.android.utils.DebugLogger.getLogCount()} entries",
-                            onClick = onNavigateToDebugLogs
+                            title = stringResource(com.ats.android.R.string.employee_id_label),
+                            value = employee.employeeId,
+                            showChevron = false
                         )
                         
                         Divider(color = ATSColors.DividerColor)
                         
+                        // Role
                         IOSSettingsRow(
-                            icon = Icons.Default.Notifications,
-                            title = stringResource(com.ats.android.R.string.notifications),
-                            value = null,
-                            onClick = { 
-                                showMessage = context.getString(com.ats.android.R.string.notification_settings)
-                            }
+                            title = stringResource(com.ats.android.R.string.role_label),
+                            value = employee.role.toString().lowercase(),
+                            showChevron = false
+                        )
+                        
+                        Divider(color = ATSColors.DividerColor)
+                        
+                        // Team
+                        IOSSettingsRow(
+                            title = stringResource(com.ats.android.R.string.team_label),
+                            value = employee.team,
+                            showChevron = false
+                        )
+                        
+                        Divider(color = ATSColors.DividerColor)
+                        
+                        // Change Password
+                        IOSSettingsRow(
+                            icon = Icons.Default.Lock, // Use Lock icon for password
+                            title = stringResource(com.ats.android.R.string.change_password),
+                            onClick = onNavigateToChangePassword
                         )
                     }
                 }
-                
-                // Attendance Management Section (Admin only)
-                if (currentEmployee?.role == com.ats.android.models.EmployeeRole.ADMIN) {
-                    item {
-                        SettingsGroupCard(title = stringResource(com.ats.android.R.string.administration)) {
-                            IOSSettingsRow(
-                                icon = Icons.Default.Schedule,
-                                title = stringResource(com.ats.android.R.string.attendance_management),
-                                subtitle = stringResource(com.ats.android.R.string.configure_shifts_locations),
-                                value = null,
-                                onClick = { 
-                                    onNavigateToAttendanceManagement()
-                                }
-                            )
-                        }
-                    }
+            }
+
+            // Preferences Section
+            item {
+                SettingsGroupCard(title = stringResource(com.ats.android.R.string.preferences)) {
+                    IOSSettingsRow(
+                        icon = Icons.Default.Language,
+                        title = stringResource(com.ats.android.R.string.language),
+                        value = if (language == "ar") "Arabic" else "English",
+                        onClick = onNavigateToLanguageSettings
+                    )
+                    
+                    Divider(color = ATSColors.DividerColor)
+                    
+                    IOSSettingsRow(
+                        icon = Icons.Default.Notifications,
+                        title = stringResource(com.ats.android.R.string.notifications),
+                        value = null,
+                        onClick = onNavigateToNotificationSettings
+                    )
                 }
-                
-                // Privacy & Permissions Section
+            }
+
+            // Privacy & Security Section
+            item {
+                SettingsGroupCard(title = stringResource(com.ats.android.R.string.privacy_security)) { // Need to ensure this string exists
+                     IOSSettingsRow(
+                        icon = Icons.Default.Security,
+                        title = stringResource(com.ats.android.R.string.privacy_center),
+                        onClick = onNavigateToPrivacyCenter
+                    )
+                    
+                    Divider(color = ATSColors.DividerColor)
+                    
+                    IOSSettingsRow(
+                        icon = Icons.Default.LocationOn,
+                        title = "Location Settings",
+                        value = stringResource(com.ats.android.R.string.enabled),
+                        showChevron = true,
+                        onClick = onNavigateToLocationSettings
+                    )
+                }
+            }
+            
+            // Management Section (Admin only)
+            if (currentEmployee?.role == com.ats.android.models.EmployeeRole.ADMIN) {
                 item {
-                    SettingsGroupCard(title = stringResource(com.ats.android.R.string.privacy)) {
+                    SettingsGroupCard(title = stringResource(com.ats.android.R.string.management_title)) {
                         IOSSettingsRow(
                             icon = Icons.Default.LocationOn,
-                            title = stringResource(com.ats.android.R.string.location_permissions),
-                            subtitle = stringResource(com.ats.android.R.string.location_always_enabled),
-                            value = stringResource(com.ats.android.R.string.enabled),
-                            showChevron = true,
-                            onClick = {
-                                // Open app settings
-                                try {
-                                    val intent = android.content.Intent(
-                                        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                        android.net.Uri.fromParts("package", context.packageName, null)
-                                    )
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    showMessage = "Unable to open settings"
-                                }
+                            title = stringResource(com.ats.android.R.string.attendance_locations),
+                            subtitle = stringResource(com.ats.android.R.string.attendance_locations_desc),
+                            onClick = onNavigateToAttendanceManagement
+                        )
+                        
+                        Divider(color = ATSColors.DividerColor)
+                        
+                        IOSSettingsRow(
+                            icon = Icons.Default.EventNote,
+                            title = stringResource(com.ats.android.R.string.leave_approval),
+                            subtitle = stringResource(com.ats.android.R.string.review_leave_requests),
+                            onClick = onNavigateToLeaveApproval
+                        )
+                        
+                        Divider(color = ATSColors.DividerColor)
+                        
+                        IOSSettingsRow(
+                            icon = Icons.Default.BarChart,
+                            title = stringResource(com.ats.android.R.string.analytics),
+                            subtitle = stringResource(com.ats.android.R.string.analytics_desc),
+                            onClick = onNavigateToAnalytics
+                        )
+                        
+                        Divider(color = ATSColors.DividerColor)
+                        
+                        IOSSettingsRow(
+                            icon = Icons.Default.Schedule,
+                            title = stringResource(com.ats.android.R.string.shift_management),
+                            subtitle = stringResource(com.ats.android.R.string.shift_management_desc),
+                            onClick = onNavigateToShiftManagement
+                        )
+                    }
+                }
+            }
+            
+            // Update Section (Only show if new version available)
+            versionInfo?.let { info ->
+                if (info.isUpdateAvailable) {
+                    item {
+                        ExpressiveUpdateCard(
+                            currentVersion = currentAppVersion,
+                            newVersion = info.latestVersion,
+                            downloadProgress = downloadProgress,
+                            onUpdateClick = {
+                                updateManager.downloadAndInstallUpdate(info.downloadUrl)
                             }
                         )
                     }
                 }
-                
-                // Test Data Section (Admin only - Development)
-                if (currentEmployee?.role == com.ats.android.models.EmployeeRole.ADMIN) {
-                    item {
-                        SettingsGroupCard(title = stringResource(com.ats.android.R.string.test_data_development)) {
-                            IOSSettingsRow(
-                                icon = Icons.Default.Person,
-                                title = stringResource(com.ats.android.R.string.add_test_employees),
-                                subtitle = stringResource(com.ats.android.R.string.add_4_sample_employees),
-                                value = null,
-                                showChevron = false,
-                                onClick = {
-                                    scope.launch {
-                                        isLoading = true
-                                        val result = TestDataHelper.addTestEmployees()
-                                        isLoading = false
-                                        showMessage = result.getOrNull() 
-                                            ?: "${context.getString(com.ats.android.R.string.error)}: ${result.exceptionOrNull()?.message}"
-                                    }
-                                }
-                            )
-                            
-                            Divider(color = ATSColors.DividerColor)
-                            
-                            IOSSettingsRow(
-                                icon = Icons.Default.LocationOn,
-                                title = stringResource(com.ats.android.R.string.add_test_locations),
-                                subtitle = stringResource(com.ats.android.R.string.add_3_active_locations),
-                                value = null,
-                                showChevron = false,
-                                onClick = {
-                                    scope.launch {
-                                        isLoading = true
-                                        val result = TestDataHelper.addTestLocations()
-                                        isLoading = false
-                                        showMessage = result.getOrNull() 
-                                            ?: "${context.getString(com.ats.android.R.string.error)}: ${result.exceptionOrNull()?.message}"
-                                    }
-                                }
-                            )
-                            
-                            Divider(color = ATSColors.DividerColor)
-                            
-                            IOSSettingsRow(
-                                icon = Icons.Default.Delete,
-                                title = stringResource(com.ats.android.R.string.clean_up_old_locations),
-                                subtitle = stringResource(com.ats.android.R.string.remove_locations_older_24h),
-                                value = null,
-                                showChevron = false,
-                                onClick = {
-                                    scope.launch {
-                                        isLoading = true
-                                        val result = com.ats.android.utils.CleanupHelper.cleanupOldActiveLocations(24)
-                                        isLoading = false
-                                        showMessage = result.getOrNull() 
-                                            ?: "${context.getString(com.ats.android.R.string.error)}: ${result.exceptionOrNull()?.message}"
-                                    }
-                                }
-                            )
-                            
-                            Divider(color = ATSColors.DividerColor)
-                            
-                            IOSSettingsRow(
-                                icon = Icons.Default.DeleteForever,
-                                title = stringResource(com.ats.android.R.string.clear_all_active_locations),
-                                subtitle = stringResource(com.ats.android.R.string.remove_all_active_locations),
-                                value = null,
-                                showChevron = false,
-                                onClick = {
-                                    scope.launch {
-                                        isLoading = true
-                                        val result = com.ats.android.utils.CleanupHelper.clearAllActiveLocations()
-                                        isLoading = false
-                                        showMessage = result.getOrNull() 
-                                            ?: "${context.getString(com.ats.android.R.string.error)}: ${result.exceptionOrNull()?.message}"
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-                
-                // Update Section (Only show if new version available)
-                versionInfo?.let { info ->
-                    if (info.isUpdateAvailable) {
-                        item {
-                            ExpressiveUpdateCard(
-                                currentVersion = currentAppVersion,
-                                newVersion = info.latestVersion,
-                                downloadProgress = downloadProgress,
-                                onUpdateClick = {
-                                    updateManager.downloadAndInstallUpdate(info.downloadUrl)
-                                }
-                            )
-                        }
-                    }
-                }
+            }
                 
                 // About Section
                 item {
@@ -363,7 +321,7 @@ fun IOSSettingsScreen(
                 }
             }
         }
-    }
+
     
     // Show message snackbar
     showMessage?.let { message ->
@@ -431,9 +389,14 @@ fun IOSSettingsScreen(
  * Profile Section (iOS style)
  */
 @Composable
-fun ProfileSection(employee: Employee) {
+fun ProfileSection(
+    employee: Employee,
+    onClick: () -> Unit
+) {
     GlassCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         cornerRadius = CornerRadius.medium
     ) {
         Column(
@@ -514,330 +477,3 @@ fun ProfileDetailRow(label: String, value: String) {
     }
 }
 
-/**
- * Settings Group Card (iOS style)
- */
-@Composable
-fun SettingsGroupCard(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = Spacing.xs)
-        )
-        
-        GlassCard(
-            modifier = Modifier.fillMaxWidth(),
-            cornerRadius = CornerRadius.medium
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                content()
-            }
-        }
-    }
-}
-
-/**
- * iOS-style Settings Row
- */
-@Composable
-fun IOSSettingsRow(
-    icon: ImageVector,
-    title: String,
-    subtitle: String? = null,
-    value: String? = null,
-    showChevron: Boolean = true,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(Spacing.lg),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Icon with colored background
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-        
-        // Title and subtitle
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
-            )
-            
-            subtitle?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        
-        // Value and/or chevron
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            value?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            if (showChevron) {
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-    }
-}
-
-/**
- * M3 Expressive Update Card - Only shown when update is available
- * Applies expressive design principles: shape variety, rich colors, emphasized typography
- */
-@Composable
-fun ExpressiveUpdateCard(
-    currentVersion: String,
-    newVersion: String,
-    downloadProgress: UpdateManager.DownloadProgress,
-    onUpdateClick: () -> Unit
-) {
-    // M3 Expressive: Mix of shapes - rounded card with contrasting elements
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        shape = MaterialTheme.shapes.extraLarge, // Expressive: Extra large corners
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer // Expressive: Rich color
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp // Expressive: Elevated for emphasis
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp), // Expressive: Generous padding
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            // Hero Moment: Emphasized header with version info
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    // Expressive Typography: Bold, large title
-                    Text(
-                        text = stringResource(com.ats.android.R.string.new_version_available),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold, // Emphasized
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    // Version progression
-                    Text(
-                        text = stringResource(
-                            com.ats.android.R.string.version_info,
-                            currentVersion,
-                            newVersion
-                        ),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.primary // Expressive: Color contrast
-                    )
-                }
-                
-                // Expressive: Circular icon badge with contrasting shape
-                Box(
-                    modifier = Modifier
-                        .size(56.dp) // Larger for emphasis
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SystemUpdate,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            }
-            
-            // Update Status/Progress
-            when (downloadProgress) {
-                is UpdateManager.DownloadProgress.Idle -> {
-                    // Expressive: Prominent action button
-                    Button(
-                        onClick = onUpdateClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp), // Expressive: Taller button for emphasis
-                        shape = MaterialTheme.shapes.large, // Mix of shapes
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Download,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        // Expressive: Emphasized button text
-                        Text(
-                            text = stringResource(com.ats.android.R.string.install_now),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    
-                    Text(
-                        text = stringResource(com.ats.android.R.string.tap_to_install),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                
-                is UpdateManager.DownloadProgress.Downloading -> {
-                    // Expressive: Animated progress with emphasized text
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        // Bold progress bar
-                        LinearProgressIndicator(
-                            progress = downloadProgress.progress / 100f,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(12.dp), // Thicker for visibility
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                        
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(com.ats.android.R.string.downloading_update),
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                            // Expressive: Large, bold percentage
-                            Text(
-                                text = stringResource(com.ats.android.R.string.download_progress, downloadProgress.progress),
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-                
-                is UpdateManager.DownloadProgress.Completed -> {
-                    // Expressive: Success state with large icon
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(48.dp) // Large for emphasis
-                        )
-                        Text(
-                            text = stringResource(com.ats.android.R.string.update_downloaded),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Text(
-                            text = stringResource(com.ats.android.R.string.install_update),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                        )
-                    }
-                }
-                
-                is UpdateManager.DownloadProgress.Error -> {
-                    // Expressive: Clear error state
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Error,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(32.dp)
-                            )
-                            Column {
-                                Text(
-                                    text = stringResource(com.ats.android.R.string.update_failed),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                                Text(
-                                    text = downloadProgress.message,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                                )
-                            }
-                        }
-                        
-                        OutlinedButton(
-                            onClick = onUpdateClick,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Retry")
-                        }
-                    }
-                }
-            }
-        }
-    }
-}

@@ -82,8 +82,12 @@ class LocationService(private val context: Context) {
             try {
                 val lastLocation = fusedLocationClient.lastLocation.await()
                 if (lastLocation != null && isLocationRecent(lastLocation)) {
-                    Log.d(TAG, "✅ Got recent last location: ${lastLocation.latitude}, ${lastLocation.longitude}, age: ${(System.currentTimeMillis() - lastLocation.time) / 1000}s")
-                    return lastLocation
+                    if (isMockLocation(lastLocation)) {
+                        Log.e(TAG, "❌ Rejected recent mock location")
+                    } else {
+                        Log.d(TAG, "✅ Got recent last location: ${lastLocation.latitude}, ${lastLocation.longitude}, age: ${(System.currentTimeMillis() - lastLocation.time) / 1000}s")
+                        return lastLocation
+                    }
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to get last location: ${e.message}")
@@ -104,6 +108,10 @@ class LocationService(private val context: Context) {
                 }
                 
                 if (location != null) {
+                    if (isMockLocation(location)) {
+                        Log.e(TAG, "❌ Rejected mock location (Fake GPS detected)")
+                        return null
+                    }
                     Log.d(TAG, "✅ Fresh location: ${location.latitude}, ${location.longitude}, accuracy: ${location.accuracy}m")
                     return location
                 }
@@ -115,9 +123,13 @@ class LocationService(private val context: Context) {
             try {
                 val fallbackLocation = fusedLocationClient.lastLocation.await()
                 if (fallbackLocation != null) {
-                    val ageMinutes = (System.currentTimeMillis() - fallbackLocation.time) / 60000
-                    Log.w(TAG, "⚠️ Using old last location (${ageMinutes}min old): ${fallbackLocation.latitude}, ${fallbackLocation.longitude}")
-                    return fallbackLocation
+                    if (isMockLocation(fallbackLocation)) {
+                        Log.e(TAG, "❌ Rejected fallback mock location")
+                    } else {
+                        val ageMinutes = (System.currentTimeMillis() - fallbackLocation.time) / 60000
+                        Log.w(TAG, "⚠️ Using old last location (${ageMinutes}min old): ${fallbackLocation.latitude}, ${fallbackLocation.longitude}")
+                        return fallbackLocation
+                    }
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to get fallback location: ${e.message}")
@@ -135,6 +147,15 @@ class LocationService(private val context: Context) {
     private fun isLocationRecent(location: Location): Boolean {
         val ageMillis = System.currentTimeMillis() - location.time
         return ageMillis < 60000 // Less than 1 minute old
+    }
+
+    fun isMockLocation(location: Location): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            location.isMock
+        } else {
+            @Suppress("DEPRECATION")
+            location.isFromMockProvider
+        }
     }
     
     fun getLocationUpdates(): Flow<Location> = callbackFlow {

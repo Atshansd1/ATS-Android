@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,11 +19,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ats.android.R
 import com.ats.android.ui.theme.*
 import com.ats.android.utils.DebugLogger
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,9 +67,9 @@ fun DebugLogsScreen(
             TopAppBar(
                 title = { 
                     Column {
-                        Text("Debug Logs")
+                        Text(stringResource(R.string.debug_logs))
                         Text(
-                            "${logs.size} entries",
+                            stringResource(R.string.entries_count, logs.size),
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
@@ -87,7 +94,7 @@ fun DebugLogsScreen(
                     IconButton(onClick = { autoScroll = !autoScroll }) {
                         Icon(
                             if (autoScroll) Icons.Default.VerticalAlignBottom else Icons.Default.SwapVert,
-                            "Auto Scroll",
+                            stringResource(R.string.auto_scroll),
                             tint = if (autoScroll) MaterialTheme.colorScheme.primary else LocalContentColor.current
                         )
                     }
@@ -95,18 +102,18 @@ fun DebugLogsScreen(
                     // Copy all logs
                     IconButton(onClick = {
                         copyLogsToClipboard(context, DebugLogger.getLogsAsString())
-                        showMessage = "Logs copied to clipboard"
+                        showMessage = context.getString(R.string.logs_copied_to_clipboard)
                     }) {
-                        Icon(Icons.Default.ContentCopy, "Copy Logs")
+                        Icon(Icons.Default.ContentCopy, stringResource(R.string.copy_logs))
                     }
                     
                     // Clear logs
                     IconButton(onClick = {
                         DebugLogger.clear()
                         logs = emptyList()
-                        showMessage = "Logs cleared"
+                        showMessage = context.getString(R.string.logs_cleared)
                     }) {
-                        Icon(Icons.Default.Delete, "Clear Logs")
+                        Icon(Icons.Default.Delete, stringResource(R.string.clear_logs))
                     }
                 }
             )
@@ -132,12 +139,12 @@ fun DebugLogsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = { Text("Filter logs (tag or message)") },
+                    placeholder = { Text(stringResource(R.string.filter_logs_hint)) },
                     leadingIcon = { Icon(Icons.Default.Search, null) },
                     trailingIcon = {
                         if (filterText.isNotEmpty()) {
                             IconButton(onClick = { filterText = "" }) {
-                                Icon(Icons.Default.Clear, "Clear filter")
+                                Icon(Icons.Default.Clear, stringResource(R.string.clear_filter))
                             }
                         }
                     },
@@ -148,23 +155,24 @@ fun DebugLogsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FilterChip(
                         selected = filterText == "ExcelReportGenerator",
                         onClick = { filterText = if (filterText == "ExcelReportGenerator") "" else "ExcelReportGenerator" },
-                        label = { Text("Excel", fontSize = 12.sp) }
+                        label = { Text(stringResource(R.string.filter_excel), fontSize = 12.sp) }
                     )
                     FilterChip(
                         selected = filterText == "ReportsViewModel",
                         onClick = { filterText = if (filterText == "ReportsViewModel") "" else "ReportsViewModel" },
-                        label = { Text("ViewModel", fontSize = 12.sp) }
+                        label = { Text(stringResource(R.string.filter_viewmodel), fontSize = 12.sp) }
                     )
                     FilterChip(
                         selected = filterText.startsWith("E/"),
                         onClick = { filterText = if (filterText.startsWith("E/")) "" else "E/" },
-                        label = { Text("Errors", fontSize = 12.sp) }
+                        label = { Text(stringResource(R.string.filter_errors), fontSize = 12.sp) }
                     )
                 }
             }
@@ -186,12 +194,12 @@ fun DebugLogsScreen(
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                         )
                         Text(
-                            if (filterText.isNotEmpty()) "No logs match filter" else "No logs yet",
+                            if (filterText.isNotEmpty()) stringResource(R.string.no_logs_match_filter) else stringResource(R.string.no_logs_yet),
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                         if (filterText.isEmpty()) {
                             Text(
-                                "Try Excel export to see logs",
+                                stringResource(R.string.try_excel_export),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                             )
@@ -209,7 +217,7 @@ fun DebugLogsScreen(
                             // Copy single log entry
                             val text = "${entry.timestamp} ${entry.level}/${entry.tag}: ${entry.message}"
                             copyLogsToClipboard(context, text)
-                            showMessage = "Log entry copied"
+                            showMessage = context.getString(R.string.log_entry_copied)
                         }
                     }
                 }

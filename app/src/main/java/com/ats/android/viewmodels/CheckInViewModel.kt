@@ -76,6 +76,13 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         }
     }
     
+    /**
+     * Clear error state after showing to user
+     */
+    fun clearError() {
+        _uiState.value = CheckInUiState.Ready
+    }
+    
     private suspend fun getCurrentLocation() {
         try {
             // Set to loading state
@@ -141,6 +148,19 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         }
     }
     
+    // Data class to hold bilingual center validation result
+    private data class CenterValidationResult(
+        val isValid: Boolean,
+        val nameEn: String? = null,
+        val nameAr: String? = null
+    ) {
+        val localizedName: String?
+            get() {
+                val isArabic = java.util.Locale.getDefault().language == "ar"
+                return if (isArabic) nameAr ?: nameEn else nameEn ?: nameAr
+            }
+    }
+    
     fun checkIn(employee: Employee) {
         viewModelScope.launch {
             try {
@@ -176,8 +196,21 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                     return@launch
                 }
                 
-                // Use place name if available, otherwise use coordinates
-                var placeName = _placeName.value
+                // Security Check: Mock Location
+                if (locationService.isMockLocation(location)) {
+                     _uiState.value = CheckInUiState.Error("Mock location detected. Please disable any 'Fake GPS' apps and try again.")
+                     return@launch
+                }
+                
+                // Security Check: Attendance Centers (Geofencing)
+                val validationResult = validateLocationWithAttendanceCenters(employee.employeeId, location)
+                if (!validationResult.isValid) {
+                     _uiState.value = CheckInUiState.Error("You are not within an authorized attendance center.")
+                     return@launch
+                }
+                
+                // Use localized place name based on device language
+                var placeName = validationResult.localizedName ?: _placeName.value
                 if (placeName == null || 
                     placeName.contains("permission", ignoreCase = true) ||
                     placeName.contains("unable", ignoreCase = true) ||
@@ -220,6 +253,73 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                 Log.e(TAG, "❌ Check-in error: ${e.message}", e)
                 _uiState.value = CheckInUiState.Error(e.message ?: "Check-in failed")
             }
+        }
+    }
+    
+    // MARK: - Attendance Center Validation
+    private suspend fun validateLocationWithAttendanceCenters(employeeId: String, location: Location): CenterValidationResult {
+        try {
+            // Fetch active attendance centers
+            val centers = firestoreService.getAllAttendanceCenters()
+            val activeCenters = centers.filter { it.isActive }
+            
+            if (activeCenters.isEmpty()) {
+                // No centers configured = allow check-in from anywhere
+                Log.d(TAG, "No attendance centers configured, allowing check-in")
+                return CenterValidationResult(isValid = true)
+            }
+            
+            Log.d(TAG, "🔍 Validating employee '$employeeId' against ${activeCenters.size} active centers")
+            
+            // Filter centers for this employee
+            val employeeCenters = activeCenters.filter { center ->
+                val isAssigned = center.assignedEmployeeIds.isEmpty() || center.assignedEmployeeIds.contains(employeeId)
+                if (!isAssigned) {
+                     Log.d(TAG, "   - Center '${center.name}': ID '$employeeId' NOT found in ${center.assignedEmployeeIds}")
+                } else {
+                     Log.d(TAG, "   - Center '${center.name}': ID '$employeeId' FOUND (or list empty)")
+                }
+                isAssigned
+            }
+            
+            if (employeeCenters.isEmpty()) {
+                Log.d(TAG, "❌ Employee not assigned to any attendance center")
+                return CenterValidationResult(isValid = false)
+            }
+            
+            // Check if location is within any assigned center's radius
+            for (center in employeeCenters) {
+               val centerLocation = Location("center").apply {
+                   latitude = center.coordinate.latitude
+                   longitude = center.coordinate.longitude
+               }
+               val distance = location.distanceTo(centerLocation)
+               
+               Log.d(TAG, "🔍 Validation Check: Center='${center.name}' (${center.coordinate.latitude}, ${center.coordinate.longitude}), Radius=${center.radiusMeters}m")
+               Log.d(TAG, "📍 User Location: (${location.latitude}, ${location.longitude})")
+               Log.d(TAG, "📏 Distance: ${distance}m (Allowed: ${center.radiusMeters}m)")
+               
+               if (center.coordinate.latitude == 0.0 && center.coordinate.longitude == 0.0) {
+                   Log.e(TAG, "⚠️ Center '${center.name}' has (0,0) coordinates! This might be a data migration issue.")
+               }
+
+                if (distance <= center.radiusMeters) {
+                    // Return both English and Arabic names for bilingual support
+                    val nameEn = if (!center.nameEn.isNullOrEmpty()) center.nameEn else center.name
+                    val nameAr = if (!center.nameAr.isNullOrEmpty()) center.nameAr else center.name
+                    Log.d(TAG, "✅ Location validated: within ${center.name} (En: $nameEn, Ar: $nameAr)")
+                    return CenterValidationResult(isValid = true, nameEn = nameEn, nameAr = nameAr)
+                } else {
+                    Log.w(TAG, "❌ Too far from center '${center.name}'. Distance: ${distance}m > Radius: ${center.radiusMeters}m")
+                }
+            }
+            
+            Log.d(TAG, "❌ Not within any assigned attendance center radius")
+            return CenterValidationResult(isValid = false)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error validating attendance centers: ${e.message}")
+            // On error, allow check-in to avoid blocking employees
+            return CenterValidationResult(isValid = true)
         }
     }
     

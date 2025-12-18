@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Background matching iOS app icon color -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#274B68" />
+        </shape>
+    </item>
+    
+    <!-- App icon in center - matching iOS splash style -->
+    <item
+        android:width="192dp"
+        android:height="192dp"
+        android:gravity="center">
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/ic_launcher" />
+    </item>
+</layer-list>

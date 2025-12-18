@@ -22,7 +22,8 @@ import com.ats.android.models.*
 import com.ats.android.ui.components.GlassCard
 import com.ats.android.ui.theme.Spacing
 import com.ats.android.viewmodels.LocationRestrictionsViewModel
-import com.ats.android.viewmodels.ShiftManagementViewModel
+import androidx.compose.ui.res.stringResource
+import com.ats.android.R
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
@@ -32,117 +33,10 @@ import com.google.maps.android.compose.*
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+
 fun AttendanceManagementScreen(
+    viewModel: LocationRestrictionsViewModel = viewModel(),
     onNavigateBack: () -> Unit
-) {
-    var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf(
-        "Shifts" to Icons.Default.Schedule,
-        "Locations" to Icons.Default.LocationOn
-    )
-    
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            "Attendance Management",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = onNavigateBack,
-                        modifier = Modifier.padding(start = 4.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.ArrowBack, 
-                            "Back",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-        ) {
-            // Enhanced Tab Row with Icons
-            Surface(
-                tonalElevation = 2.dp,
-                shadowElevation = 2.dp
-            ) {
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    tabs.forEachIndexed { index, (title, icon) ->
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            selectedContentColor = MaterialTheme.colorScheme.primary,
-                            unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.height(64.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            ) {
-                                Icon(
-                                    icon,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = title,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // Tab Content
-            when (selectedTab) {
-                0 -> ShiftManagementTab()
-                1 -> LocationRestrictionsTab()
-            }
-        }
-    }
-}
-
-// MARK: - Shift Management Tab
-@Composable
-fun ShiftManagementTab() {
-    // Reuse existing ShiftManagementScreen content
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Use existing ShiftManagementScreen here")
-    }
-}
-
-// MARK: - Location Restrictions Tab
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun LocationRestrictionsTab(
-    viewModel: LocationRestrictionsViewModel = viewModel()
 ) {
     val restrictionType by viewModel.restrictionType.collectAsState()
     val allowedLocations by viewModel.allowedLocations.collectAsState()
@@ -160,367 +54,403 @@ fun LocationRestrictionsTab(
         viewModel.loadConfiguration()
     }
     
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Main content
-        LazyColumn(
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        stringResource(R.string.attendance_locations),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onNavigateBack
+                    ) {
+                        Icon(
+                            Icons.Default.ArrowBack, 
+                            stringResource(R.string.back),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showLocationSearch = true }) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = stringResource(R.string.add_location),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        }
+    ) { paddingValues ->
+        Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentPadding = PaddingValues(Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(Spacing.md)
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
         ) {
-            // Header
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = Spacing.sm)
-                ) {
-                    Text(
-                        text = "Location Restrictions",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(Spacing.xs))
-                    Text(
-                        text = "Control where employees can check in",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
-            // Error message
-            errorMessage?.let { error ->
+             // Main content
+             LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentPadding = PaddingValues(Spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(Spacing.md)
+            ) {
+                // Main Header content extracted from original LocationRestrictionsTab
                 item {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = Spacing.sm)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(Spacing.md),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.Error,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.width(Spacing.md))
-                            Text(
-                                text = error,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                    }
-                }
-            }
-            
-            // Success message
-            successMessage?.let { success ->
-                item {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFF4CAF50).copy(alpha = 0.1f)
+                        Text(
+                            text = stringResource(R.string.attendance_locations_desc),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(Spacing.md),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = Color(0xFF4CAF50)
-                            )
-                            Spacer(modifier = Modifier.width(Spacing.md))
-                            Text(
-                                text = success,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF1B5E20)
-                            )
-                        }
                     }
                 }
-            }
-            
-            // Restriction Type Section
-            item {
-                ElevatedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(Spacing.lg)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(bottom = Spacing.md)
+                
+                // Error message
+                errorMessage?.let { error ->
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            )
                         ) {
-                            Icon(
-                                Icons.Default.Policy,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(Spacing.sm))
-                            Text(
-                                text = "Check-In Policy",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        
-                        Divider(modifier = Modifier.padding(vertical = Spacing.sm))
-                        
-                        LocationRestrictionType.values().forEach { type ->
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (restrictionType == type) 
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) 
-                                else 
-                                    Color.Transparent
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .clickable { viewModel.updateRestrictionType(type) }
-                                        .padding(Spacing.md),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    RadioButton(
-                                        selected = restrictionType == type,
-                                        onClick = { viewModel.updateRestrictionType(type) },
-                                        colors = RadioButtonDefaults.colors(
-                                            selectedColor = MaterialTheme.colorScheme.primary,
-                                            unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.width(Spacing.md))
-                                    Column {
-                                        Text(
-                                            text = type.displayName,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = if (restrictionType == type) FontWeight.SemiBold else FontWeight.Normal,
-                                            color = if (restrictionType == type) 
-                                                MaterialTheme.colorScheme.onPrimaryContainer 
-                                            else 
-                                                MaterialTheme.colorScheme.onSurface
-                                        )
-                                        if (restrictionType == type) {
-                                            Text(
-                                                text = when(type) {
-                                                    LocationRestrictionType.ANYWHERE -> "Employees can check in from any location"
-                                                    LocationRestrictionType.SPECIFIC -> "Check-in limited to one location"
-                                                    LocationRestrictionType.MULTIPLE -> "Check-in allowed from multiple locations"
-                                                },
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // Allowed Locations Section
-            if (restrictionType != LocationRestrictionType.ANYWHERE) {
-                item {
-                    Card {
-                        Column(modifier = Modifier.padding(Spacing.md)) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.padding(Spacing.md),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "Allowed Locations",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
+                                Icon(
+                                    Icons.Default.Error,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error
                                 )
-                                IconButton(onClick = { showLocationSearch = true }) {
-                                    Icon(Icons.Default.Add, "Add Location")
-                                }
-                            }
-                            
-                            if (allowedLocations.isEmpty()) {
-                                Spacer(modifier = Modifier.height(Spacing.sm))
+                                Spacer(modifier = Modifier.width(Spacing.md))
                                 Text(
-                                    text = "No locations added yet",
+                                    text = error,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onErrorContainer
                                 )
                             }
                         }
                     }
                 }
                 
-                // Location items
-                items(allowedLocations) { location ->
-                    AllowedLocationCard(
-                        location = location,
-                        onRemove = { viewModel.removeLocation(location.id) },
-                        onShowMap = { selectedLocationForMap = location },
-                        onRadiusChange = { newRadius ->
-                            viewModel.updateLocationRadius(location.id, newRadius)
-                        }
-                    )
-                }
-            }
-            
-            // Employee Selection Section
-            item {
-                Card {
-                    Column(modifier = Modifier.padding(Spacing.md)) {
-                        Text(
-                            text = "Apply To",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(Spacing.sm))
-                        
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { viewModel.toggleAppliesToAllEmployees() }
-                                .padding(vertical = Spacing.sm),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = appliesToAllEmployees,
-                                onClick = { viewModel.toggleAppliesToAllEmployees() }
+                // Success message
+                successMessage?.let { success ->
+                    item {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFF4CAF50).copy(alpha = 0.1f)
                             )
-                            Spacer(modifier = Modifier.width(Spacing.sm))
-                            Text(
-                                text = "All Employees",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                        
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    if (appliesToAllEmployees) {
-                                        viewModel.toggleAppliesToAllEmployees()
-                                    }
-                                    showEmployeeSelection = true
-                                }
-                                .padding(vertical = Spacing.sm),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(
-                                    selected = !appliesToAllEmployees,
-                                    onClick = {
-                                        if (appliesToAllEmployees) {
-                                            viewModel.toggleAppliesToAllEmployees()
-                                        }
-                                        showEmployeeSelection = true
-                                    }
+                            Row(
+                                modifier = Modifier.padding(Spacing.md),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color(0xFF4CAF50)
                                 )
-                                Spacer(modifier = Modifier.width(Spacing.sm))
+                                Spacer(modifier = Modifier.width(Spacing.md))
                                 Text(
-                                    text = "Specific Employees",
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            }
-                            
-                            if (!appliesToAllEmployees) {
-                                Text(
-                                    text = "${selectedEmployeeIds.size} selected",
+                                    text = success,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = Color(0xFF1B5E20)
                                 )
                             }
                         }
                     }
                 }
-            }
-        }
-        
-        // Enhanced Save Button at bottom
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shadowElevation = 8.dp,
-            tonalElevation = 3.dp,
-            color = MaterialTheme.colorScheme.surface
-        ) {
-            Column {
-                Divider(
-                    thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = Spacing.lg, vertical = Spacing.md)
-                ) {
-                    if (isLoading) {
-                        OutlinedCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.outlinedCardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                
+                // Restriction Type Section
+                item {
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(Spacing.lg)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(bottom = Spacing.md)
+                            ) {
+                                Icon(
+                                    Icons.Default.Policy,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(Spacing.sm))
+                                Text(
+                                    text = stringResource(R.string.check_in_policy),
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            
+                            Divider(modifier = Modifier.padding(vertical = Spacing.sm))
+                            
+                            LocationRestrictionType.values().forEach { type ->
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (restrictionType == type) 
+                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) 
+                                    else 
+                                        Color.Transparent
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .clickable { viewModel.updateRestrictionType(type) }
+                                            .padding(Spacing.md),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(
+                                            selected = restrictionType == type,
+                                            onClick = { viewModel.updateRestrictionType(type) },
+                                            colors = RadioButtonDefaults.colors(
+                                                selectedColor = MaterialTheme.colorScheme.primary,
+                                                unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        )
+                                        Spacer(modifier = Modifier.width(Spacing.md))
+                                        Column {
+                                            Text(
+                                                text = when(type) {
+                                                    LocationRestrictionType.ANYWHERE -> stringResource(R.string.restriction_anywhere)
+                                                    LocationRestrictionType.SPECIFIC -> stringResource(R.string.restriction_specific)
+                                                    LocationRestrictionType.MULTIPLE -> stringResource(R.string.restriction_multiple)
+                                                },
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = if (restrictionType == type) FontWeight.SemiBold else FontWeight.Normal,
+                                                color = if (restrictionType == type) 
+                                                    MaterialTheme.colorScheme.onPrimaryContainer 
+                                                else 
+                                                    MaterialTheme.colorScheme.onSurface
+                                            )
+                                            if (restrictionType == type) {
+                                                Text(
+                                                    text = when(type) {
+                                                        LocationRestrictionType.ANYWHERE -> stringResource(R.string.desc_anywhere)
+                                                        LocationRestrictionType.SPECIFIC -> stringResource(R.string.desc_specific)
+                                                        LocationRestrictionType.MULTIPLE -> stringResource(R.string.desc_multiple)
+                                                    },
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Allowed Locations Section
+                if (restrictionType != LocationRestrictionType.ANYWHERE) {
+                    item {
+                        Card {
+                            Column(modifier = Modifier.padding(Spacing.md)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.allowed_locations),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                                
+                                if (allowedLocations.isEmpty()) {
+                                    Spacer(modifier = Modifier.height(Spacing.sm))
+                                    Text(
+                                        text = stringResource(R.string.no_locations_added),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Location items
+                    items(allowedLocations) { location ->
+                        AllowedLocationCard(
+                            location = location,
+                            onRemove = { viewModel.removeLocation(location.id) },
+                            onShowMap = { selectedLocationForMap = location },
+                            onRadiusChange = { newRadius ->
+                                viewModel.updateLocationRadius(location.id, newRadius)
+                            }
+                        )
+                    }
+                }
+                
+                // Employee Selection Section
+                item {
+                    Card {
+                        Column(modifier = Modifier.padding(Spacing.md)) {
+                            Text(
+                                text = stringResource(R.string.apply_to),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
                             )
-                        ) {
+                            Spacer(modifier = Modifier.height(Spacing.sm))
+                            
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 16.dp),
-                                horizontalArrangement = Arrangement.Center,
+                                    .clickable { viewModel.toggleAppliesToAllEmployees() }
+                                    .padding(vertical = Spacing.sm),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.primary
+                                RadioButton(
+                                    selected = appliesToAllEmployees,
+                                    onClick = { viewModel.toggleAppliesToAllEmployees() }
                                 )
-                                Spacer(modifier = Modifier.width(Spacing.md))
+                                Spacer(modifier = Modifier.width(Spacing.sm))
                                 Text(
-                                    "Saving configuration...",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    text = stringResource(R.string.all_employees),
+                                    style = MaterialTheme.typography.bodyLarge
                                 )
                             }
+                            
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        if (appliesToAllEmployees) {
+                                            viewModel.toggleAppliesToAllEmployees()
+                                        }
+                                        showEmployeeSelection = true
+                                    }
+                                    .padding(vertical = Spacing.sm),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(
+                                        selected = !appliesToAllEmployees,
+                                        onClick = {
+                                            if (appliesToAllEmployees) {
+                                                viewModel.toggleAppliesToAllEmployees()
+                                            }
+                                            showEmployeeSelection = true
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.width(Spacing.sm))
+                                    Text(
+                                        text = stringResource(R.string.specific_employees),
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                                
+                                if (!appliesToAllEmployees) {
+                                    Text(
+                                        text = stringResource(R.string.selected_count, selectedEmployeeIds.size),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
                         }
-                    } else {
-                        Button(
-                            onClick = { viewModel.saveConfiguration() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            ),
-                            elevation = ButtonDefaults.buttonElevation(
-                                defaultElevation = 4.dp,
-                                pressedElevation = 8.dp
-                            )
-                        ) {
-                            Icon(
-                                Icons.Default.Check, 
-                                "Save",
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Spacer(modifier = Modifier.width(Spacing.sm))
-                            Text(
-                                "Save Configuration",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
+                    }
+                }
+            } // End LazyColumn
+            
+            // Enhanced Save Button at bottom
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shadowElevation = 8.dp,
+                tonalElevation = 3.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column {
+                    Divider(
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.lg, vertical = Spacing.md)
+                    ) {
+                        if (isLoading) {
+                            OutlinedCard(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.outlinedCardColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 16.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(Spacing.md))
+                                    Text(
+                                        stringResource(R.string.saving_configuration),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
+                            }
+                        } else {
+                            Button(
+                                onClick = { viewModel.saveConfiguration() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(
+                                    defaultElevation = 4.dp,
+                                    pressedElevation = 8.dp
+                                )
+                            ) {
+                                Icon(
+                                    Icons.Default.Check, 
+                                    stringResource(R.string.save_configuration),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Spacer(modifier = Modifier.width(Spacing.sm))
+                                Text(
+                                    stringResource(R.string.save_configuration),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -528,7 +458,7 @@ fun LocationRestrictionsTab(
         }
     }
     
-    // Location Search Dialog
+    // Dialogs code remains the same...
     if (showLocationSearch) {
         LocationSearchDialog(
             onDismiss = { showLocationSearch = false },
@@ -539,7 +469,6 @@ fun LocationRestrictionsTab(
         )
     }
     
-    // Employee Selection Dialog
     if (showEmployeeSelection) {
         EmployeeSelectionDialog(
             viewModel = viewModel,
@@ -547,7 +476,6 @@ fun LocationRestrictionsTab(
         )
     }
     
-    // Map Dialog
     selectedLocationForMap?.let { location ->
         LocationMapDialog(
             location = location,
@@ -618,7 +546,7 @@ fun AllowedLocationCard(
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     ) {
-                        Icon(Icons.Default.Map, "Show on map")
+                        Icon(Icons.Default.Map, stringResource(R.string.show_on_map))
                     }
                     FilledIconButton(
                         onClick = onRemove,
@@ -627,7 +555,7 @@ fun AllowedLocationCard(
                             contentColor = MaterialTheme.colorScheme.onErrorContainer
                         )
                     ) {
-                        Icon(Icons.Default.Delete, "Remove")
+                        Icon(Icons.Default.Delete, stringResource(R.string.remove))
                     }
                 }
             }
@@ -652,7 +580,7 @@ fun AllowedLocationCard(
                     )
                     Spacer(modifier = Modifier.width(Spacing.sm))
                     Text(
-                        text = "Radius: ${location.radius.toInt()} meters",
+                        text = stringResource(R.string.radius_meters, location.radius.toInt()),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -673,11 +601,11 @@ fun LocationSearchDialog(
     // Temporary placeholder - Location search will be re-enabled
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Location") },
-        text = { Text("Location search feature temporarily disabled. Will be re-enabled soon.") },
+        title = { Text(stringResource(R.string.add_location)) },
+        text = { Text(stringResource(R.string.location_search_disabled)) },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("OK")
+                Text(stringResource(R.string.done))
             }
         }
     )
@@ -694,7 +622,7 @@ fun EmployeeSelectionDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select Employees") },
+        title = { Text(stringResource(R.string.select_employees)) },
         text = {
             LazyColumn {
                 items(employees) { employee ->
@@ -721,7 +649,7 @@ fun EmployeeSelectionDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Done")
+                Text(stringResource(R.string.done))
             }
         }
     )
@@ -768,7 +696,7 @@ fun LocationMapDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(stringResource(R.string.close))
             }
         }
     )

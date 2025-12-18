@@ -10,7 +10,7 @@ data class LocationMovement(
     val id: String? = null,
     val employeeId: String = "",
     val employeeName: String = "",
-    val movementType: MovementType = MovementType.SIGNIFICANT_MOVE,
+    val movementType: String = MovementType.SIGNIFICANT_MOVE.value,
     
     // From location
     val fromLatitude: Double = 0.0,
@@ -89,6 +89,13 @@ data class LocationMovement(
                 Math.sin(dLng / 2) * Math.sin(dLng / 2)
         val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
         return r * c
+    }
+    fun getType(): MovementType {
+        return MovementType.fromString(movementType)
+    }
+
+    fun getDurationSeconds(): Double? {
+        return duration?.toDouble()
     }
 }
 

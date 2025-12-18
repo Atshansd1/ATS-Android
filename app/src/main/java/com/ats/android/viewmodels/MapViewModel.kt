@@ -78,42 +78,78 @@ class MapViewModel(context: Context? = null) : ViewModel() {
                     viewModelScope.launch {
                         Log.d(TAG, "📍 Received ${locations.size} active locations from Firestore")
                         
-                        val employeeLocations = locations.map { (employee, location) ->
-                            Log.d(TAG, "📍 Mapping location for: ${employee.displayName} at (${location.location.latitude}, ${location.location.longitude})")
-                            // Store employee data for avatar display
-                            employeeDataMap[employee.employeeId] = employee
-                            EmployeeLocation(
+                        // 1. First, map to EmployeeLocation with original positions
+                        val initialList = locations.map { (employee, activeLocation) ->
+                             Log.d(TAG, "📍 Mapping location for: ${employee.displayName}")
+                             employeeDataMap[employee.employeeId] = employee
+                             
+                             EmployeeLocation(
                                 employeeId = employee.employeeId,
                                 employeeName = employee.displayName,
                                 position = LatLng(
-                                    location.location.latitude,
-                                    location.location.longitude
+                                    activeLocation.location.latitude,
+                                    activeLocation.location.longitude
                                 ),
-                                placeName = location.placeName,
-                                timestamp = location.timestamp.toDate(),
+                                placeName = activeLocation.placeName,
+                                timestamp = activeLocation.timestamp.toDate(),
                                 role = employee.role,
                                 avatarUrl = employee.avatarURL,
-                                checkInTime = location.checkInTime.toDate()
+                                checkInTime = activeLocation.checkInTime.toDate()
                             )
                         }
                         
-                        _employeeLocations.value = employeeLocations
+                        // 2. Group by rounded position to find overlaps (approx 30m resolution)
+                        // Using smaller multiplier (3000) makes the grid cells larger (~35m) to catch nearby markers
+                        val groupedByPosition = initialList.groupBy { 
+                            val roundedLat = (it.position.latitude * 3000).toInt()
+                            val roundedLng = (it.position.longitude * 3000).toInt()
+                            roundedLat to roundedLng
+                        }
+                        
+                        // 3. Re-map with offsets if needed
+                        val finalEmployeeLocations = initialList.map { empLoc ->
+                            Log.d(TAG, "👤 Avatar URL for ${empLoc.employeeName}: ${empLoc.avatarUrl}")
+                            
+                            val roundedLat = (empLoc.position.latitude * 3000).toInt()
+                            val roundedLng = (empLoc.position.longitude * 3000).toInt()
+                            val key = roundedLat to roundedLng
+                            
+                            val group = groupedByPosition[key] ?: emptyList()
+                            if (group.size > 1) {
+                                val index = group.indexOfFirst { it.employeeId == empLoc.employeeId }
+                                if (index > 0) {
+                                    // Apply jitter - spread out more for visibility (approx 45m radius)
+                                    val angle = (2 * Math.PI / group.size) * index
+                                    val radius = 0.0004
+                                    val newLat = empLoc.position.latitude + (radius * Math.cos(angle))
+                                    val newLng = empLoc.position.longitude + (radius * Math.sin(angle))
+                                    
+                                    Log.d(TAG, "🕸️ Spiderfied ${empLoc.employeeName} from ${empLoc.position} to ($newLat, $newLng)")
+                                    empLoc.copy(position = LatLng(newLat, newLng))
+                                } else {
+                                    empLoc
+                                }
+                            } else {
+                                empLoc
+                            }
+                        }
+                        
+                        _employeeLocations.value = finalEmployeeLocations
                         
                         // Apply filters
                         applyFilters()
                         
                         // Set map center to first employee location if available
-                        if (employeeLocations.isNotEmpty()) {
-                            if (_mapCenter.value == null) {
-                                _mapCenter.value = employeeLocations.first().position
-                                Log.d(TAG, "📍 Set map center to: ${_mapCenter.value}")
-                            }
+                        if (finalEmployeeLocations.isNotEmpty()) {
+                             if (_mapCenter.value == null) {
+                                 _mapCenter.value = finalEmployeeLocations.first().position
+                             }
                         } else {
-                            Log.w(TAG, "⚠️ No employee locations available")
+                             Log.w(TAG, "⚠️ No employee locations available")
                         }
                         
                         _uiState.value = MapUiState.Success
-                        Log.d(TAG, "✅ Map state set to Success with ${employeeLocations.size} locations")
+                        Log.d(TAG, "✅ Map state set to Success with ${finalEmployeeLocations.size} locations")
                     }
                 }
                 
@@ -245,6 +281,23 @@ class MapViewModel(context: Context? = null) : ViewModel() {
     // Get employee data for a given ID
     fun getEmployee(employeeId: String): Employee? {
         return employeeDataMap[employeeId]
+    }
+    
+    // Admin: Force Checkout
+    fun forceCheckout(employeeId: String) {
+        viewModelScope.launch {
+            try {
+                firestoreService.forceCheckout(employeeId).onSuccess {
+                    Log.d(TAG, "✅ Force checkout successful for $employeeId")
+                    refresh() // Refresh map data
+                }.onFailure { e ->
+                    Log.e(TAG, "❌ Force checkout failed: ${e.message}")
+                    _uiState.value = MapUiState.Error("Force checkout failed: ${e.message}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Force checkout exception: ${e.message}")
+            }
+        }
     }
     
     // Get sorted employees by distance from search location (matching iOS)

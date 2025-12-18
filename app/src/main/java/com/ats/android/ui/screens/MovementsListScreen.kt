@@ -5,13 +5,17 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.TripOrigin
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -20,11 +24,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ats.android.R
 import com.ats.android.models.LocationMovement
 import com.ats.android.models.MovementType
+import com.ats.android.ui.components.GlassCard
 import com.ats.android.ui.theme.ComponentShapes
+import com.ats.android.ui.theme.CornerRadius
 import com.ats.android.utils.NumberFormatter
 import com.ats.android.viewmodels.MovementsViewModel
 import com.ats.android.viewmodels.MovementsUiState
 import java.util.Date
+import com.ats.android.ui.components.EmployeeAvatar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,53 +41,76 @@ fun MovementsListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val movements by viewModel.movements.collectAsState()
-    val selectedEmployeeId by viewModel.selectedEmployeeId.collectAsState()
+    val employees by viewModel.employees.collectAsState()
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.recent_activity)) },
-                actions = {
-                    IconButton(onClick = { /* Filter menu */ }) {
-                        Icon(Icons.Default.FilterList, stringResource(R.string.filter))
-                    }
-                }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    )
+                )
             )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            when (uiState) {
-                is MovementsUiState.Loading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                is MovementsUiState.Empty -> {
-                    EmptyMovementsView(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                is MovementsUiState.Error -> {
-                    ErrorView(
-                        message = (uiState as MovementsUiState.Error).message,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                is MovementsUiState.Success -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(movements) { movement ->
-                            MovementCard(
-                                movement = movement,
-                                onViewRoute = onViewRoute
-                            )
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = { 
+                        Text(
+                            stringResource(R.string.recent_activity),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                        ) 
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color.Transparent
+                    ),
+                    actions = {
+                        IconButton(onClick = { /* Filter menu */ }) {
+                            Icon(Icons.Default.FilterList, stringResource(R.string.filter))
+                        }
+                    }
+                )
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                when (uiState) {
+                    is MovementsUiState.Loading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    is MovementsUiState.Empty -> {
+                        EmptyMovementsView(
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    is MovementsUiState.Error -> {
+                        ErrorView(
+                            message = (uiState as MovementsUiState.Error).message,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    is MovementsUiState.Success -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            items(movements) { movement ->
+                                MovementCard(
+                                    movement = movement,
+                                    employee = employees[movement.employeeId],
+                                    onViewRoute = onViewRoute
+                                )
+                            }
                         }
                     }
                 }
@@ -92,164 +122,199 @@ fun MovementsListScreen(
 @Composable
 fun MovementCard(
     movement: LocationMovement,
+    employee: com.ats.android.models.Employee?,
     modifier: Modifier = Modifier,
     onViewRoute: (LocationMovement) -> Unit = {}
 ) {
-    Card(
+    GlassCard(
         modifier = modifier.fillMaxWidth(),
-        shape = ComponentShapes.Card,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        cornerRadius = CornerRadius.medium
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Header
+            // Header: Avatar + Name + Time
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
+                // Avatar
+                EmployeeAvatar(
+                    avatarUrl = employee?.avatarURL,
+                    employeeName = employee?.displayName ?: movement.employeeName,
+                    size = 48.dp
+                )
+                  
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = employee?.displayName ?: movement.employeeName.ifEmpty { "Unknown Employee" },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = employee?.role?.toString()?.uppercase() ?: "EMPLOYEE",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                
+                // Time Ago
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    // Movement type icon
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(getMovementColor(movement.movementType).copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = getMovementIcon(movement.movementType),
-                            contentDescription = null,
-                            tint = getMovementColor(movement.movementType),
-                            modifier = Modifier.size(24.dp)
+                    Text(
+                        text = LocalizedTimeAgo(movement.startTime.toDate()),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            
+            Divider(
+                modifier = Modifier.padding(vertical = 12.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+            )
+            
+            // Movement Type Chip
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(getMovementColor(movement.getType()).copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = getMovementIcon(movement.getType()),
+                        contentDescription = null,
+                        tint = getMovementColor(movement.getType()),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = getLocalizedMovementType(movement.getType()),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = getMovementColor(movement.getType())
+                )
+                
+                Spacer(modifier = Modifier.weight(1f))
+                
+                if (movement.distance > 0) {
+                     Icon(
+                        imageVector = Icons.Default.Straighten,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(14.dp)
+                     )
+                     Spacer(modifier = Modifier.width(4.dp))
+                     Text(
+                        text = NumberFormatter.formatDistance(movement.distance),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                     )
+                }
+            }
+            
+            // Location Details (Timeline style)
+            if (movement.fromAddress != null || movement.toAddress != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Column(modifier = Modifier.padding(start = 8.dp)) {
+                    if (movement.fromAddress != null) {
+                        TimelineRow(
+                            icon = Icons.Default.TripOrigin,
+                            text = movement.fromAddress,
+                            isLast = movement.toAddress == null,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                     }
                     
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = movement.employeeName.ifEmpty { stringResource(R.string.unknown) },
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = getLocalizedMovementType(movement.movementType),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = getMovementColor(movement.movementType),
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-                
-                Column(
-                    horizontalAlignment = Alignment.End
-                ) {
-                    // Time ago with English digits
-                    Text(
-                        text = formatTimeAgoEnglish(movement.startTime.toDate()),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    // Distance with English digits
-                    if (movement.distance > 0) {
-                        Text(
-                            text = NumberFormatter.formatDistance(movement.distance),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.SemiBold
+                    if (movement.toAddress != null) {
+                        TimelineRow(
+                            icon = Icons.Default.Place,
+                            text = movement.toAddress,
+                            isLast = true,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
             }
             
-            // Location details
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            movement.fromAddress?.let { address ->
-                LocationRow(
-                    icon = Icons.Default.LocationOn,
-                    label = stringResource(R.string.movement_from),
-                    address = address,
-                    color = MaterialTheme.colorScheme.tertiary
-                )
-            }
-            
-            if (movement.toAddress != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                LocationRow(
-                    icon = Icons.Default.LocationOn,
-                    label = stringResource(R.string.movement_to),
-                    address = movement.toAddress!!,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            
-            // Additional info with English digits
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                // Duration
-                if (movement.duration != null && movement.duration > 0) {
-                    InfoChip(
-                        icon = Icons.Default.Timer,
-                        label = stringResource(R.string.movement_duration),
-                        value = NumberFormatter.formatDuration(movement.duration),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                
-                // Distance from check-in
-                if (movement.distanceFromCheckIn() > 0.1) {
-                    InfoChip(
-                        icon = Icons.Default.MyLocation,
-                        label = stringResource(R.string.distance_from_checkin, ""),
-                        value = NumberFormatter.formatDistance(movement.distanceFromCheckIn()),
-                        color = if (movement.distanceFromCheckIn() > 1.0) 
-                            MaterialTheme.colorScheme.error 
-                        else 
-                            MaterialTheme.colorScheme.tertiary
-                    )
-                }
-            }
-            
-            // View route button
-            Spacer(modifier = Modifier.height(12.dp))
-            
+            // Action Button
+            Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = { onViewRoute(movement) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Map,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.view_route),
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.labelLarge
                 )
             }
         }
+    }
+}
+
+@Composable
+fun TimelineRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String?,
+    isLast: Boolean,
+    color: Color
+) {
+    if (text == null) return
+    
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+             Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(12.dp)
+            )
+            if (!isLast) {
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .height(24.dp) // Fixed height for timeline segment
+                        .background(color.copy(alpha = 0.3f))
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+            maxLines = 2,
+            modifier = Modifier.padding(bottom = if (isLast) 0.dp else 12.dp)
+        )
     }
 }
 
@@ -268,7 +333,7 @@ fun LocationRow(
             imageVector = icon,
             contentDescription = null,
             tint = color,
-            modifier = Modifier.size(16.dp)
+            modifier = Modifier.size(16.dp).padding(top = 2.dp)
         )
         Column {
             Text(
@@ -289,27 +354,36 @@ fun LocationRow(
 fun EmptyMovementsView(
     modifier: Modifier = Modifier
 ) {
-    Column(
+    GlassCard(
         modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        cornerRadius = CornerRadius.large
     ) {
-        Icon(
-            imageVector = Icons.Default.LocationOff,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-        )
-        Text(
-            text = stringResource(R.string.no_movements_detected),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = stringResource(R.string.movements_will_appear),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-        )
+        Column(
+            modifier = Modifier.padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOff,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = stringResource(R.string.no_movements_detected),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = stringResource(R.string.movements_will_appear),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+        }
     }
 }
 
@@ -318,27 +392,34 @@ fun ErrorView(
     message: String,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    GlassCard(
         modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        cornerRadius = CornerRadius.large
     ) {
-        Icon(
-            imageVector = Icons.Default.Error,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.error
-        )
-        Text(
-            text = stringResource(R.string.error_loading_movements),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.error
-        )
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Column(
+            modifier = Modifier.padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Error,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.error
+            )
+            Text(
+                text = stringResource(R.string.error_loading_movements),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
     }
 }
 
@@ -350,34 +431,41 @@ fun InfoChip(
     color: Color,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    Surface(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        color = color.copy(alpha = 0.1f),
+        shape = RoundedCornerShape(8.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        Column(
+            modifier = Modifier.padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(16.dp)
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
-        }
-        if (label.isNotEmpty()) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = color
+                )
+            }
+            if (label.isNotEmpty()) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    maxLines = 1
+                )
+            }
         }
     }
 }
@@ -392,16 +480,17 @@ fun getLocalizedMovementType(type: MovementType): String {
     }
 }
 
-fun formatTimeAgoEnglish(date: Date): String {
+@Composable
+fun LocalizedTimeAgo(date: Date): String {
     val now = System.currentTimeMillis()
     val then = date.time
     val diffSeconds = (now - then) / 1000
     
     return when {
-        diffSeconds < 60 -> "now"
-        diffSeconds < 3600 -> "${diffSeconds / 60}m"
-        diffSeconds < 86400 -> "${diffSeconds / 3600}h"
-        else -> "${diffSeconds / 86400}d"
+        diffSeconds < 60 -> stringResource(R.string.time_just_now)
+        diffSeconds < 3600 -> stringResource(R.string.time_ago_m, (diffSeconds / 60).toInt())
+        diffSeconds < 86400 -> stringResource(R.string.time_ago_h, (diffSeconds / 3600).toInt())
+        else -> stringResource(R.string.time_ago_d, (diffSeconds / 86400).toInt())
     }
 }
 

@@ -63,6 +63,16 @@ class UpdateManager(private val context: Context) {
         }
     }
     
+    fun getCurrentVersion(): String {
+        return try {
+            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            packageInfo.versionName
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting current version: ${e.message}")
+            "1.0.0"
+        }
+    }
+    
     suspend fun checkForUpdates(): VersionInfo? {
         return withContext(Dispatchers.IO) {
             try {

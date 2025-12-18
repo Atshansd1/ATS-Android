@@ -1,17 +1,26 @@
 package com.ats.android.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import com.ats.android.ui.theme.ComponentShapes
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -22,10 +31,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ats.android.R
 import com.ats.android.models.AttendanceRecord
 import com.ats.android.models.Employee
+import com.ats.android.ui.theme.CornerRadius
+import com.ats.android.ui.components.EmployeeAvatar
+import com.ats.android.ui.components.GlassCard
+import com.ats.android.ui.theme.ATSColors
 import com.ats.android.viewmodels.CheckInViewModel
 import com.ats.android.viewmodels.CheckInUiState
 import com.ats.android.viewmodels.HistoryViewModel
-import com.ats.android.viewmodels.HistoryUiState
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -46,7 +58,6 @@ fun CheckInScreen(
     val placeName by viewModel.placeName.collectAsState()
     val activeRecord by viewModel.activeRecord.collectAsState()
     
-    val historyUiState by historyViewModel.uiState.collectAsState()
     val attendanceRecords by historyViewModel.attendanceRecords.collectAsState()
     
     LaunchedEffect(currentEmployee) {
@@ -56,511 +67,295 @@ fun CheckInScreen(
         }
     }
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        if (isCheckedIn) stringResource(R.string.check_out_title) 
-                        else stringResource(R.string.check_in_title),
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+    // Status Pulse Animation
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    
+    val statusColor by animateColorAsState(
+        targetValue = if (isCheckedIn) ATSColors.CheckInGreen else MaterialTheme.colorScheme.primary,
+        label = "statusColor"
+    )
+    
+    // Snackbar for error messages
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    // Show error in snackbar when uiState is Error
+    LaunchedEffect(uiState) {
+        if (uiState is CheckInUiState.Error) {
+            snackbarHostState.showSnackbar(
+                message = (uiState as CheckInUiState.Error).message,
+                duration = SnackbarDuration.Long
             )
+            viewModel.clearError()
         }
-    ) { paddingValues ->
-        // Calculate stats
-        val totalDays = attendanceRecords.size
-        val totalHours = attendanceRecords.sumOf { record ->
-            record.durationHours * 3600
-        } / 3600.0
-        
-        LazyColumn(
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // Expressive Background Gradient
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Employee Profile Header
-            item {
-                currentEmployee?.let { employee ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = ComponentShapes.Card,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            statusColor.copy(alpha = 0.05f),
+                            MaterialTheme.colorScheme.surface
                         )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            // Avatar
-                            com.ats.android.ui.components.EmployeeAvatar(
-                                avatarUrl = employee.avatarURL,
-                                employeeName = employee.displayName,
-                                size = 64.dp
-                            )
-                            
-                            // Employee Info
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = employee.displayName,
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                                Text(
-                                    text = employee.team,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                                )
-                                Text(
-                                    text = "ID: ${employee.employeeId}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
-                                )
-                            }
-                            
-                            // Role Badge
-                            Surface(
-                                shape = MaterialTheme.shapes.small,
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                            ) {
-                                Text(
-                                    text = employee.role.value.uppercase(),
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // Status Card
-            item {
-                if (uiState is CheckInUiState.Loading) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = ComponentShapes.Card,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(48.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(48.dp),
-                                strokeWidth = 4.dp
-                            )
-                        }
-                    }
-                } else {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = ComponentShapes.Card,
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isCheckedIn) 
-                                MaterialTheme.colorScheme.tertiaryContainer
-                            else 
-                                MaterialTheme.colorScheme.surfaceVariant
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            // Status Icon
-                            Surface(
-                                modifier = Modifier.size(80.dp),
-                                shape = CircleShape,
-                                color = if (isCheckedIn)
-                                    MaterialTheme.colorScheme.tertiary
-                                else
-                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = if (isCheckedIn) Icons.Default.CheckCircle else Icons.Default.Schedule,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(40.dp),
-                                        tint = if (isCheckedIn)
-                                            MaterialTheme.colorScheme.onTertiary
-                                        else
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                    
-                    // Status Text
-                    Text(
-                        text = if (isCheckedIn) 
-                            stringResource(R.string.currently_checked_in)
-                        else 
-                            stringResource(R.string.ready_to_check_in),
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = if (isCheckedIn)
-                            MaterialTheme.colorScheme.onTertiaryContainer
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
                     )
-                    
-                    // Check-in time if active
-                    if (activeRecord != null) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Schedule,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = if (isCheckedIn)
-                                    MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            )
-                            Text(
-                                text = stringResource(R.string.since, SimpleDateFormat("hh:mm a", Locale.US).format(activeRecord!!.checkInTime.toDate())),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (isCheckedIn)
-                                    MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
-                                else
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            )
-                        }
-                    }
-                        }
-                    }
-                }
-            }
-            
-            // Location Card
-            item {
-                Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = ComponentShapes.Card,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary
+        )
+
+        Scaffold(
+            containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(
+                            if (isCheckedIn) stringResource(R.string.check_out_title) else stringResource(R.string.check_in_title),
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
                     )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.current_location),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
-                        Text(
-                            text = when (placeName) {
-                                null -> stringResource(R.string.loading_location)
-                                "permission_required" -> stringResource(R.string.location_required)
-                                "location_unavailable" -> stringResource(R.string.unable_to_get_location)
-                                "location_error" -> stringResource(R.string.location_unavailable)
-                                else -> placeName ?: stringResource(R.string.loading_location)
-                            },
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                }
+                )
             }
+        ) { paddingValues ->
+            // Calculate stats
+            val totalDays = attendanceRecords.size
+            val totalHours = attendanceRecords.sumOf { record ->
+                record.durationHours * 3600
+            } / 3600.0
             
-            // Check In/Out Button
-            item {
-                Button(
-                onClick = {
-                    if (currentEmployee != null) {
-                        if (isCheckedIn) {
-                            viewModel.checkOut(currentEmployee)
-                        } else {
-                            viewModel.checkIn(currentEmployee)
-                        }
-                    }
-                },
+            LazyColumn(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                enabled = currentEmployee != null && uiState !is CheckInUiState.Processing,
-                shape = ComponentShapes.Button,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isCheckedIn) 
-                        MaterialTheme.colorScheme.error 
-                    else 
-                        MaterialTheme.colorScheme.primary
-                )
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                if (uiState is CheckInUiState.Processing) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 3.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Icon(
-                        imageVector = if (isCheckedIn) Icons.Default.Logout else Icons.Default.Login,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isCheckedIn) 
-                            stringResource(R.string.check_out_button) 
-                        else 
-                            stringResource(R.string.check_in_button),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        )
-                    )
-                }
-                }
-            }
-            
-            // Success/Error Messages
-            if (uiState is CheckInUiState.Success || uiState is CheckInUiState.Error) {
+                // Employee Profile Greeting
                 item {
-                    when (uiState) {
-                is CheckInUiState.Success -> {
-                    Card(
-                        shape = ComponentShapes.Card,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                    currentEmployee?.let { employee ->
+                        GlassCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            cornerRadius = CornerRadius.large
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                text = (uiState as CheckInUiState.Success).message,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
-                is CheckInUiState.Error -> {
-                    Card(
-                        shape = ComponentShapes.Card,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Error,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                            Text(
-                                text = (uiState as CheckInUiState.Error).message,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                    }
-                }
-                        else -> {}
-                    }
-                }
-            }
-            
-            // Divider before history
-            item {
-                Divider(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    thickness = 1.dp,
-                    color = MaterialTheme.colorScheme.outlineVariant
-                )
-            }
-            
-            // History Section Header with Stats
-            if (totalDays > 0) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = ComponentShapes.Card,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.attendance_history),
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            
-                            Spacer(modifier = Modifier.height(12.dp))
-                            
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                // Days Present
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        text = totalDays.toString(),
-                                        style = MaterialTheme.typography.displaySmall.copy(
-                                            fontWeight = FontWeight.Bold
-                                        ),
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.days_present),
-                                        style = MaterialTheme.typography.bodySmall.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                                
-                                // Divider
-                                Divider(
-                                    modifier = Modifier
-                                        .width(1.dp)
-                                        .height(40.dp),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f)
+                                EmployeeAvatar(
+                                    avatarUrl = employee.avatarURL,
+                                    employeeName = employee.displayName,
+                                    size = 56.dp
                                 )
                                 
-                                // Hours Worked
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(
-                                        text = String.format("%.1f", totalHours),
-                                        style = MaterialTheme.typography.displaySmall.copy(
-                                            fontWeight = FontWeight.Bold
-                                        ),
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        text = stringResource(R.string.hello_greeting, employee.displayName.split(" ").firstOrNull() ?: ""),
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Bold
                                     )
                                     Text(
-                                        text = stringResource(R.string.hours_worked),
-                                        style = MaterialTheme.typography.bodySmall.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        textAlign = TextAlign.Center
+                                        text = employee.role.value.uppercase(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             }
                         }
                     }
                 }
-            }
-            
-            // History Records or Empty State
-            if (attendanceRecords.isEmpty()) {
+                
+                // Active Status Card (The "Big Button" Area)
                 item {
-                    Card(
+                    GlassCard(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = ComponentShapes.Card,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
+                        cornerRadius = CornerRadius.large,
+                        backgroundColor = if (isCheckedIn) ATSColors.CheckInGreen.copy(alpha = 0.1f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(32.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(24.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.EventBusy,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            // Pulse Status Indicator
+                            Box(contentAlignment = Alignment.Center) {
+                                if (isCheckedIn) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(100.dp)
+                                            .scale(pulseScale)
+                                            .background(ATSColors.CheckInGreen.copy(alpha = 0.2f), CircleShape)
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(80.dp)
+                                            .scale(pulseScale)
+                                            .background(ATSColors.CheckInGreen.copy(alpha = 0.3f), CircleShape)
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .background(statusColor, CircleShape)
+                                        .shadow(10.dp, CircleShape, spotColor = statusColor),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = if (isCheckedIn) Icons.Default.Check else Icons.Default.Fingerprint,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
+                            }
                             
-                            Text(
-                                text = stringResource(R.string.no_records_yet),
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = if (isCheckedIn) stringResource(R.string.currently_checked_in) else stringResource(R.string.ready_to_check_in),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isCheckedIn) ATSColors.CheckInGreen else MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // Location Pill
+                                Surface(
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                                    shape = RoundedCornerShape(50),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.LocationOn,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Text(
+                                            text = when (placeName) {
+                                                null -> stringResource(R.string.loading_location)
+                                                "permission_required" -> stringResource(R.string.location_required)
+                                                "location_unavailable" -> stringResource(R.string.unable_to_get_location)
+                                                else -> placeName ?: stringResource(R.string.loading_location)
+                                            },
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Check In/Out Button (Main Action)
+                            Button(
+                                onClick = {
+                                    if (currentEmployee != null) {
+                                        if (isCheckedIn) viewModel.checkOut(currentEmployee) else viewModel.checkIn(currentEmployee)
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                enabled = currentEmployee != null && uiState !is CheckInUiState.Processing,
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = statusColor
                                 ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                            
-                            Text(
-                                text = stringResource(R.string.no_records_description),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                textAlign = TextAlign.Center
-                            )
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 2.dp)
+                            ) {
+                                if (uiState is CheckInUiState.Processing) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                                } else {
+                                    Text(
+                                        text = if (isCheckedIn) stringResource(R.string.check_out_button) else stringResource(R.string.check_in_button),
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-            } else {
-                items(attendanceRecords) { record ->
-                    CheckInHistoryRecordCard(record = record)
+                
+                // History Header
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = stringResource(R.string.recent_activity),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        
+                        // Mini Stats
+                        if (totalDays > 0) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.stats_summary_fmt, totalHours, totalDays),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                // Recent Items
+                if (attendanceRecords.isEmpty()) {
+                    item {
+                        GlassCard(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                            cornerRadius = CornerRadius.medium
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(Icons.Default.History, null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f), modifier = Modifier.size(48.dp))
+                                Text(stringResource(R.string.no_recent_activity), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                } else {
+                    items(attendanceRecords.take(5)) { record ->
+                        CheckInHistoryRecordCard(record)
+                    }
                 }
             }
         }
@@ -569,157 +364,82 @@ fun CheckInScreen(
 
 @Composable
 fun CheckInHistoryRecordCard(record: AttendanceRecord) {
-    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    val dateFormat = SimpleDateFormat("MMM dd", Locale.getDefault())
     val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
-    
-    val dateStr = dateFormat.format(record.checkInTime.toDate())
-    val checkInTimeStr = timeFormat.format(record.checkInTime.toDate())
-    val checkOutTimeStr = record.checkOutTime?.let { timeFormat.format(it.toDate()) } ?: "—"
-    
-    val durationStr = if (record.totalDuration != null || record.duration != null) {
-        val totalSeconds = (record.totalDuration ?: record.duration?.toDouble() ?: 0.0).toLong()
-        val hours = TimeUnit.SECONDS.toHours(totalSeconds)
-        val minutes = TimeUnit.SECONDS.toMinutes(totalSeconds) % 60
-        String.format("%dh %dm", hours, minutes)
-    } else {
-        stringResource(R.string.in_progress)
-    }
-    
     val isActive = record.checkOutTime == null
     
-    Card(
+    GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = ComponentShapes.Card,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isActive)
-                MaterialTheme.colorScheme.tertiaryContainer
-            else
-                MaterialTheme.colorScheme.surfaceVariant
-        )
+        cornerRadius = CornerRadius.medium
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Header Row - Date and Status
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = dateStr,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = if (isActive)
-                        MaterialTheme.colorScheme.onTertiaryContainer
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                // Duration Badge
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                // Date Box
                 Surface(
-                    shape = ComponentShapes.Chip,
-                    color = if (isActive)
-                        MaterialTheme.colorScheme.tertiary
-                    else
-                        MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isActive) ATSColors.CheckInGreen.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 ) {
-                    Text(
-                        text = durationStr,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = if (isActive)
-                            MaterialTheme.colorScheme.onTertiary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
-            // Time Details Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Check In Time
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Login,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = if (isActive)
-                            MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
-                    Text(
-                        text = checkInTimeStr,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isActive)
-                            MaterialTheme.colorScheme.onTertiaryContainer
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(
+                        modifier = Modifier
+                            .width(50.dp)
+                            .padding(vertical = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = dateFormat.format(record.checkInTime.toDate()).split(" ").getOrElse(0) { "" },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = dateFormat.format(record.checkInTime.toDate()).split(" ").getOrElse(1) { "" },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isActive) ATSColors.CheckInGreen else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
                 
-                // Check Out Time
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Logout,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = if (isActive)
-                            MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
+                // Times
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = checkOutTimeStr,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isActive)
-                            MaterialTheme.colorScheme.onTertiaryContainer
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                        text = if (isActive) stringResource(R.string.currently_active) else "${timeFormat.format(record.checkInTime.toDate())} - ${record.checkOutTime?.let { timeFormat.format(it.toDate()) } ?: "..."}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isActive) ATSColors.CheckInGreen else MaterialTheme.colorScheme.onSurface
                     )
+                    
+                    if (record.checkInPlaceName != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                             Icon(Icons.Default.Place, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                             Text(
+                                text = record.checkInPlaceName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1
+                            )
+                        }
+                    }
                 }
             }
             
-            // Location if available
-            if (record.checkInPlaceName != null) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = if (isActive)
-                            MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f)
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
-                    Text(
-                        text = record.checkInPlaceName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isActive)
-                            MaterialTheme.colorScheme.onTertiaryContainer
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            // Duration
+            if (!isActive) {
+                 val totalSeconds = (record.totalDuration ?: record.duration?.toDouble() ?: 0.0).toLong()
+                 val hours = TimeUnit.SECONDS.toHours(totalSeconds)
+                 val minutes = TimeUnit.SECONDS.toMinutes(totalSeconds) % 60
+                 
+                 Text(
+                     text = String.format("%dh %dm", hours, minutes),
+                     style = MaterialTheme.typography.labelSmall,
+                     fontWeight = FontWeight.Bold,
+                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                 )
             }
         }
     }

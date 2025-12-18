@@ -19,6 +19,8 @@ import com.ats.android.viewmodels.MapUiState
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
+import androidx.compose.ui.res.stringResource
+import com.ats.android.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,7 +93,7 @@ fun MapScreen(
                         Marker(
                             state = MarkerState(position = location.position),
                             title = location.employeeName,
-                            snippet = "${location.role} • ${location.placeName ?: "Unknown location"}",
+                            snippet = "${location.role} • ${location.placeName ?: stringResource(R.string.unknown_location)}",
                             tag = location.employeeId
                         )
                     }
@@ -107,7 +109,7 @@ fun MapScreen(
                     containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.primary
                 ) {
-                    Icon(Icons.Default.FilterList, "Filters")
+                    Icon(Icons.Default.FilterList, stringResource(R.string.filters))
                 }
                 
                 // Employee count badge (bottom left)
@@ -133,7 +135,7 @@ fun MapScreen(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "${displayLocations.size} Active",
+                                text = stringResource(R.string.active_count, displayLocations.size),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -172,7 +174,7 @@ fun MapFilterSheet(
                 .padding(bottom = 32.dp)
         ) {
             Text(
-                text = "Filter Employees",
+                text = stringResource(R.string.filter_employees),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -180,7 +182,7 @@ fun MapFilterSheet(
             
             // Role filter
             Text(
-                text = "Role",
+                text = stringResource(R.string.role),
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -211,7 +213,7 @@ fun MapFilterSheet(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Clear All Filters")
+                    Text(stringResource(R.string.clear_all_filters))
                 }
             }
             
@@ -221,7 +223,7 @@ fun MapFilterSheet(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Apply")
+                Text(stringResource(R.string.apply))
             }
         }
     }

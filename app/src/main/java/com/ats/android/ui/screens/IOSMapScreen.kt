@@ -35,6 +35,9 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
+import com.google.android.gms.maps.model.MapStyleOptions
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.platform.LocalContext
 
 
 /**
@@ -48,6 +51,17 @@ fun IOSMapScreen(
     val uiState by viewModel.uiState.collectAsState()
     val employeeLocations by viewModel.employeeLocations.collectAsState()
     val mapCenter by viewModel.mapCenter.collectAsState()
+    
+    // Dark Mode Map Style
+    val context = LocalContext.current
+    val isDarkTheme = isSystemInDarkTheme()
+    val mapStyleOptions = remember(isDarkTheme) {
+        if (isDarkTheme) {
+            MapStyleOptions.loadRawResourceStyle(context, com.ats.android.R.raw.map_style_dark)
+        } else {
+            null
+        }
+    }
     
     // Log state for debugging
     LaunchedEffect(uiState, employeeLocations.size) {
@@ -103,7 +117,8 @@ fun IOSMapScreen(
                     cameraPositionState = cameraPositionState,
                     properties = MapProperties(
                         isMyLocationEnabled = false,
-                        mapType = MapType.NORMAL
+                        mapType = MapType.NORMAL,
+                        mapStyleOptions = mapStyleOptions
                     ),
                     uiSettings = MapUiSettings(
                         zoomControlsEnabled = false,
@@ -135,7 +150,8 @@ fun IOSMapScreen(
                     cameraPositionState = cameraPositionState,
                     properties = MapProperties(
                         isMyLocationEnabled = false,
-                        mapType = MapType.NORMAL
+                        mapType = MapType.NORMAL,
+                        mapStyleOptions = mapStyleOptions
                     ),
                     uiSettings = MapUiSettings(
                         zoomControlsEnabled = false,
@@ -177,7 +193,8 @@ fun IOSMapScreen(
                     cameraPositionState = cameraPositionState,
                     properties = MapProperties(
                         isMyLocationEnabled = false,
-                        mapType = MapType.NORMAL
+                        mapType = MapType.NORMAL,
+                        mapStyleOptions = mapStyleOptions
                     ),
                     uiSettings = MapUiSettings(
                         zoomControlsEnabled = false,
@@ -438,30 +455,19 @@ fun ExpandedSearchBar(
                 }
             }
             
-            // Search suggestions (placeholder)
+            // Search suggestions - will be populated by Google Places API when implemented
             if (searchText.isNotEmpty()) {
                 Divider()
                 
-                // Simulate search results
-                listOf(
-                    "King Fahd Road, Riyadh",
-                    "Al Olaya, Riyadh",
-                    "Diplomatic Quarter, Riyadh"
-                ).filter { it.contains(searchText, ignoreCase = true) }
-                    .take(3)
-                    .forEach { place ->
-                        ListItem(
-                            modifier = Modifier.clickable {
-                                onSearchTextChange(place)
-                                onSearch(place)
-                            },
-                            headlineContent = { Text(place) },
-                            leadingContent = {
-                                Icon(Icons.Default.LocationOn, null)
-                            }
-                        )
-                        Divider()
+                ListItem(
+                    modifier = Modifier.clickable {
+                        onSearch(searchText)
+                    },
+                    headlineContent = { Text(stringResource(com.ats.android.R.string.search_for, searchText)) },
+                    leadingContent = {
+                        Icon(Icons.Default.Search, null)
                     }
+                )
             }
         }
     }
@@ -495,7 +501,7 @@ fun CompactEmployeeButton(
             ) {
                 ActiveStatusDot(isActive = true, size = 8.dp)
                 Text(
-                    text = "$employeeCount active employees",
+                    text = stringResource(com.ats.android.R.string.active_employees_count, employeeCount),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
@@ -559,7 +565,7 @@ fun EmployeeListBottomSheet(
         ) {
             // Header
             Text(
-                text = "${employees.size} Active Employees",
+                text = stringResource(com.ats.android.R.string.active_employees_count, employees.size),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.md)

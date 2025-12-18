@@ -13,14 +13,22 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.ats.android.R
+import com.ats.android.models.AttendanceCenter
+import com.ats.android.models.MovementType
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.GeoPoint
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
+import java.util.Date
+import kotlin.math.*
 
 /**
- * Foreground service that tracks employee location while checked in
- * Updates Firestore activeLocations collection every 2 minutes
+ * Foreground service that tracks employee location while checked in.
+ * 
+ * Features matching iOS parity:
+ * - Updates every 2 minutes
+ * - Matches location to Attendance Centers
+ * - Detects Movements (Significant, Stationary, Left Area)
+ * - Updates Firestore ActiveLocation
  */
 class LocationTrackingService : Service() {
     
@@ -33,11 +41,26 @@ class LocationTrackingService : Service() {
     private var employeeName: String? = null
     private var locationUpdateJob: Job? = null
     
+    // Tracking State
+    private var attendanceCenters: List<AttendanceCenter> = emptyList()
+    private var checkInLocation: Location? = null // To track distance from check-in
+    private var lastRecordedLocation: Location? = null // To track significant moves
+    private var stationaryStartLocation: Location? = null // To track stationary stays
+    private var stationaryStartTime: Long = 0L
+    private var hasRecordedStationary: Boolean = false
+    private var hasLeftCheckInArea: Boolean = false
+    
     companion object {
         private const val TAG = "LocationTrackingService"
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "location_tracking"
         private const val UPDATE_INTERVAL_MS = 120000L // 2 minutes
+        
+        // Thresholds matching iOS
+        private const val SIGNIFICANT_MOVE_THRESHOLD_M = 1000f // 1km
+        private const val CHECKIN_AREA_THRESHOLD_M = 1000f // 1km
+        private const val STATIONARY_RADIUS_M = 50f // 50 meters
+        private const val STATIONARY_TIME_MS = 15 * 60 * 1000L // 15 minutes
         
         const val ACTION_START_TRACKING = "START_TRACKING"
         const val ACTION_STOP_TRACKING = "STOP_TRACKING"
@@ -81,6 +104,7 @@ class LocationTrackingService : Service() {
                 
                 if (employeeId != null && employeeName != null) {
                     startForeground(NOTIFICATION_ID, createNotification(employeeName!!))
+                    initializeTrackingState()
                     startLocationTracking()
                     Log.d(TAG, "✅ Started tracking for: $employeeName ($employeeId)")
                 } else {
@@ -98,10 +122,48 @@ class LocationTrackingService : Service() {
         return START_STICKY
     }
     
+    private fun initializeTrackingState() {
+        serviceScope.launch {
+            try {
+                // 1. Load Attendance Centers
+                attendanceCenters = firestoreService.getAllAttendanceCenters()
+                Log.d(TAG, "📥 Loaded ${attendanceCenters.size} attendance centers for matching")
+                
+                // 2. Load Active Check-In info
+                employeeId?.let { uid ->
+                    val checkInRecord = firestoreService.getActiveCheckIn(uid)
+                    checkInRecord?.let { record ->
+                        checkInLocation = Location("").apply {
+                            latitude = record.checkInLocation?.latitude ?: 0.0
+                            longitude = record.checkInLocation?.longitude ?: 0.0
+                        }
+                        Log.d(TAG, "📍 Initialized check-in location: ${checkInLocation?.latitude}, ${checkInLocation?.longitude}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to initialize tracking state: ${e.message}")
+            }
+        }
+    }
+    
     override fun onBind(intent: Intent?): IBinder? = null
+    
+    private var checkInListener: com.google.firebase.firestore.ListenerRegistration? = null
     
     private fun startLocationTracking() {
         locationUpdateJob?.cancel()
+        
+        // Listen for remote checkouts (Force Checkout)
+        checkInListener?.remove()
+        employeeId?.let { id ->
+            checkInListener = firestoreService.listenToActiveCheckIn(id) { record ->
+                if (record == null) {
+                    Log.w(TAG, "⚠️ Remote checkout detected! Stopping service.")
+                    showForceCheckoutNotification()
+                    stopSelf()
+                }
+            }
+        }
         
         locationUpdateJob = serviceScope.launch {
             while (isActive) {
@@ -116,54 +178,195 @@ class LocationTrackingService : Service() {
         }
     }
     
+    private data class PlaceNames(val display: String, val nameEn: String?, val nameAr: String?)
+    
     private suspend fun updateLocation() {
         try {
             val empId = employeeId ?: return
             
-            Log.d(TAG, "📍 Getting location for update...")
+            Log.d(TAG, "📍 Updating location...")
             
-            // Get current location
+            // 1. Get current location
             val location = locationService.getCurrentLocation()
             if (location == null) {
-                Log.w(TAG, "⚠️ Could not get location for update")
+                Log.w(TAG, "⚠️ Could not get valid location")
                 return
             }
             
-            Log.d(TAG, "📍 Got location: ${location.latitude}, ${location.longitude}, accuracy: ${location.accuracy}m")
+            // 2. Determine Place Name (Centers OR Geocoding)
+            val placeNames = resolvePlaceName(location)
             
-            // Get place name (with timeout)
-            var placeName: String? = null
-            try {
-                placeName = withTimeoutOrNull(5000L) {
-                    geocodingService.getPlaceName(location.latitude, location.longitude)
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to get place name: ${e.message}")
-            }
-            
-            if (placeName.isNullOrBlank()) {
-                placeName = "${String.format("%.4f", location.latitude)}, ${String.format("%.4f", location.longitude)}"
-            }
-            
-            // Update Firestore
+            // 3. Update Firestore Active Location
             val geoPoint = GeoPoint(location.latitude, location.longitude)
-            firestoreService.updateEmployeeLocation(empId, geoPoint, placeName)
+            firestoreService.updateEmployeeLocation(
+                employeeId = empId, 
+                location = geoPoint, 
+                placeName = placeNames.display,
+                placeNameEn = placeNames.nameEn,
+                placeNameAr = placeNames.nameAr
+            )
             
-            Log.d(TAG, "✅ Location updated for $empId at $placeName")
+            // 4. Process Movement Logic
+            processMovements(location, placeNames.display)
             
-            // Update notification with latest location
-            val notification = createNotification(employeeName!!, placeName)
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.notify(NOTIFICATION_ID, notification)
+            // 5. Update Notification
+            updateNotification(placeNames.display)
+            
+            // Update tracking references
+            stationaryStartLocation = stationaryStartLocation ?: location
+            if (stationaryStartTime == 0L) stationaryStartTime = System.currentTimeMillis()
             
         } catch (e: Exception) {
             Log.e(TAG, "❌ Update location error: ${e.message}", e)
         }
     }
     
+    private suspend fun resolvePlaceName(location: Location): PlaceNames {
+        // A. Check Attendance Centers
+        val matchedCenter = attendanceCenters.find { center ->
+            val centerLoc = Location("").apply {
+                latitude = center.coordinate.latitude
+                longitude = center.coordinate.longitude
+            }
+            location.distanceTo(centerLoc) <= center.radiusMeters
+        }
+        
+        if (matchedCenter != null) {
+            Log.d(TAG, "✅ Matched attendance center: ${matchedCenter.name}")
+            // Prefer English name if available, or just name
+            val nameEn = if (!matchedCenter.nameEn.isNullOrEmpty()) matchedCenter.nameEn else matchedCenter.name
+            val nameAr = if (!matchedCenter.nameAr.isNullOrEmpty()) matchedCenter.nameAr else matchedCenter.name
+            
+            // Determine display name based on current device locale
+            val isArabic = java.util.Locale.getDefault().language == "ar"
+            val displayName = if (isArabic) nameAr else nameEn
+            
+            return PlaceNames(displayName, nameEn, nameAr)
+        }
+        
+        // B. Fallback to Geocoding
+        return try {
+            val nameEn = withTimeoutOrNull(5000L) {
+                geocodingService.getPlaceName(location.latitude, location.longitude, java.util.Locale.US)
+            }
+            
+            val nameAr = withTimeoutOrNull(5000L) {
+                geocodingService.getPlaceName(location.latitude, location.longitude, java.util.Locale("ar"))
+            }
+            
+            val coordinates = "${String.format(java.util.Locale.US, "%.4f", location.latitude)}, ${String.format(java.util.Locale.US, "%.4f", location.longitude)}"
+            val defaultNameEn = nameEn ?: coordinates
+            val defaultNameAr = nameAr ?: coordinates
+            
+            val isArabic = java.util.Locale.getDefault().language == "ar"
+            val displayName = if (isArabic) defaultNameAr else defaultNameEn
+            
+            PlaceNames(displayName, defaultNameEn, defaultNameAr)
+        } catch (e: Exception) {
+            val coordinates = "${String.format(java.util.Locale.US, "%.4f", location.latitude)}, ${String.format(java.util.Locale.US, "%.4f", location.longitude)}"
+            PlaceNames(coordinates, coordinates, coordinates)
+        }
+    }
+    
+    private suspend fun processMovements(currentLocation: Location, currentPlace: String) {
+        val empId = employeeId ?: return
+        val now = Timestamp.now()
+        
+        // --- Logic 1: Stationary Detection ---
+        val distFromStationaryStart = stationaryStartLocation?.distanceTo(currentLocation) ?: 0f
+        
+        if (distFromStationaryStart < STATIONARY_RADIUS_M) {
+            // User is stationary
+            val timeStationary = System.currentTimeMillis() - stationaryStartTime
+            
+            if (timeStationary >= STATIONARY_TIME_MS && !hasRecordedStationary) {
+                // Record Stationary Event
+                Log.d(TAG, "🛑 User stationary for > 15 mins. Recording event.")
+                firestoreService.recordMovement(
+                    employeeId = empId,
+                    fromLat = stationaryStartLocation!!.latitude,
+                    fromLng = stationaryStartLocation!!.longitude,
+                    fromPlace = currentPlace, // Approximate
+                    toLat = currentLocation.latitude,
+                    toLng = currentLocation.longitude,
+                    toPlace = currentPlace,
+                    distance = (distFromStationaryStart / 1000).toDouble(),
+                    startTime = Timestamp(Date(stationaryStartTime)),
+                    endTime = now,
+                    movementType = MovementType.STATIONARY_STAY
+                )
+                hasRecordedStationary = true
+            }
+        } else {
+            // User moved beyond radius -> Reset stationary tracker
+            stationaryStartLocation = currentLocation
+            stationaryStartTime = System.currentTimeMillis()
+            hasRecordedStationary = false
+        }
+        
+        // --- Logic 2: Significant Movement ---
+        if (lastRecordedLocation != null) {
+            val distFromLast = lastRecordedLocation!!.distanceTo(currentLocation)
+            if (distFromLast >= SIGNIFICANT_MOVE_THRESHOLD_M) {
+                Log.d(TAG, "➡️ Significant movement detected: ${distFromLast}m")
+                
+                // Fetch previous place name if possible (omitted for simplicity, used "Unknown")
+                // In a perfect world we'd track previous place name too.
+                
+                firestoreService.recordMovement(
+                    employeeId = empId,
+                    fromLat = lastRecordedLocation!!.latitude,
+                    fromLng = lastRecordedLocation!!.longitude,
+                    fromPlace = null, // simplified
+                    toLat = currentLocation.latitude,
+                    toLng = currentLocation.longitude,
+                    toPlace = currentPlace,
+                    distance = (distFromLast / 1000).toDouble(),
+                    startTime = Timestamp(Date(System.currentTimeMillis() - UPDATE_INTERVAL_MS)), // Approx
+                    endTime = now,
+                    movementType = MovementType.SIGNIFICANT_MOVE
+                )
+                lastRecordedLocation = currentLocation
+            }
+        } else {
+            lastRecordedLocation = currentLocation
+        }
+        
+        // --- Logic 3: Check-in Area Departure ---
+        if (checkInLocation != null && !hasLeftCheckInArea) {
+            val distFromCheckIn = checkInLocation!!.distanceTo(currentLocation)
+            if (distFromCheckIn >= CHECKIN_AREA_THRESHOLD_M) {
+                Log.d(TAG, "⚠️ User left check-in area: ${distFromCheckIn}m")
+                
+                firestoreService.recordMovement(
+                    employeeId = empId,
+                    fromLat = checkInLocation!!.latitude,
+                    fromLng = checkInLocation!!.longitude,
+                    fromPlace = "Check-in Point",
+                    toLat = currentLocation.latitude,
+                    toLng = currentLocation.longitude,
+                    toPlace = currentPlace,
+                    distance = (distFromCheckIn / 1000).toDouble(),
+                    startTime = Timestamp(Date(System.currentTimeMillis())), 
+                    endTime = now,
+                    movementType = MovementType.LEFT_CHECKIN_AREA
+                )
+                hasLeftCheckInArea = true
+            }
+        }
+    }
+    
     private fun stopLocationTracking() {
         locationUpdateJob?.cancel()
         locationUpdateJob = null
+        checkInListener?.remove()
+        checkInListener = null
+    }
+    
+    private fun updateNotification(placeName: String) {
+        val notification = createNotification(employeeName!!, placeName)
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(NOTIFICATION_ID, notification)
     }
     
     private fun createNotification(employeeName: String, location: String? = null): Notification {
@@ -205,6 +408,20 @@ class LocationTrackingService : Service() {
             .setSilent(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
+    }
+    
+    private fun showForceCheckoutNotification() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(getString(R.string.notification_force_checkout_title))
+            .setContentText(getString(R.string.notification_force_checkout_body))
+            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+            
+        notificationManager.notify(NOTIFICATION_ID + 1, notification)
     }
     
     override fun onDestroy() {

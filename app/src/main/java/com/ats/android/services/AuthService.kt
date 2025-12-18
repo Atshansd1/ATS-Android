@@ -73,6 +73,28 @@ class AuthService private constructor() {
         }
     }
     
+    suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> {
+        return try {
+            val user = auth.currentUser ?: throw Exception("No user signed in")
+            val email = user.email ?: throw Exception("No email for user")
+            
+            // Re-authenticate first
+            Log.d(TAG, "🔐 Re-authenticating before password change...")
+            val credential = com.google.firebase.auth.EmailAuthProvider.getCredential(email, currentPassword)
+            user.reauthenticate(credential).await()
+            
+            // Update password
+            Log.d(TAG, "🔐 Updating password...")
+            user.updatePassword(newPassword).await()
+            
+            Log.d(TAG, "✅ Password updated successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Change password error: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
     fun signOut() {
         auth.signOut()
         _currentEmployee = null

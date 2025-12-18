@@ -46,6 +46,8 @@ import java.util.*
 fun ExpressiveDashboardScreen(
     employee: Employee?,
     onNavigateToMovements: () -> Unit = {},
+    onNavigateToAnalytics: () -> Unit = {},
+    onNavigateToMap: (String) -> Unit = {},
     viewModel: DashboardViewModel = viewModel()
 ) {
     val activeEmployeeItems by viewModel.activeEmployeeItems.collectAsState()
@@ -68,6 +70,9 @@ fun ExpressiveDashboardScreen(
                     )
                 },
                 actions = {
+                    IconButton(onClick = onNavigateToAnalytics) {
+                        Icon(Icons.Default.Insights, "Analytics")
+                    }
                     IconButton(onClick = { viewModel.loadDashboardData() }) {
                         Icon(Icons.Default.Refresh, stringResource(R.string.refresh))
                     }
@@ -117,7 +122,10 @@ fun ExpressiveDashboardScreen(
             
             // Active Employees
             item {
-                ExpressiveActiveEmployeesSection(employees = activeEmployeeItems)
+                ExpressiveActiveEmployeesSection(
+                    employees = activeEmployeeItems,
+                    onNavigateToMap = onNavigateToMap
+                )
             }
         }
     }
@@ -551,7 +559,8 @@ fun ExpressiveActivityRow(activity: ActivityItem) {
  */
 @Composable
 fun ExpressiveActiveEmployeesSection(
-    employees: List<ActiveEmployeeItem>
+    employees: List<ActiveEmployeeItem>,
+    onNavigateToMap: (String) -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -569,7 +578,7 @@ fun ExpressiveActiveEmployeesSection(
                 color = MaterialTheme.colorScheme.onSurface
             )
             
-            TextButton(onClick = { /* Navigate to map */ }) {
+            TextButton(onClick = { onNavigateToMap("") }) {
                 Text(
                     text = stringResource(R.string.view_map),
                     style = MaterialTheme.typography.labelLarge.copy(
@@ -626,7 +635,10 @@ fun ExpressiveActiveEmployeesSection(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 employees.forEach { employee ->
-                    ExpressiveActiveEmployeeCard(employee = employee)
+                    ExpressiveActiveEmployeeCard(
+                        employee = employee,
+                        onClick = { onNavigateToMap(employee.id) }
+                    )
                 }
             }
         }
@@ -647,9 +659,14 @@ fun getRoleColor(role: EmployeeRole): Color {
 /**
  * M3 Expressive Active Employee Card with avatar and green dot (iOS style)
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpressiveActiveEmployeeCard(employee: ActiveEmployeeItem) {
+fun ExpressiveActiveEmployeeCard(
+    employee: ActiveEmployeeItem,
+    onClick: () -> Unit
+) {
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = ComponentShapes.Card,
         colors = CardDefaults.cardColors(

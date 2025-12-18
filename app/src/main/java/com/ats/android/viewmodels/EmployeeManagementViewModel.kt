@@ -201,6 +201,26 @@ class EmployeeManagementViewModel : ViewModel() {
             Result.failure(e)
         }
     }
+
+    suspend fun forceCheckOut(employeeId: String): Result<Unit> {
+        return try {
+            Log.d(TAG, "👮‍♂️ Admin forcing checkout for: $employeeId")
+            
+            // Use 0,0 as location for admin override
+            // The service will handle finding the active check-in record
+            firestoreService.checkOut(
+                employeeId = employeeId,
+                location = com.google.firebase.firestore.GeoPoint(0.0, 0.0),
+                placeName = "Admin Force Checkout"
+            )
+            
+            Log.d(TAG, "✅ Force checkout successful")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Force checkout error: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
     
     private suspend fun uploadAvatar(employeeId: String, uri: Uri): String {
         return try {

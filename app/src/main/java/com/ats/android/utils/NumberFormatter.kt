@@ -69,6 +69,13 @@ object NumberFormatter {
             else -> "${seconds}s"
         }
     }
+
+    /**
+     * Format duration (Double) in seconds to human-readable format with English digits
+     */
+    fun formatDuration(seconds: Double): String {
+        return formatDuration(seconds.toLong())
+    }
     
     /**
      * Format time ago string with English digits

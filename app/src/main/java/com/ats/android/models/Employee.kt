@@ -3,6 +3,7 @@ package com.ats.android.models
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 import java.util.Locale
+import com.ats.android.R
 
 data class Employee(
     val uid: String = "",
@@ -42,10 +43,12 @@ data class Employee(
         get() = if (Locale.getDefault().language == "ar") departmentAr else departmentEn
 }
 
-enum class EmployeeRole(val value: String) {
-    ADMIN("admin"),
-    SUPERVISOR("supervisor"),
-    EMPLOYEE("employee");
+
+
+enum class EmployeeRole(val value: String, val labelResId: Int) {
+    ADMIN("admin", R.string.admin),
+    SUPERVISOR("supervisor", R.string.supervisor),
+    EMPLOYEE("employee", R.string.employee);
     
     val isAdmin: Boolean get() = this == ADMIN
     val isSupervisor: Boolean get() = this == SUPERVISOR

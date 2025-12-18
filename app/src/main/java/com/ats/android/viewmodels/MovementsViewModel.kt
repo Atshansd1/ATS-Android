@@ -24,9 +24,25 @@ class MovementsViewModel : ViewModel() {
     private val _selectedEmployeeId = MutableStateFlow<String?>(null)
     val selectedEmployeeId: StateFlow<String?> = _selectedEmployeeId.asStateFlow()
     
+    private val _employees = MutableStateFlow<Map<String, com.ats.android.models.Employee>>(emptyMap())
+    val employees: StateFlow<Map<String, com.ats.android.models.Employee>> = _employees.asStateFlow()
+    
     init {
         Log.d(TAG, "🚀 MovementsViewModel initialized")
+        loadEmployees()
         startListening(null)
+    }
+    
+    private fun loadEmployees() {
+        viewModelScope.launch {
+            try {
+                val employeeList = firestoreService.getAllEmployees()
+                _employees.value = employeeList.associateBy { it.employeeId }
+                Log.d(TAG, "👥 Loaded ${employeeList.size} employees for lookup")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error loading employees: ${e.message}")
+            }
+        }
     }
     
     fun startListening(employeeId: String?) {
@@ -59,6 +75,10 @@ class MovementsViewModel : ViewModel() {
     
     fun filterByEmployee(employeeId: String?) {
         startListening(employeeId)
+    }
+    
+    fun getEmployee(id: String): com.ats.android.models.Employee? {
+        return _employees.value[id]
     }
     
     companion object {

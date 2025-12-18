@@ -202,8 +202,8 @@ fun EmployeeManagementScreen(
     showDeleteDialog?.let { employee ->
         AlertDialog(
             onDismissRequest = { showDeleteDialog = null },
-            title = { Text("Delete Employee") },
-            text = { Text("Are you sure you want to delete ${employee.displayName}? This action cannot be undone.") },
+            title = { Text(stringResource(R.string.delete_employee_title)) },
+            text = { Text(stringResource(R.string.delete_employee_confirmation_fmt, employee.displayName)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -216,12 +216,12 @@ fun EmployeeManagementScreen(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -250,7 +250,7 @@ fun EmployeeListItem(
                     Text(employee.displayName)
                     if (!employee.isActive) {
                         Text(
-                            text = "Inactive",
+                            text = stringResource(R.string.inactive),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -259,7 +259,7 @@ fun EmployeeListItem(
             },
             supportingContent = { 
                 Column {
-                    Text(employee.email ?: "No email")
+                    Text(employee.email ?: stringResource(R.string.no_email))
                     Text(
                         text = "${employee.role} • ${employee.employeeId}",
                         style = MaterialTheme.typography.labelSmall
@@ -287,7 +287,7 @@ fun EmployeeListItem(
             trailingContent = {
                 Box {
                     IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, "More")
+                        Icon(Icons.Default.MoreVert, stringResource(R.string.more_options))
                     }
                     
                     DropdownMenu(
@@ -295,7 +295,7 @@ fun EmployeeListItem(
                         onDismissRequest = { showMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Edit") },
+                            text = { Text(stringResource(R.string.edit)) },
                             onClick = {
                                 showMenu = false
                                 onEdit()
@@ -303,7 +303,7 @@ fun EmployeeListItem(
                             leadingIcon = { Icon(Icons.Default.Edit, null) }
                         )
                         DropdownMenuItem(
-                            text = { Text(if (employee.isActive) "Deactivate" else "Activate") },
+                            text = { Text(stringResource(if (employee.isActive) R.string.deactivate else R.string.activate)) },
                             onClick = {
                                 showMenu = false
                                 onToggleStatus()
@@ -316,7 +316,7 @@ fun EmployeeListItem(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Delete") },
+                            text = { Text(stringResource(R.string.delete)) },
                             onClick = {
                                 showMenu = false
                                 onDelete()
@@ -353,7 +353,7 @@ fun EmployeeFormDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (employee == null) "Add Employee" else "Edit Employee") },
+        title = { Text(stringResource(if (employee == null) R.string.add_employee_title else R.string.edit_employee_title)) },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -387,7 +387,7 @@ fun EmployeeFormDialog(
                         TextButton(onClick = { imagePicker.launch("image/*") }) {
                             Icon(Icons.Default.Edit, null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Change Photo")
+                            Text(stringResource(R.string.change_photo))
                         }
                     }
                 }
@@ -395,7 +395,7 @@ fun EmployeeFormDialog(
                 OutlinedTextField(
                     value = nameEn,
                     onValueChange = { nameEn = it },
-                    label = { Text("English Name") },
+                    label = { Text(stringResource(R.string.english_name_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -403,7 +403,7 @@ fun EmployeeFormDialog(
                 OutlinedTextField(
                     value = nameAr,
                     onValueChange = { nameAr = it },
-                    label = { Text("Arabic Name") },
+                    label = { Text(stringResource(R.string.arabic_name_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -411,7 +411,7 @@ fun EmployeeFormDialog(
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Email") },
+                    label = { Text(stringResource(R.string.email_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -419,7 +419,7 @@ fun EmployeeFormDialog(
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Phone Number") },
+                    label = { Text(stringResource(R.string.phone_number_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -433,7 +433,7 @@ fun EmployeeFormDialog(
                         value = role.toString(),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Role") },
+                        label = { Text(stringResource(R.string.role_label)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showRoleMenu) },
                         modifier = Modifier
                             .menuAnchor()

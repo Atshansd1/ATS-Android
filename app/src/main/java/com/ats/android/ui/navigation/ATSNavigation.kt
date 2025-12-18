@@ -49,12 +49,18 @@ sealed class Screen(
 ) {
     object Login : Screen("login", com.ats.android.R.string.login, Icons.Default.Login, showInNav = false)
     object Dashboard : Screen("dashboard", com.ats.android.R.string.dashboard, Icons.Default.Dashboard, roles = listOf(EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR))
-    object Map : Screen("map", com.ats.android.R.string.map, Icons.Default.LocationOn, roles = listOf(EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR))
+    object Map : Screen("map", com.ats.android.R.string.map, Icons.Default.LocationOn, roles = listOf(EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR)) {
+        fun createRoute(employeeId: String?) = if (employeeId != null) "map?employeeId=$employeeId" else "map"
+    }
     object CheckIn : Screen("checkin", com.ats.android.R.string.check_in, Icons.Default.CheckCircle, roles = listOf(EmployeeRole.EMPLOYEE, EmployeeRole.SUPERVISOR))
     object History : Screen("history", com.ats.android.R.string.history, Icons.Default.CalendarToday, roles = listOf(EmployeeRole.EMPLOYEE, EmployeeRole.SUPERVISOR))
     object Reports : Screen("reports", com.ats.android.R.string.reports, Icons.Default.BarChart, roles = listOf(EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR))
     object EmployeeManagement : Screen("employees", com.ats.android.R.string.employees, Icons.Default.Groups, roles = listOf(EmployeeRole.ADMIN))
     object Movements : Screen("movements", com.ats.android.R.string.movements, Icons.Default.DirectionsWalk, showInNav = false, roles = listOf(EmployeeRole.ADMIN, EmployeeRole.SUPERVISOR))
+    object Leaves : Screen("leaves", com.ats.android.R.string.leaves, Icons.Default.DateRange, roles = listOf(EmployeeRole.EMPLOYEE, EmployeeRole.SUPERVISOR))
+    object LeaveApprovals : Screen("leave_approvals", com.ats.android.R.string.leave_approvals, Icons.Default.Approval, roles = listOf(EmployeeRole.ADMIN))
+    object Analytics : Screen("analytics", com.ats.android.R.string.analytics, Icons.Default.BarChart, roles = listOf(EmployeeRole.ADMIN))
+    object ShiftManagement : Screen("shift_management", com.ats.android.R.string.shift_management, Icons.Default.Schedule, roles = listOf(EmployeeRole.ADMIN))
     object Settings : Screen("settings", com.ats.android.R.string.settings, Icons.Default.Settings)
 }
 
@@ -76,9 +82,7 @@ fun ATSNavigation() {
     
     when (authState) {
         is AuthUiState.Loading -> {
-            Box(modifier = Modifier.fillMaxSize()) {
-                CircularProgressIndicator()
-            }
+            com.ats.android.ui.screens.SplashView()
         }
         is AuthUiState.Unauthenticated, is AuthUiState.Error -> {
             LoginScreen(
@@ -124,9 +128,15 @@ fun ExpressiveNavigationBar(
     // Always use compact mode for 5+ items, or if screen is small
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp
+    val density = androidx.compose.ui.platform.LocalDensity.current
     val isCompact = items.size >= 5 || screenWidthDp < 400
     
-    android.util.Log.d("NavigationBar", "Items: ${items.size}, Screen: ${screenWidthDp}dp, Compact: $isCompact")
+    // Dynamic height based on content and screen
+    val navBarHeight = with(density) {
+        if (isCompact) 72.dp else 80.dp
+    }
+    
+    android.util.Log.d("NavigationBar", "Items: ${items.size}, Screen: ${screenWidthDp}dp, Compact: $isCompact, Height: $navBarHeight")
     
     Surface(
         modifier = modifier
@@ -149,10 +159,10 @@ fun ExpressiveNavigationBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(if (isCompact) 64.dp else 80.dp)  // Reduced height for compact
+                    .height(navBarHeight)
                     .padding(
-                        horizontal = if (isCompact) 2.dp else 8.dp,
-                        vertical = if (isCompact) 4.dp else 8.dp
+                        horizontal = if (isCompact) 4.dp else 8.dp,
+                        vertical = if (isCompact) 6.dp else 8.dp
                     ),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
@@ -285,12 +295,13 @@ fun MainScaffold(
                     add(Screen.Dashboard)
                     add(Screen.Map)
                     add(Screen.EmployeeManagement)
+                    // LeaveApprovals is now accessed via Settings only
                     add(Screen.Reports)
                     add(Screen.Settings)
                     android.util.Log.d("MainScaffold", "Added 5 tabs for ADMIN")
                 }
                 EmployeeRole.SUPERVISOR -> {
-                    // Supervisor: Dashboard, Map, Check-In, Reports, Settings
+                    // Supervisor: Dashboard, Map, Check-In, Reports, Settings (Leaves accessed via Settings)
                     add(Screen.Dashboard)
                     add(Screen.Map)
                     add(Screen.CheckIn)
@@ -299,8 +310,9 @@ fun MainScaffold(
                     android.util.Log.d("MainScaffold", "Added 5 tabs for SUPERVISOR (Dashboard, Map, CheckIn, Reports, Settings)")
                 }
                 EmployeeRole.EMPLOYEE -> {
-                    // Employee: Check-In, Settings
+                    // Employee: Check-In, Leaves, Settings
                     add(Screen.CheckIn)
+                     add(Screen.Leaves)
                     add(Screen.Settings)
                     android.util.Log.d("MainScaffold", "Added 2 tabs for EMPLOYEE")
                 }
@@ -314,6 +326,11 @@ fun MainScaffold(
     
     // Check if current route is Map to hide top bar only
     val isMapScreen = currentDestination?.route == Screen.Map.route
+    
+    // Navigation bar height (without system bars, since windowInsetsPadding handles that)
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isCompact = items.size >= 5 || configuration.screenWidthDp < 400
+    val navBarHeight = if (isCompact) 72.dp else 80.dp
     
     Box(
         modifier = Modifier
@@ -332,18 +349,43 @@ fun MainScaffold(
             startDestination = getStartDestination(currentEmployee?.role),
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 96.dp)  // Navigation bar height
+                .padding(bottom = navBarHeight)
         ) {
             composable(Screen.Dashboard.route) {
                 ExpressiveDashboardScreen(
                     employee = currentEmployee,
                     onNavigateToMovements = {
                         navController.navigate(Screen.Movements.route)
+                    },
+                    onNavigateToAnalytics = {
+                        navController.navigate("analytics_screen")
+                    },
+                    onNavigateToMap = { employeeId ->
+                        navController.navigate(Screen.Map.createRoute(employeeId)) {
+                             // Pop up to the start destination of the graph to avoid building up a large stack of destinations
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            // Avoid multiple copies of the same destination
+                            launchSingleTop = true
+                            // Restore state when reselecting a previously selected item
+                            restoreState = true
+                        }
                     }
                 )
             }
-            composable(Screen.Map.route) {
-                EnhancedMapScreen()
+            composable(
+                route = "map?employeeId={employeeId}",
+                arguments = listOf(
+                    androidx.navigation.navArgument("employeeId") { 
+                        type = androidx.navigation.NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { backStackEntry ->
+                val employeeId = backStackEntry.arguments?.getString("employeeId")
+                EnhancedMapScreen(selectedEmployeeId = employeeId)
             }
             composable(Screen.Movements.route) {
                 MovementsListScreen(
@@ -377,13 +419,153 @@ fun MainScaffold(
                     onNavigateToDebugLogs = {
                         navController.navigate("debug_logs")
                     },
+                    onNavigateToChangePassword = {
+                        navController.navigate("change_password")
+                    },
+                    onNavigateToNotificationSettings = {
+                        navController.navigate("notification_settings")
+                    },
+                    onNavigateToPrivacyCenter = {
+                        navController.navigate("privacy_center")
+                    },
+                    onNavigateToLocationSettings = {
+                        navController.navigate("location_settings_detail")
+                    },
+                    onNavigateToProfile = {
+                        navController.navigate("profile")
+                    },
+                    onNavigateToLeaveApproval = {
+                        navController.navigate(Screen.LeaveApprovals.route)
+                    },
+                    onNavigateToLeaves = {
+                        navController.navigate(Screen.Leaves.route)
+                    },
+
+                    onNavigateToAnalytics = {
+                        navController.navigate(Screen.Analytics.route)
+                    },
+                    onNavigateToShiftManagement = {
+                        navController.navigate(Screen.ShiftManagement.route)
+                    },
                     onSignOut = onSignOut
                 )
             }
             
-            // Attendance Management Screen (Admin only)
+            // Settings Sub-screens
+            composable("profile") {
+                currentEmployee?.let { employee ->
+                     com.ats.android.ui.screens.ProfileScreen(
+                        employee = employee,
+                        onNavigateBack = { navController.popBackStack() },
+                        onEditProfile = { /* TODO: Implement edit */ }
+                    )
+                }
+            }
+
+            composable("analytics_screen") {
+                com.ats.android.ui.screens.AnalyticsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            
+            composable("change_password") {
+                ChangePasswordScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            
+            composable("notification_settings") {
+                NotificationSettingsScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            
+            composable("privacy_center") {
+                PrivacyCenterScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onChangePasswordClick = { navController.navigate("change_password") }
+                )
+            }
+            
+            composable("location_settings_detail") {
+                LocationSettingsDetailScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            
+            // Leave Management Routes
+            composable(Screen.Leaves.route) {
+                // Pass a callback to show request form? Or navigate to a new screen?
+                // For simplicity, LeavesScreen can handle showing the sheet itself or we navigate.
+                // The iOS app often uses sheets. Let's use a sheet in LeavesScreen or navigate to a new route.
+                // In LeavesScreen.kt I implemented a sheet state.
+                com.ats.android.ui.leaves.LeavesScreen(
+                    employeeId = currentEmployee?.employeeId ?: "",
+                    onRequestLeaveClick = {
+                        navController.navigate("leave_request_form")
+                    }
+                )
+            }
+            
+            composable("leave_request_form") {
+                com.ats.android.ui.leaves.LeaveRequestFormScreen(
+                    employeeId = currentEmployee?.employeeId ?: "",
+                    employeeName = currentEmployee?.displayName ?: "",
+                    onDismiss = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+            
+            composable(Screen.LeaveApprovals.route) {
+                com.ats.android.ui.leaves.LeaveApprovalScreen(
+                    reviewerId = currentEmployee?.employeeId ?: ""
+                )
+            }
+            
+            
+            
+            // Analytics Screen (Admin only)
+            composable(Screen.Analytics.route) {
+                com.ats.android.ui.screens.AnalyticsScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+            
+            // Shift Management Screen (Admin only)
+            composable(Screen.ShiftManagement.route) {
+                com.ats.android.ui.screens.ShiftManagementScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            // Attendance Management Screen (Admin only) - NOW ATTENDANCE CENTERS
             composable("attendance_management") {
-                AttendanceManagementScreen(
+                AttendanceCentersScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToCreate = { center ->
+                         if (center != null) {
+                             navController.navigate("create_center?centerId=${center.id}")
+                         } else {
+                             navController.navigate("create_center")
+                         }
+                    }
+                )
+            }
+            
+            composable(
+                route = "create_center?centerId={centerId}",
+                arguments = listOf(
+                    androidx.navigation.navArgument("centerId") { 
+                        type = androidx.navigation.NavType.StringType
+                        nullable = true 
+                        defaultValue = null
+                    }
+                )
+            ) { backStackEntry ->
+                val centerId = backStackEntry.arguments?.getString("centerId")
+                CreateCenterScreen(
+                    centerId = centerId,
                     onNavigateBack = {
                         navController.popBackStack()
                     }

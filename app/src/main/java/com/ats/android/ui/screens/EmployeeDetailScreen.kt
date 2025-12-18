@@ -25,8 +25,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.ats.android.R
 import com.ats.android.models.AttendanceRecord
 import com.ats.android.models.AttendanceStatus
 import com.ats.android.models.Employee
@@ -220,7 +222,7 @@ fun AvatarSection(
             ) {
                 Icon(
                     imageVector = Icons.Default.CameraAlt,
-                    contentDescription = "Upload Photo",
+                    contentDescription = stringResource(R.string.upload_photo),
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -233,7 +235,7 @@ fun AvatarSection(
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                 Text(
-                    "Uploading...",
+                    stringResource(R.string.uploading),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -267,14 +269,14 @@ fun BasicInfoSection(employee: Employee) {
             // Employee Details
             InfoDetailRow(
                 icon = Icons.Default.Badge,
-                label = "Employee ID",
+                label = stringResource(R.string.employee_id_label),
                 value = employee.employeeId
             )
             
             employee.email?.let { email ->
                 InfoDetailRow(
                     icon = Icons.Default.Email,
-                    label = "Email",
+                    label = stringResource(R.string.email_label),
                     value = email
                 )
             }
@@ -282,24 +284,24 @@ fun BasicInfoSection(employee: Employee) {
             employee.phoneNumber?.let { phone ->
                 InfoDetailRow(
                     icon = Icons.Default.Phone,
-                    label = "Phone",
+                    label = stringResource(R.string.phone_label),
                     value = phone
                 )
             }
             
             InfoDetailRow(
                 icon = Icons.Default.Business,
-                label = "Department",
+                label = stringResource(R.string.department_label),
                 value = employee.team
             )
             
             InfoDetailRow(
                 icon = Icons.Default.AdminPanelSettings,
-                label = "Role",
+                label = stringResource(R.string.role_label),
                 value = when (employee.role) {
-                    EmployeeRole.ADMIN -> "Admin"
-                    EmployeeRole.SUPERVISOR -> "Supervisor"
-                    EmployeeRole.EMPLOYEE -> "Employee"
+                    EmployeeRole.ADMIN -> stringResource(R.string.admin)
+                    EmployeeRole.SUPERVISOR -> stringResource(R.string.supervisor)
+                    EmployeeRole.EMPLOYEE -> stringResource(R.string.employee)
                 }
             )
             
@@ -315,13 +317,13 @@ fun BasicInfoSection(employee: Employee) {
                     tint = if (employee.isActive) ATSColors.ActiveDot else ATSColors.InactiveDot
                 )
                 Text(
-                    text = "Status",
+                    text = stringResource(R.string.status),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = if (employee.isActive) "Active" else "Inactive",
+                    text = if (employee.isActive) stringResource(R.string.active) else stringResource(R.string.inactive),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
@@ -379,7 +381,7 @@ fun AttendanceHistorySection(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "Recent Attendance (30 days)",
+            text = stringResource(R.string.recent_attendance_30),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold
         )
@@ -419,7 +421,7 @@ fun AttendanceHistorySection(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            "No records yet",
+                            stringResource(R.string.no_records_yet),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -434,7 +436,7 @@ fun AttendanceHistorySection(
                     
                     if (records.size > 5) {
                         Text(
-                            text = "Showing last 5 of ${records.size} records",
+                            text = stringResource(R.string.showing_last_5_of, records.size),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 8.dp, top = 4.dp)
@@ -470,7 +472,7 @@ fun CompactAttendanceCard(record: AttendanceRecord) {
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = SimpleDateFormat("MMM dd", java.util.Locale.US)
+                    text = SimpleDateFormat("MMM dd", java.util.Locale.getDefault())
                         .format((record.date ?: record.checkInTime).toDate()),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold
@@ -480,7 +482,7 @@ fun CompactAttendanceCard(record: AttendanceRecord) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = SimpleDateFormat("hh:mm a", java.util.Locale.US)
+                        text = SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
                             .format(record.checkInTime.toDate()),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -492,7 +494,7 @@ fun CompactAttendanceCard(record: AttendanceRecord) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = SimpleDateFormat("hh:mm a", java.util.Locale.US)
+                            text = SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
                                 .format(record.checkOutTime!!.toDate()),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -512,8 +514,8 @@ fun CompactAttendanceCard(record: AttendanceRecord) {
             ) {
                 Text(
                     text = when (record.status) {
-                        AttendanceStatus.CHECKED_IN -> "Active"
-                        AttendanceStatus.CHECKED_OUT -> "Done"
+                        AttendanceStatus.CHECKED_IN -> stringResource(R.string.active_status)
+                        AttendanceStatus.CHECKED_OUT -> stringResource(R.string.done_status)
                         else -> record.status.value
                     },
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -549,7 +551,7 @@ fun AttendanceRecordCard(record: AttendanceRecord) {
             ) {
                 // Date
                 Text(
-                    text = SimpleDateFormat("MMM dd, yyyy", java.util.Locale.US)
+                    text = SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
                         .format((record.date ?: record.checkInTime).toDate()),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
@@ -571,7 +573,7 @@ fun AttendanceRecordCard(record: AttendanceRecord) {
                     tint = Color.Green
                 )
                 Text(
-                    text = "In: ${SimpleDateFormat("hh:mm a", java.util.Locale.US)
+                    text = "In: ${SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
                         .format(record.checkInTime.toDate())}",
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -590,7 +592,7 @@ fun AttendanceRecordCard(record: AttendanceRecord) {
                         tint = Color(0xFFFF9800)
                     )
                     Text(
-                        text = "Out: ${SimpleDateFormat("hh:mm a", java.util.Locale.US)
+                        text = "Out: ${SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
                             .format(checkOut.toDate())}",
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -628,10 +630,10 @@ fun AttendanceRecordCard(record: AttendanceRecord) {
 @Composable
 fun StatusBadge(status: AttendanceStatus) {
     val (color, text) = when (status) {
-        AttendanceStatus.CHECKED_IN -> Color.Green to "Checked In"
-        AttendanceStatus.CHECKED_OUT -> Color(0xFF2196F3) to "Checked Out"
-        AttendanceStatus.ON_LEAVE -> Color(0xFFFF9800) to "On Leave"
-        AttendanceStatus.ABSENT -> Color(0xFFF44336) to "Absent"
+        AttendanceStatus.CHECKED_IN -> Color.Green to stringResource(R.string.checked_in)
+        AttendanceStatus.CHECKED_OUT -> Color(0xFF2196F3) to stringResource(R.string.checked_out)
+        AttendanceStatus.ON_LEAVE -> Color(0xFFFF9800) to stringResource(R.string.on_leave_status)
+        AttendanceStatus.ABSENT -> Color(0xFFF44336) to stringResource(R.string.absent_status)
     }
     
     Text(

@@ -43,7 +43,13 @@ class LocationRestrictionsViewModel : ViewModel() {
         Log.d(TAG, "LocationRestrictionsViewModel initialized")
     }
     
+    private var isDataLoaded = false
+
     fun loadConfiguration() {
+        if (isDataLoaded) {
+            Log.d(TAG, "⚠️ Configuration already loaded, skipping reload to preserve state")
+            return
+        }
         viewModelScope.launch {
             try {
                 Log.d(TAG, "📥 Loading configuration...")
@@ -75,6 +81,7 @@ class LocationRestrictionsViewModel : ViewModel() {
                         _appliesToAllEmployees.value = true
                         _selectedEmployeeIds.value = emptySet()
                     }
+                    isDataLoaded = true
                 }.onFailure { error ->
                     Log.e(TAG, "❌ Error loading configuration", error)
                     _errorMessage.value = error.message
@@ -86,6 +93,11 @@ class LocationRestrictionsViewModel : ViewModel() {
                 _isLoading.value = false
             }
         }
+    }
+    
+    fun refresh() {
+        isDataLoaded = false
+        loadConfiguration()
     }
     
     fun saveConfiguration() {

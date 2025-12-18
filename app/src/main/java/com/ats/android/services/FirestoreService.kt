@@ -13,10 +13,24 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
 import java.util.Calendar
 import java.util.Date
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class FirestoreService private constructor() {
     
-    private val db: FirebaseFirestore = Firebase.firestore
+    private val db: FirebaseFirestore
+    
+    init {
+        val settings = com.google.firebase.firestore.FirebaseFirestoreSettings.Builder()
+            .setPersistenceEnabled(true)
+            .setCacheSizeBytes(com.google.firebase.firestore.FirebaseFirestoreSettings.CACHE_SIZE_UNLIMITED)
+            .build()
+            
+        db = Firebase.firestore
+        db.firestoreSettings = settings
+    }
     
     companion object {
         private const val TAG = "FirestoreService"
@@ -26,7 +40,10 @@ class FirestoreService private constructor() {
         private const val ACTIVE_LOCATIONS_COLLECTION = "companies/$COMPANY_ID/activeLocations"
         private const val SHIFT_CONFIGS_COLLECTION = "companies/$COMPANY_ID/shiftConfigs"
         private const val CHECKIN_LOCATION_CONFIGS_COLLECTION = "companies/$COMPANY_ID/checkInLocationConfigs"
+        private const val ATTENDANCE_CENTERS_COLLECTION = "companies/$COMPANY_ID/attendanceCenters"
         private const val MOVEMENTS_COLLECTION = "companies/$COMPANY_ID/movements"
+        private const val LEAVE_REQUESTS_COLLECTION = "companies/$COMPANY_ID/leaveRequests"
+        private const val LEAVE_BALANCES_COLLECTION = "companies/$COMPANY_ID/leaveBalances"
         
         @Volatile
         private var instance: FirestoreService? = null
@@ -146,6 +163,117 @@ class FirestoreService private constructor() {
         } catch (e: Exception) {
             Log.e(TAG, "❌ Update avatar error: ${e.message}", e)
             throw e
+        }
+    }
+    
+    // MARK: - Attendance Center Operations
+    
+    suspend fun getAttendanceCenter(centerId: String): Result<AttendanceCenter> {
+        return try {
+            val snapshot = db.collection(ATTENDANCE_CENTERS_COLLECTION)
+                .document(centerId)
+                .get()
+                .await()
+            
+            val center = snapshot.toObject(AttendanceCenter::class.java)
+            if (center != null) {
+                // Ensure ID is set
+                val centerWithId = center.copy(id = snapshot.id)
+                Result.success(centerWithId)
+            } else {
+                Result.failure(Exception("Attendance center not found"))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching attendance center", e)
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun createAttendanceCenter(center: AttendanceCenter): Result<String> {
+        return try {
+            val docRef = db.collection(ATTENDANCE_CENTERS_COLLECTION)
+                .document()
+                
+            val centerWithTimestamps = center.copy(
+                createdAt = Timestamp.now(),
+                updatedAt = Timestamp.now()
+            )
+            
+            docRef.set(centerWithTimestamps).await()
+            Log.d(TAG, "Created attendance center: ${center.name} (ID: ${docRef.id})")
+            Result.success(docRef.id)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error creating attendance center", e)
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun updateAttendanceCenter(center: AttendanceCenter): Result<Unit> {
+        return try {
+            val id = center.id ?: return Result.failure(Exception("Invalid document ID"))
+            
+            val docRef = db.collection(ATTENDANCE_CENTERS_COLLECTION)
+                .document(id)
+                
+            val centerWithTimestamp = center.copy(
+                updatedAt = Timestamp.now()
+            )
+            
+            docRef.set(centerWithTimestamp).await() // Using set to overwrite/merge
+            Log.d(TAG, "Updated attendance center: ${center.name}")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating attendance center", e)
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun deleteAttendanceCenter(centerId: String): Result<Unit> {
+        return try {
+            db.collection(ATTENDANCE_CENTERS_COLLECTION)
+                .document(centerId)
+                .delete()
+                .await()
+                
+            Log.d(TAG, "Deleted attendance center: $centerId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deleting attendance center", e)
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getAllAttendanceCenters(): List<AttendanceCenter> {
+        return try {
+            val snapshot = db.collection(ATTENDANCE_CENTERS_COLLECTION)
+                .orderBy("createdAt")
+                .get(com.google.firebase.firestore.Source.SERVER)
+                .await()
+                
+            snapshot.documents.mapNotNull { doc ->
+                doc.toObject(AttendanceCenter::class.java)?.copy(id = doc.id)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching all attendance centers", e)
+            emptyList()
+        }
+    }
+    
+    suspend fun getActiveCenters(): List<AttendanceCenter> {
+        return try {
+            val snapshot = db.collection(ATTENDANCE_CENTERS_COLLECTION)
+                .whereEqualTo("isActive", true)
+                .get()
+                .await()
+                
+            val centers = snapshot.documents.mapNotNull { doc ->
+                doc.toObject(AttendanceCenter::class.java)?.copy(id = doc.id)
+            }
+            // Client-side sort if needed, as compound query might require index
+            centers.sortedBy { it.createdAt }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching active attendance centers", e)
+            emptyList()
         }
     }
     
@@ -293,6 +421,43 @@ class FirestoreService private constructor() {
         return records
     }
     
+    /**
+     * Force checkout an employee (Admin only)
+     */
+    suspend fun forceCheckout(employeeId: String): Result<Unit> {
+        return try {
+            val record = getActiveCheckIn(employeeId) ?: return Result.failure(Exception("No active check-in found"))
+            
+            val checkOutTime = Timestamp.now()
+            val checkInTime = record.checkInTime ?: Timestamp.now()
+            val duration = checkOutTime.seconds - checkInTime.seconds
+            
+            val updates = mapOf(
+                "checkOutTime" to checkOutTime,
+                "checkOutPlaceName" to "Admin Force Checkout",
+                "status" to "checked_out",
+                "totalDuration" to duration.toDouble(),
+                "duration" to duration
+            )
+            
+            val recordId = record.id ?: return Result.failure(Exception("Invalid record ID"))
+            
+            db.collection(ATTENDANCE_COLLECTION).document(recordId).update(updates).await()
+            
+            // Remove from active locations
+            try {
+                db.collection(ACTIVE_LOCATIONS_COLLECTION).document(employeeId).delete().await()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to remove active location: ${e.message}")
+            }
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Force checkout failed: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
     suspend fun getActiveCheckIn(employeeId: String): AttendanceRecord? {
         val snapshot = db.collection(ATTENDANCE_COLLECTION)
             .whereEqualTo("employeeId", employeeId)
@@ -384,56 +549,18 @@ class FirestoreService private constructor() {
     suspend fun updateEmployeeLocation(
         employeeId: String,
         location: GeoPoint,
-        placeName: String?
+        placeName: String?,
+        placeNameEn: String? = null,
+        placeNameAr: String? = null
     ) {
-        // Get previous location to detect movement
-        val previousLocation = try {
-            db.collection(ACTIVE_LOCATIONS_COLLECTION)
-                .document(employeeId)
-                .get()
-                .await()
-        } catch (e: Exception) {
-            null
-        }
-        
         // Update active location
-        updateActiveLocation(employeeId, location, placeName)
+        updateActiveLocation(employeeId, location, placeName, placeNameEn, placeNameAr)
         
-        // Record movement if location changed significantly
-        if (previousLocation != null && previousLocation.exists()) {
-            try {
-                val prevLocationData = previousLocation.get("location") as? Map<*, *>
-                val prevLat = (prevLocationData?.get("latitude") as? Number)?.toDouble()
-                val prevLng = (prevLocationData?.get("longitude") as? Number)?.toDouble()
-                val prevPlace = previousLocation.getString("placeName")
-                val prevTimestamp = previousLocation.getTimestamp("lastUpdated")
-                
-                if (prevLat != null && prevLng != null && prevTimestamp != null) {
-                    val distance = calculateDistance(prevLat, prevLng, location.latitude, location.longitude)
-                    
-                    // Record movement if moved more than 100 meters
-                    if (distance > 0.1) { // 0.1 km = 100 meters
-                        recordMovement(
-                            employeeId = employeeId,
-                            fromLat = prevLat,
-                            fromLng = prevLng,
-                            fromPlace = prevPlace,
-                            toLat = location.latitude,
-                            toLng = location.longitude,
-                            toPlace = placeName,
-                            distance = distance,
-                            startTime = prevTimestamp,
-                            endTime = Timestamp.now()
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error checking for movement: ${e.message}")
-            }
-        }
+        // Removed automatic movement recording. 
+        // Logic is now moved to LocationTrackingService for handling stationary/check-in area departure logic.
     }
     
-    private suspend fun recordMovement(
+    suspend fun recordMovement(
         employeeId: String,
         fromLat: Double,
         fromLng: Double,
@@ -443,7 +570,8 @@ class FirestoreService private constructor() {
         toPlace: String?,
         distance: Double,
         startTime: Timestamp,
-        endTime: Timestamp
+        endTime: Timestamp,
+        movementType: MovementType
     ) {
         try {
             // Get employee info
@@ -458,13 +586,6 @@ class FirestoreService private constructor() {
             
             // Calculate duration in seconds
             val durationSeconds = endTime.seconds - startTime.seconds
-            
-            // Determine movement type
-            val movementType = when {
-                distance > 1.0 -> MovementType.SIGNIFICANT_MOVE
-                durationSeconds > 900 -> MovementType.STATIONARY_STAY // 15 minutes
-                else -> MovementType.SIGNIFICANT_MOVE
-            }
             
             val movement = hashMapOf<String, Any?>(
                 "employeeId" to employeeId,
@@ -511,7 +632,9 @@ class FirestoreService private constructor() {
     private suspend fun updateActiveLocation(
         employeeId: String,
         location: GeoPoint,
-        placeName: String?
+        placeName: String?,
+        placeNameEn: String? = null,
+        placeNameAr: String? = null
     ) {
         try {
             val now = Timestamp.now()
@@ -530,7 +653,9 @@ class FirestoreService private constructor() {
                 "lastUpdated" to now,        // iOS expects "lastUpdated" not "timestamp"
                 "checkInTime" to now,
                 "isActive" to true,
-                "placeName" to (placeName ?: "Unknown Location")
+                "placeName" to (placeName ?: "Unknown Location"),
+                "placeNameEn" to (placeNameEn ?: placeName),
+                "placeNameAr" to (placeNameAr ?: placeName),
             )
             
             Log.d(TAG, "📍 Updating active location for $employeeId at (${location.latitude}, ${location.longitude})")
@@ -587,8 +712,8 @@ class FirestoreService private constructor() {
                     
                     val activeLocation = ActiveLocation(
                         employeeId = employeeId,
-                        location = geoPoint,
-                        timestamp = document.getTimestamp("timestamp") ?: Timestamp.now(),
+                        location = GeoPointData.fromGeoPoint(geoPoint),
+                        timestamp = document.getTimestamp("lastUpdated") ?: Timestamp.now(),
                         checkInTime = document.getTimestamp("checkInTime") ?: Timestamp.now(),
                         isActive = document.getBoolean("isActive") ?: true,
                         placeName = document.getString("placeName"),
@@ -618,7 +743,7 @@ class FirestoreService private constructor() {
     private suspend fun getEmployeeByEmployeeId(employeeId: String): Employee? {
         return try {
             val snapshot = db.collection(EMPLOYEES_COLLECTION)
-                .whereEqualTo("employeeId", employeeId)
+                .whereEqualTo("id", employeeId)
                 .limit(1)
                 .get()
                 .await()
@@ -665,134 +790,150 @@ class FirestoreService private constructor() {
             emptyList()
         }
     }
+
+    suspend fun getAllAttendanceRecords(
+        startDate: Date,
+        endDate: Date
+    ): List<AttendanceRecord> {
+        com.ats.android.utils.DebugLogger.d(TAG, "📥 Fetching ALL attendance records for analytics")
+        com.ats.android.utils.DebugLogger.d(TAG, "🔍 Query range: $startDate to $endDate")
+        
+        return try {
+            val snapshot = db.collection(ATTENDANCE_COLLECTION)
+                .whereGreaterThanOrEqualTo("checkInTime", Timestamp(startDate))
+                .whereLessThanOrEqualTo("checkInTime", Timestamp(endDate))
+                .orderBy("checkInTime", Query.Direction.DESCENDING)
+                .get()
+                .await()
+            
+            val records = snapshot.documents.mapNotNull { doc ->
+                try {
+                    doc.toObject<AttendanceRecord>()
+                } catch (e: Exception) {
+                    convertDocumentToAttendanceRecord(doc)
+                }
+            }
+            
+            Log.d(TAG, "✅ Fetched ${records.size} total attendance records for analytics")
+            records
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error fetching analytics attendance: ${e.message}", e)
+            emptyList()
+        }
+    }
     
     // Real-time active locations observer (matching iOS getActiveLocations)
     fun observeActiveLocations(onUpdate: (List<Pair<Employee, ActiveLocation>>) -> Unit) {
         Log.d(TAG, "📍 Starting real-time location observer on: $ATTENDANCE_COLLECTION (status=checked_in)")
         
-        // FIX: Query attendance collection for checked-in employees, then get their locations
-        // This is more accurate than relying on isActive flag which may not be synced properly
         db.collection(ATTENDANCE_COLLECTION)
             .whereEqualTo("status", "checked_in")
             .addSnapshotListener { attendanceSnapshot, error ->
                 if (error != null) {
-                    Log.e(TAG, "❌ Attendance listener error: ${error.message}", error)
+                    Log.e(TAG, "❌ Listen failed: ${error.message}", error)
                     return@addSnapshotListener
                 }
                 
                 if (attendanceSnapshot == null || attendanceSnapshot.isEmpty) {
-                    Log.d(TAG, "⚠️ No checked-in employees in attendance collection")
                     onUpdate(emptyList())
                     return@addSnapshotListener
                 }
                 
-                Log.d(TAG, "📍 Found ${attendanceSnapshot.size()} checked-in employees in attendance")
+                // Get all checked-in employee IDs
+                val checkedInEmployeeIds = attendanceSnapshot.documents.mapNotNull { it.getString("employeeId") }
                 
-                // Get unique employeeIds (deduplicate in case of multiple check-in records)
-                val employeeIds = attendanceSnapshot.documents.mapNotNull { doc ->
-                    doc.getString("employeeId")
-                }.distinct().also { ids ->
-                    Log.d(TAG, "📍 Checked-in employees (unique): ${ids.size} - $ids")
-                    if (attendanceSnapshot.size() > ids.size) {
-                        Log.w(TAG, "⚠️ Found ${attendanceSnapshot.size() - ids.size} duplicate check-in records")
-                    }
-                }
-                
-                if (employeeIds.isEmpty()) {
-                    Log.d(TAG, "⚠️ No employeeIds found in attendance documents")
+                if (checkedInEmployeeIds.isEmpty()) {
                     onUpdate(emptyList())
                     return@addSnapshotListener
                 }
                 
-                // Fetch employees and locations in parallel using Tasks
-                val employeesFuture = db.collection(EMPLOYEES_COLLECTION).get()
-                val locationFutures = employeeIds.map { id ->
-                    db.collection(ACTIVE_LOCATIONS_COLLECTION).document(id).get()
-                }
-                
-                // Wait for all employee documents
-                employeesFuture.addOnSuccessListener { employeeDocs ->
-                    Log.d(TAG, "📥 Fetched ${employeeDocs.size()} employee documents")
-                    
-                    val employees = employeeDocs.documents.mapNotNull { doc ->
-                        try {
-                            doc.toObject<Employee>()
-                        } catch (e: Exception) {
-                            Log.w(TAG, "Failed to parse employee ${doc.id}: ${e.message}")
-                            null
-                        }
-                    }
-                    
-                    // Wait for all location documents
-                    val allLocationTasks = com.google.android.gms.tasks.Tasks.whenAllSuccess<com.google.firebase.firestore.DocumentSnapshot>(locationFutures)
-                    allLocationTasks.addOnSuccessListener { locationDocs ->
-                        val locations = mutableListOf<Pair<Employee, ActiveLocation>>()
-                        
-                        locationDocs.forEach { doc ->
-                            try {
-                                if (!doc.exists()) {
-                                    Log.w(TAG, "⚠️ Location doc doesn't exist: ${doc.id}")
-                                    return@forEach
-                                }
-                                
-                                val employeeId = doc.id // Document ID is the employeeId
-                                
-                                val locationData = doc.get("location")
-                                val geoPoint = when (locationData) {
-                                    is com.google.firebase.firestore.GeoPoint -> locationData
-                                    is Map<*, *> -> {
-                                        val lat = (locationData["latitude"] as? Number)?.toDouble() ?: 0.0
-                                        val lng = (locationData["longitude"] as? Number)?.toDouble() ?: 0.0
-                                        com.google.firebase.firestore.GeoPoint(lat, lng)
+                db.collection(ACTIVE_LOCATIONS_COLLECTION)
+                    .addSnapshotListener { locationSnapshot, locationError ->
+                         if (locationError != null) {
+                            Log.e(TAG, "❌ Location listen failed: ${locationError.message}")
+                            return@addSnapshotListener
+                         }
+                         
+                         if (locationSnapshot == null) return@addSnapshotListener
+                         
+                         val activeLocations = mutableListOf<Pair<Employee, ActiveLocation>>()
+                         
+                         CoroutineScope(Dispatchers.IO).launch {
+                            locationSnapshot.documents.forEach { doc ->
+                                try {
+                                    val employeeId = doc.getString("employeeId") ?: return@forEach
+                                    
+                                    // Only include if checked in
+                                    if (!checkedInEmployeeIds.contains(employeeId)) return@forEach
+                                    
+                                    val geoPoint = when (val loc = doc.get("location")) {
+                                        is GeoPoint -> loc
+                                        is HashMap<*, *> -> {
+                                            val lat = (loc["latitude"] as? Double) ?: 0.0
+                                            val lng = (loc["longitude"] as? Double) ?: 0.0
+                                            GeoPoint(lat, lng)
+                                        }
+                                        else -> return@forEach
                                     }
-                                    else -> {
-                                        Log.w(TAG, "Unknown location data type: ${locationData?.javaClass}")
-                                        return@forEach
+                                    
+                                    val activeLocation = ActiveLocation(
+                                        employeeId = employeeId,
+                                        location = GeoPointData.fromGeoPoint(geoPoint),
+                                        timestamp = doc.getTimestamp("lastUpdated") ?: Timestamp.now(),
+                                        checkInTime = doc.getTimestamp("checkInTime") ?: Timestamp.now(),
+                                        placeName = doc.getString("placeName")
+                                    )
+                                    
+                                    val employee = getEmployeeByEmployeeId(employeeId)
+                                    if (employee != null) {
+                                        activeLocations.add(Pair(employee, activeLocation))
                                     }
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Error parsing active location: ${e.message}")
                                 }
-                                
-                                val activeLocation = ActiveLocation(
-                                    employeeId = employeeId,
-                                    location = geoPoint,
-                                    timestamp = doc.getTimestamp("timestamp") ?: com.google.firebase.Timestamp.now(),
-                                    checkInTime = doc.getTimestamp("checkInTime") ?: com.google.firebase.Timestamp.now(),
-                                    isActive = true, // They're checked-in, so they're active
-                                    placeName = doc.getString("placeName"),
-                                    previousPlaceName = doc.getString("previousPlaceName"),
-                                    batteryLevel = doc.getDouble("batteryLevel"),
-                                    speed = doc.getDouble("speed"),
-                                    accuracy = doc.getDouble("accuracy")
-                                )
-                                
-                                // Find employee by employeeId (Firestore field "id" maps to property employeeId)
-                                val employee = employees.find { emp ->
-                                    emp.employeeId == employeeId
-                                }
-                                if (employee != null) {
-                                    Log.d(TAG, "✅ Matched: ${employee.displayName} ($employeeId)")
-                                    locations.add(Pair(employee, activeLocation))
-                                } else {
-                                    Log.w(TAG, "⚠️ No employee found for: $employeeId")
-                                }
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error parsing location: ${e.message}", e)
                             }
-                        }
-                        
-                        Log.d(TAG, "✅ Real-time update: ${locations.size} active locations with employee data")
-                        onUpdate(locations)
-                    }.addOnFailureListener { e ->
-                        Log.e(TAG, "❌ Error fetching locations: ${e.message}", e)
-                        onUpdate(emptyList())
+                            
+                            withContext(Dispatchers.Main) {
+                                onUpdate(activeLocations)
+                            }
+                         }
                     }
-                }.addOnFailureListener { e ->
-                    Log.e(TAG, "❌ Error fetching employees: ${e.message}", e)
-                    onUpdate(emptyList())
+            }
+    }
+
+    // Real-time listener for a single employee's check-in status
+    fun listenToActiveCheckIn(employeeId: String, onUpdate: (AttendanceRecord?) -> Unit): com.google.firebase.firestore.ListenerRegistration {
+        Log.d(TAG, "👂 listening to active check-in for: $employeeId")
+        return db.collection(ATTENDANCE_COLLECTION)
+            .whereEqualTo("employeeId", employeeId)
+            .whereEqualTo("status", "checked_in")
+            .limit(1)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e(TAG, "❌ Listen active check-in error: ${error.message}")
+                    return@addSnapshotListener
+                }
+                
+                if (snapshot == null || snapshot.isEmpty) {
+                    onUpdate(null)
+                    return@addSnapshotListener
+                }
+                
+                try {
+                    val record = try {
+                        snapshot.documents[0].toObject<AttendanceRecord>()
+                    } catch (e: Exception) {
+                        convertDocumentToAttendanceRecord(snapshot.documents[0])
+                    }
+                    onUpdate(record)
+                } catch (e: Exception) {
+                     Log.e(TAG, "❌ Error parsing active record: ${e.message}")
+                     onUpdate(null)
                 }
             }
     }
-    
-    // Employee Management operations
+                                
+
     suspend fun createEmployee(employee: Employee) {
         try {
             Log.d(TAG, "➕ Creating employee: ${employee.employeeId}")
@@ -926,7 +1067,7 @@ class FirestoreService private constructor() {
     // Location Movement Operations (matching iOS implementation)
     suspend fun saveLocationMovement(movement: LocationMovement): Result<Unit> {
         return try {
-            Log.d(TAG, "💾 Saving location movement: ${movement.movementType.displayName}")
+            Log.d(TAG, "💾 Saving location movement: ${movement.getType().displayName}")
             db.collection(MOVEMENTS_COLLECTION)
                 .add(movement)
                 .await()
@@ -1032,4 +1173,224 @@ class FirestoreService private constructor() {
             onUpdate(movements)
         }
     }
+    // MARK: - Leave Management
+    
+    suspend fun submitLeaveRequest(
+        employeeId: String,
+        employeeName: String,
+        leaveType: LeaveType,
+        startDate: Date,
+        endDate: Date,
+        reason: String
+    ): Result<LeaveRequest> {
+        return try {
+            val now = Timestamp.now()
+            val request = LeaveRequest(
+                employeeId = employeeId,
+                employeeName = employeeName,
+                leaveType = leaveType.value,
+                startDate = Timestamp(startDate),
+                endDate = Timestamp(endDate),
+                reason = reason,
+                status = LeaveStatus.PENDING.value,
+                submittedAt = now
+            )
+            
+            val docRef = db.collection(LEAVE_REQUESTS_COLLECTION)
+                .add(request)
+                .await()
+            
+            Log.d(TAG, "✅ Leave request submitted: ${docRef.id}")
+            Result.success(request.copy(id = docRef.id))
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Submit leave request error: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getMyLeaveRequests(employeeId: String): List<LeaveRequest> {
+        return try {
+            val snapshot = db.collection(LEAVE_REQUESTS_COLLECTION)
+                .whereEqualTo("employeeId", employeeId)
+                .orderBy("submittedAt", Query.Direction.DESCENDING)
+                .get()
+                .await()
+            
+            snapshot.toObjects<LeaveRequest>()
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error fetching my leave requests: ${e.message}", e)
+            emptyList()
+        }
+    }
+    
+    suspend fun getPendingRequests(): List<LeaveRequest> {
+        return try {
+            val snapshot = db.collection(LEAVE_REQUESTS_COLLECTION)
+                .whereEqualTo("status", LeaveStatus.PENDING.value)
+                .orderBy("submittedAt", Query.Direction.ASCENDING)
+                .get()
+                .await()
+            
+            snapshot.toObjects<LeaveRequest>()
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error fetching pending requests: ${e.message}", e)
+            emptyList()
+        }
+    }
+    
+    suspend fun getAllLeaveRequests(limit: Long = 100): List<LeaveRequest> {
+        return try {
+            val snapshot = db.collection(LEAVE_REQUESTS_COLLECTION)
+                .orderBy("submittedAt", Query.Direction.DESCENDING)
+                .limit(limit)
+                .get()
+                .await()
+            
+            snapshot.toObjects<LeaveRequest>()
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error fetching all leave requests: ${e.message}", e)
+            emptyList()
+        }
+    }
+    
+    suspend fun approveLeaveRequest(
+        requestId: String,
+        reviewedBy: String,
+        notes: String?
+    ): Result<Unit> {
+        return try {
+            db.collection(LEAVE_REQUESTS_COLLECTION)
+                .document(requestId)
+                .update(
+                    mapOf(
+                        "status" to LeaveStatus.APPROVED.value,
+                        "reviewedBy" to reviewedBy,
+                        "reviewedAt" to Timestamp.now(),
+                        "reviewNotes" to (notes ?: "")
+                    )
+                )
+                .await()
+            
+            Log.d(TAG, "✅ Leave request approved: $requestId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Approve leave request error: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun rejectLeaveRequest(
+        requestId: String,
+        reviewedBy: String,
+        notes: String?
+    ): Result<Unit> {
+        return try {
+            db.collection(LEAVE_REQUESTS_COLLECTION)
+                .document(requestId)
+                .update(
+                    mapOf(
+                        "status" to LeaveStatus.REJECTED.value,
+                        "reviewedBy" to reviewedBy,
+                        "reviewedAt" to Timestamp.now(),
+                        "reviewNotes" to (notes ?: "")
+                    )
+                )
+                .await()
+            
+            Log.d(TAG, "✅ Leave request rejected: $requestId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Reject leave request error: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getLeaveBalance(
+        employeeId: String,
+        year: Int = Calendar.getInstance().get(Calendar.YEAR)
+    ): LeaveBalance {
+        return try {
+            val snapshot = db.collection(LEAVE_BALANCES_COLLECTION)
+                .whereEqualTo("employeeId", employeeId)
+                .whereEqualTo("year", year)
+                .limit(1)
+                .get()
+                .await()
+            
+            if (snapshot.documents.isNotEmpty()) {
+                snapshot.documents[0].toObject<LeaveBalance>() ?: createDefaultBalance(employeeId, year)
+            } else {
+                createDefaultBalance(employeeId, year)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error fetching leave balance: ${e.message}", e)
+            // Return default balance on error to not block UI
+            LeaveBalance(employeeId = employeeId, year = year)
+        }
+    }
+    
+    private suspend fun createDefaultBalance(employeeId: String, year: Int): LeaveBalance {
+        try {
+            val balance = LeaveBalance(
+                employeeId = employeeId,
+                year = year,
+                vacationTotal = 20,
+                vacationUsed = 0,
+                sickTotal = 10,
+                sickUsed = 0,
+                personalTotal = 5,
+                personalUsed = 0
+            )
+            
+            val docRef = db.collection(LEAVE_BALANCES_COLLECTION)
+                .add(balance)
+                .await()
+            
+            Log.d(TAG, "✅ Default leave balance created for $employeeId")
+            return balance.copy(id = docRef.id)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error creating default balance: ${e.message}", e)
+            return LeaveBalance(employeeId = employeeId, year = year)
+        }
+    }
+    
+    suspend fun updateLeaveBalance(
+        employeeId: String,
+        year: Int,
+        leaveType: LeaveType,
+        daysUsed: Int
+    ): Result<Unit> {
+        return try {
+            val balance = getLeaveBalance(employeeId, year)
+            val balanceId = balance.id
+            
+            if (balanceId == null) {
+                throw Exception("Balance ID not found")
+            }
+            
+            val updates = HashMap<String, Any>()
+            
+            when (leaveType) {
+                LeaveType.VACATION -> updates["vacationUsed"] = balance.vacationUsed + daysUsed
+                LeaveType.SICK -> updates["sickUsed"] = balance.sickUsed + daysUsed
+                LeaveType.PERSONAL -> updates["personalUsed"] = balance.personalUsed + daysUsed
+                else -> { /* No update for other types */ }
+            }
+            
+            if (updates.isNotEmpty()) {
+                db.collection(LEAVE_BALANCES_COLLECTION)
+                    .document(balanceId)
+                    .update(updates)
+                    .await()
+            }
+            
+            Log.d(TAG, "✅ Leave balance updated for $employeeId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Update leave balance error: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+
 }

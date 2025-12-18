@@ -2,6 +2,7 @@ package com.ats.android.models
 
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.PropertyName
+import com.ats.android.R
 
 data class ShiftConfig(
     val id: String = "default",
@@ -41,17 +42,16 @@ data class DaySchedule(
     fun getStartHour(): Int = startTime.split(":")[0].toInt()
     fun getStartMinute(): Int = startTime.split(":")[1].toInt()
     fun getEndHour(): Int = endTime.split(":")[0].toInt()
-    fun getEndMinute(): Int = endTime.split(":")[1].toInt()
 }
 
-enum class WorkDay(val displayName: String, val arabicName: String) {
-    SUNDAY("Sunday", "الأحد"),
-    MONDAY("Monday", "الإثنين"),
-    TUESDAY("Tuesday", "الثلاثاء"),
-    WEDNESDAY("Wednesday", "الأربعاء"),
-    THURSDAY("Thursday", "الخميس"),
-    FRIDAY("Friday", "الجمعة"),
-    SATURDAY("Saturday", "السبت");
+enum class WorkDay(val labelResId: Int) {
+    SUNDAY(R.string.day_sunday),
+    MONDAY(R.string.day_monday),
+    TUESDAY(R.string.day_tuesday),
+    WEDNESDAY(R.string.day_wednesday),
+    THURSDAY(R.string.day_thursday),
+    FRIDAY(R.string.day_friday),
+    SATURDAY(R.string.day_saturday);
     
     companion object {
         fun fromCalendarDay(calendarDay: Int): WorkDay {

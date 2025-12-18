@@ -7,8 +7,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import android.app.Application
 import com.ats.android.utils.LocaleManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,17 +19,35 @@ import kotlinx.coroutines.launch
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-class SettingsViewModel(private val context: Context) : ViewModel() {
+class SettingsViewModel(application: Application) : AndroidViewModel(application) {
+    
+    private val context = getApplication<Application>()
     
     private val _language = MutableStateFlow("en")
     val language: StateFlow<String> = _language.asStateFlow()
-    
+
     private val _theme = MutableStateFlow("system")
     val theme: StateFlow<String> = _theme.asStateFlow()
     
     private val _notificationsEnabled = MutableStateFlow(true)
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
     
+    // Granular State
+    private val _pushEnabled = MutableStateFlow(true)
+    val pushEnabled: StateFlow<Boolean> = _pushEnabled.asStateFlow()
+
+    private val _emailEnabled = MutableStateFlow(true)
+    val emailEnabled: StateFlow<Boolean> = _emailEnabled.asStateFlow()
+
+    private val _checkInReminders = MutableStateFlow(true)
+    val checkInReminders: StateFlow<Boolean> = _checkInReminders.asStateFlow()
+
+    private val _leaveUpdates = MutableStateFlow(true)
+    val leaveUpdates: StateFlow<Boolean> = _leaveUpdates.asStateFlow()
+
+    private val _announcementAlerts = MutableStateFlow(true)
+    val announcementAlerts: StateFlow<Boolean> = _announcementAlerts.asStateFlow()
+
     init {
         loadSettings()
     }
@@ -44,6 +63,13 @@ class SettingsViewModel(private val context: Context) : ViewModel() {
                 val preferences = context.dataStore.data.first()
                 _theme.value = preferences[THEME_KEY] ?: "system"
                 _notificationsEnabled.value = preferences[NOTIFICATIONS_KEY]?.toBoolean() ?: true
+                
+                // Load granular
+                _pushEnabled.value = preferences[NOTIF_PUSH_KEY]?.toBoolean() ?: true
+                _emailEnabled.value = preferences[NOTIF_EMAIL_KEY]?.toBoolean() ?: true
+                _checkInReminders.value = preferences[NOTIF_REMINDERS_KEY]?.toBoolean() ?: true
+                _leaveUpdates.value = preferences[NOTIF_LEAVE_KEY]?.toBoolean() ?: true
+                _announcementAlerts.value = preferences[NOTIF_ANNOUNCEMENTS_KEY]?.toBoolean() ?: true
                 
                 // Sync language to DataStore if needed
                 if (preferences[LANGUAGE_KEY] != currentLanguage) {
@@ -107,10 +133,39 @@ class SettingsViewModel(private val context: Context) : ViewModel() {
         }
     }
     
+    fun updateNotificationSetting(key: String, enabled: Boolean) {
+        viewModelScope.launch {
+            context.dataStore.edit { prefs ->
+                val prefKey = when(key) {
+                    "push" -> NOTIF_PUSH_KEY
+                    "email" -> NOTIF_EMAIL_KEY
+                    "reminders" -> NOTIF_REMINDERS_KEY
+                    "leave" -> NOTIF_LEAVE_KEY
+                    "announcements" -> NOTIF_ANNOUNCEMENTS_KEY
+                    else -> return@edit
+                }
+                prefs[prefKey] = enabled.toString()
+            }
+            when(key) {
+                "push" -> _pushEnabled.value = enabled
+                "email" -> _emailEnabled.value = enabled
+                "reminders" -> _checkInReminders.value = enabled
+                "leave" -> _leaveUpdates.value = enabled
+                "announcements" -> _announcementAlerts.value = enabled
+            }
+        }
+    }
+    
     companion object {
         private const val TAG = "SettingsViewModel"
         private val LANGUAGE_KEY = stringPreferencesKey("language")
         private val THEME_KEY = stringPreferencesKey("theme")
         private val NOTIFICATIONS_KEY = stringPreferencesKey("notifications_enabled")
+        // Granular keys
+        private val NOTIF_PUSH_KEY = stringPreferencesKey("notif_push")
+        private val NOTIF_EMAIL_KEY = stringPreferencesKey("notif_email")
+        private val NOTIF_REMINDERS_KEY = stringPreferencesKey("notif_reminders")
+        private val NOTIF_LEAVE_KEY = stringPreferencesKey("notif_leave")
+        private val NOTIF_ANNOUNCEMENTS_KEY = stringPreferencesKey("notif_announcements")
     }
 }

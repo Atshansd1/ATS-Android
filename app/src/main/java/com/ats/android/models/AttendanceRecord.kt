@@ -75,13 +75,26 @@ enum class AttendanceStatus(val value: String) {
 
 data class ActiveLocation(
     val employeeId: String = "",
-    val location: com.google.firebase.firestore.GeoPoint = com.google.firebase.firestore.GeoPoint(0.0, 0.0),
+    val location: GeoPointData = GeoPointData(),
     val timestamp: Timestamp = Timestamp.now(),
     val checkInTime: Timestamp = Timestamp.now(),
     val isActive: Boolean = true,
     val placeName: String? = null,
+    val placeNameEn: String? = null,
+    val placeNameAr: String? = null,
     val previousPlaceName: String? = null,
     val batteryLevel: Double? = null,
     val speed: Double? = null,
-    val accuracy: Double? = null
-)
+    val accuracy: Double? = null,
+    // Use lastUpdated instead of timestamp for sorting to match iOS
+    val lastUpdated: Timestamp = Timestamp.now()
+) {
+    fun getLocalizedPlaceName(): String? {
+        val isArabic = java.util.Locale.getDefault().language == "ar"
+        return if (isArabic) {
+            placeNameAr ?: placeName
+        } else {
+            placeNameEn ?: placeName
+        }
+    }
+}

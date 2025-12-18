@@ -206,7 +206,7 @@ fun RouteInfoCard(
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    text = getLocalizedMovementType(movement.movementType),
+                    text = getLocalizedMovementType(movement.getType()),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.primary

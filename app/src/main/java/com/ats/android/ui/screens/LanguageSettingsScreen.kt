@@ -34,14 +34,7 @@ fun LanguageSettingsScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val settingsViewModel: SettingsViewModel = viewModel(
-        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                return SettingsViewModel(context) as T
-            }
-        }
-    )
+val settingsViewModel: SettingsViewModel = viewModel()
     
     val currentLanguage by settingsViewModel.language.collectAsState()
     var selectedLanguage by remember { mutableStateOf(currentLanguage) }

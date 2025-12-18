@@ -60,6 +60,27 @@ class AuthViewModel : ViewModel() {
         _currentEmployee.value = null
         _uiState.value = AuthUiState.Unauthenticated
     }
+    fun changePassword(currentPassword: String, newPassword: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            _uiState.value = AuthUiState.Loading
+            
+            val result = authService.changePassword(currentPassword, newPassword)
+            
+            if (result.isSuccess) {
+                // Restore authenticated state
+                _currentEmployee.value?.let { 
+                    _uiState.value = AuthUiState.Authenticated(it) 
+                }
+                onSuccess()
+            } else {
+                val error = result.exceptionOrNull()?.message ?: "Failed to change password"
+                _currentEmployee.value?.let {
+                    _uiState.value = AuthUiState.Authenticated(it)
+                }
+                onError(error)
+            }
+        }
+    }
 }
 
 sealed class AuthUiState {

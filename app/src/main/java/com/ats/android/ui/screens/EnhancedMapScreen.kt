@@ -4,6 +4,7 @@ import android.location.Location
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import android.util.Log
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,7 +19,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -26,6 +31,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -41,7 +47,11 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.google.android.gms.maps.model.MapStyleOptions
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.combinedClickable
 
 /**
  * Enhanced Map Screen matching iOS ModernAdminMapView with Material 3 Expressive Design
@@ -56,7 +66,9 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EnhancedMapScreen() {
+fun EnhancedMapScreen(
+    selectedEmployeeId: String? = null
+) {
     val context = LocalContext.current
     val viewModel: MapViewModel = viewModel(
         factory = com.ats.android.viewmodels.MapViewModelFactory(context)
@@ -73,10 +85,22 @@ fun EnhancedMapScreen() {
     var expandedSearch by remember { mutableStateOf(false) }
     var expandedEmployeeList by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
-    var selectedEmployeeId by remember { mutableStateOf<String?>(null) }
+    // Initialize with passed ID if present, otherwise null
+    var currentSelectedEmployeeId by remember(selectedEmployeeId) { mutableStateOf(selectedEmployeeId) }
+    var showForceCheckoutDialog by remember { mutableStateOf<String?>(null) }
     
     val scope = rememberCoroutineScope()
     val locationService = remember { com.ats.android.services.LocationService(context) }
+    
+    // Dark Mode Map Style
+    val isDarkTheme = isSystemInDarkTheme()
+    val mapStyleOptions = remember(isDarkTheme) {
+        if (isDarkTheme) {
+            MapStyleOptions.loadRawResourceStyle(context, com.ats.android.R.raw.map_style_dark)
+        } else {
+            null
+        }
+    }
     
     // Get user's current location for map center
     var defaultCenter by remember { mutableStateOf<LatLng?>(null) }
@@ -119,8 +143,8 @@ fun EnhancedMapScreen() {
     }
     
     // Move camera to selected employee
-    LaunchedEffect(selectedEmployeeId) {
-        selectedEmployeeId?.let { id ->
+    LaunchedEffect(currentSelectedEmployeeId) {
+        currentSelectedEmployeeId?.let { id ->
             employeeLocations.find { it.employeeId == id }?.let { employee ->
                 cameraPositionState.animate(
                     CameraUpdateFactory.newCameraPosition(
@@ -131,9 +155,34 @@ fun EnhancedMapScreen() {
                 
                 // Auto-deselect after 5 seconds (matching iOS)
                 delay(5000)
-                selectedEmployeeId = null
+                currentSelectedEmployeeId = null
             }
         }
+    }
+    
+    // Force Checkout Confirmation Dialog
+    if (showForceCheckoutDialog != null) {
+        AlertDialog(
+            onDismissRequest = { showForceCheckoutDialog = null },
+            title = { Text(stringResource(R.string.force_checkout)) },
+            text = { Text(stringResource(R.string.force_checkout_confirmation)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showForceCheckoutDialog?.let { viewModel.forceCheckout(it) }
+                        showForceCheckoutDialog = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.force_checkout))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showForceCheckoutDialog = null }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
     }
     
     // Move camera to search location
@@ -153,23 +202,49 @@ fun EnhancedMapScreen() {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            properties = MapProperties(
-                isMyLocationEnabled = false,
-                mapType = MapType.NORMAL
-            ),
-            uiSettings = MapUiSettings(
+                    properties = MapProperties(
+                        isMyLocationEnabled = true,
+                        mapType = MapType.NORMAL,
+                        mapStyleOptions = mapStyleOptions
+                    ),       uiSettings = MapUiSettings(
                 zoomControlsEnabled = false,
                 myLocationButtonEnabled = false,
                 compassEnabled = true
             )
         ) {
             // Employee markers
-            employeeLocations.forEach { location ->
-                val isSelected = location.employeeId == selectedEmployeeId
+            for (location in employeeLocations) {
+                val isSelected = location.employeeId == currentSelectedEmployeeId
                 val isNearest = location.employeeId == nearestEmployee?.employeeId
                 
-                Marker(
+                // Manually load bitmap to avoid AsyncImage crash in MarkerComposable
+                var avatarBitmap by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+                val context = LocalContext.current
+                
+                LaunchedEffect(location.avatarUrl) {
+                    if (location.avatarUrl != null) {
+                        try {
+                            val request = coil.request.ImageRequest.Builder(context)
+                                .data(location.avatarUrl)
+                                .allowHardware(false) // Important for Map markers
+                                .size(100, 100)
+                                .build()
+                            
+                            val result = coil.ImageLoader(context).execute(request)
+                            if (result is coil.request.SuccessResult) {
+                                avatarBitmap = result.drawable.toBitmap().asImageBitmap()
+                            } else if (result is coil.request.ErrorResult) {
+                                Log.e("EnhancedMapScreen", "Error loading avatar: ${result.throwable.message}")
+                            }
+                        } catch (e: Exception) {
+                            Log.e("EnhancedMapScreen", "Exception loading avatar", e)
+                        }
+                    }
+                }
+
+                MarkerComposable(
                     state = MarkerState(position = location.position),
+                    keys = arrayOf(location.employeeId, isSelected, isNearest, avatarBitmap ?: "no_avatar"), // Ensure non-null
                     title = location.employeeName,
                     snippet = buildString {
                         append("${location.role}")
@@ -178,15 +253,81 @@ fun EnhancedMapScreen() {
                     },
                     tag = location.employeeId,
                     onClick = {
-                        selectedEmployeeId = location.employeeId
+                        currentSelectedEmployeeId = location.employeeId
                         true
                     },
-                    icon = if (isNearest) {
-                        BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)
-                    } else {
-                        BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                    zIndex = if (isSelected) 1.0f else 0.0f
+                ) {
+                    val roleColor = getRoleColor(location.role)
+                    val borderColor = if (isNearest) ATSColors.ActiveNowGreen else Color.White
+                    
+                    Box(
+                        modifier = Modifier
+                            .size(if (isSelected) 60.dp else 48.dp)
+                            .shadow(
+                                elevation = 4.dp,
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Avatar
+                        if (avatarBitmap != null) {
+                            androidx.compose.foundation.Image(
+                                bitmap = avatarBitmap!!,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape)
+                                    .border(
+                                        width = if (isSelected || isNearest) 3.dp else 2.dp,
+                                        color = borderColor,
+                                        shape = CircleShape
+                                    ),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            // Fallback with initials
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                roleColor.copy(alpha = 0.8f),
+                                                roleColor
+                                            )
+                                        ),
+                                        shape = CircleShape
+                                    )
+                                    .border(
+                                        width = if (isSelected || isNearest) 3.dp else 2.dp,
+                                        color = borderColor,
+                                        shape = CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = location.employeeName.firstOrNull()?.uppercase() ?: "?",
+                                    color = Color.White,
+                                    fontSize = if (isSelected) 24.sp else 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        
+                        // Active/Nearest Indicator Dot
+                        if (isNearest || isSelected) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .offset(x = (-2).dp, y = (-2).dp)
+                                    .size(12.dp)
+                                    .background(ATSColors.ActiveNowGreen, CircleShape)
+                                    .border(1.5.dp, Color.White, CircleShape)
+                            )
+                        }
                     }
-                )
+                }
             }
             
             // Search location marker
@@ -234,7 +375,7 @@ fun EnhancedMapScreen() {
                             viewModel.selectPlace(placeId)
                         },
                         onEmployeeClick = { employeeId ->
-                            selectedEmployeeId = employeeId
+                            currentSelectedEmployeeId = employeeId
                             expandedEmployeeList = false
                             expandedSearch = false
                         }
@@ -269,8 +410,11 @@ fun EnhancedMapScreen() {
                     selectedEmployeeId = selectedEmployeeId,
                     nearestEmployeeId = nearestEmployee?.employeeId,
                     onEmployeeClick = { employeeId ->
-                        selectedEmployeeId = employeeId
+                        currentSelectedEmployeeId = employeeId
                         expandedEmployeeList = false
+                    },
+                    onEmployeeLongClick = { employeeId ->
+                        showForceCheckoutDialog = employeeId
                     },
                     onDismiss = {
                         expandedEmployeeList = false
@@ -480,12 +624,12 @@ fun ExpandedSearchView(
                         tint = MaterialTheme.colorScheme.error
                     )
                     Text(
-                        "Search Error",
+                        stringResource(R.string.search_error),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        searchError,
+                        searchError, // Keep exact error message from ViewModel
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -522,12 +666,12 @@ fun ExpandedSearchView(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                     Text(
-                        "No results found",
+                        stringResource(R.string.no_results_found),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        "Try a different search term",
+                        stringResource(R.string.try_different_search),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -588,7 +732,7 @@ fun SearchResultItem(
         if (employeeLocations.isNotEmpty()) {
             Spacer(modifier = Modifier.height(Spacing.sm))
             Text(
-                text = "${employeeLocations.size} active employees nearby",
+                text = stringResource(R.string.active_employees_nearby_fmt, employeeLocations.size),
                 style = MaterialTheme.typography.labelSmall,
                 color = ATSColors.SupervisorBlue,
                 modifier = Modifier.padding(start = 36.dp)
@@ -742,11 +886,7 @@ fun NearbyEmployeeItem(
                 fontWeight = FontWeight.Medium
             )
             Text(
-                text = when (employee.role) {
-                    com.ats.android.models.EmployeeRole.ADMIN -> stringResource(R.string.admin)
-                    com.ats.android.models.EmployeeRole.SUPERVISOR -> stringResource(R.string.supervisor)
-                    com.ats.android.models.EmployeeRole.EMPLOYEE -> stringResource(R.string.employee)
-                },
+                text = stringResource(employee.role.labelResId),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -767,7 +907,7 @@ fun NearbyEmployeeItem(
             if (isNearest) {
                 Icon(
                     Icons.Default.CheckCircle,
-                    contentDescription = "Nearest",
+                    contentDescription = stringResource(R.string.nearest),
                     tint = Color.Green,
                     modifier = Modifier.size(16.dp)
                 )
@@ -900,6 +1040,7 @@ fun ExpandedEmployeeListView(
     selectedEmployeeId: String?,
     nearestEmployeeId: String?,
     onEmployeeClick: (String) -> Unit,
+    onEmployeeLongClick: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
@@ -960,7 +1101,8 @@ fun ExpandedEmployeeListView(
                         searchLocation = searchLocation,
                         isSelected = employee.employeeId == selectedEmployeeId,
                         isNearest = employee.employeeId == nearestEmployeeId,
-                        onClick = { onEmployeeClick(employee.employeeId) }
+                        onClick = { onEmployeeClick(employee.employeeId) },
+                        onLongClick = { onEmployeeLongClick(employee.employeeId) }
                     )
                     Divider(modifier = Modifier.padding(start = 72.dp))
                 }
@@ -972,13 +1114,15 @@ fun ExpandedEmployeeListView(
 /**
  * Employee List Item (iOS style with distance)
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun EmployeeListItem(
     employee: EmployeeLocation,
     searchLocation: LatLng?,
     isSelected: Boolean,
     isNearest: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
 ) {
     val distance = searchLocation?.let { search ->
         val results = FloatArray(1)
@@ -993,7 +1137,10 @@ fun EmployeeListItem(
     
     ListItem(
         modifier = Modifier
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
             .then(
                 if (isSelected) {
                     Modifier.background(ATSColors.SupervisorBlue.copy(alpha = 0.1f))

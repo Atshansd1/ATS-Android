@@ -13,6 +13,9 @@ import androidx.compose.ui.unit.dp
 import com.ats.android.models.Employee
 import com.ats.android.models.EmployeeRole
 import com.ats.android.ui.theme.Spacing
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.Alignment
+import com.ats.android.R
 
 /**
  * Edit Employee Dialog matching iOS EditEmployeeView
@@ -44,12 +47,12 @@ fun EditEmployeeDialog(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    "Edit Employee",
+                    stringResource(R.string.edit_employee),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
                 )
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, "Close")
+                    Icon(Icons.Default.Close, stringResource(R.string.close))
                 }
             }
         },
@@ -64,81 +67,82 @@ fun EditEmployeeDialog(
                 OutlinedTextField(
                     value = englishName,
                     onValueChange = { englishName = it },
-                    label = { Text("English Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    label = { Text(stringResource(R.string.english_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 
                 // Arabic Name
                 OutlinedTextField(
                     value = arabicName,
                     onValueChange = { arabicName = it },
-                    label = { Text("Arabic Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    label = { Text(stringResource(R.string.arabic_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 
                 // Employee ID
                 OutlinedTextField(
                     value = employeeId,
-                    onValueChange = { employeeId = it },
-                    label = { Text("Employee ID") },
-                    modifier = Modifier.fillMaxWidth(),
+                    onValueChange = { },
+                    label = { Text(stringResource(R.string.employee_id_label)) },
+                    enabled = false, // ID cannot be changed
                     singleLine = true,
-                    enabled = false // Don't allow changing ID
+                    modifier = Modifier.fillMaxWidth()
                 )
                 
                 // Email
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Email") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    label = { Text(stringResource(R.string.email_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 
                 // Phone Number
                 OutlinedTextField(
                     value = phoneNumber,
                     onValueChange = { phoneNumber = it },
-                    label = { Text("Phone Number") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    label = { Text(stringResource(R.string.phone_number)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 
                 // Department (English)
                 OutlinedTextField(
                     value = departmentEn,
                     onValueChange = { departmentEn = it },
-                    label = { Text("Department (English)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    label = { Text(stringResource(R.string.department_en)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 
                 // Department (Arabic)
                 OutlinedTextField(
                     value = departmentAr,
                     onValueChange = { departmentAr = it },
-                    label = { Text("Department (Arabic)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    label = { Text(stringResource(R.string.department_ar)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 
-                // Role Dropdown
+                // Role Selection
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded }
                 ) {
                     OutlinedTextField(
                         value = when (selectedRole) {
-                            EmployeeRole.ADMIN -> "Admin"
-                            EmployeeRole.SUPERVISOR -> "Supervisor"
-                            EmployeeRole.EMPLOYEE -> "Employee"
+                            EmployeeRole.ADMIN -> stringResource(R.string.admin)
+                            EmployeeRole.SUPERVISOR -> stringResource(R.string.supervisor)
+                            EmployeeRole.EMPLOYEE -> stringResource(R.string.employee)
                         },
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Role") },
+                        label = { Text(stringResource(R.string.role)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor()
@@ -149,21 +153,21 @@ fun EditEmployeeDialog(
                         onDismissRequest = { expanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Employee") },
+                            text = { Text(stringResource(R.string.employee)) },
                             onClick = {
                                 selectedRole = EmployeeRole.EMPLOYEE
                                 expanded = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Supervisor") },
+                            text = { Text(stringResource(R.string.supervisor)) },
                             onClick = {
                                 selectedRole = EmployeeRole.SUPERVISOR
                                 expanded = false
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Admin") },
+                            text = { Text(stringResource(R.string.admin)) },
                             onClick = {
                                 selectedRole = EmployeeRole.ADMIN
                                 expanded = false
@@ -175,10 +179,11 @@ fun EditEmployeeDialog(
                 // Active Status
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Active Status",
+                        stringResource(R.string.active),
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Switch(
@@ -204,12 +209,12 @@ fun EditEmployeeDialog(
                     onSave(updatedEmployee)
                 }
             ) {
-                Text("Save Changes")
+                Text(stringResource(R.string.save_changes))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

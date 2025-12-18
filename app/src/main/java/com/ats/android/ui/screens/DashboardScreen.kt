@@ -31,6 +31,12 @@ import com.ats.android.models.Employee
 import com.ats.android.models.ActivityType
 import com.ats.android.viewmodels.DashboardViewModel
 import com.ats.android.viewmodels.DashboardUiState
+import androidx.compose.ui.res.stringResource
+import com.ats.android.R
+import com.ats.android.ui.theme.ATSColors
+import java.util.Date
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,13 +52,13 @@ fun DashboardScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 title = { 
                     Column {
                         Text(
-                            "Dashboard",
+                            stringResource(R.string.dashboard),
                             style = MaterialTheme.typography.titleLarge
                         )
                         currentEmployee?.let {
@@ -66,7 +72,7 @@ fun DashboardScreen(
                 },
                 actions = {
                     IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(Icons.Default.Refresh, "Refresh")
+                        Icon(Icons.Default.Refresh, stringResource(R.string.refresh))
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -135,8 +141,8 @@ fun DashboardScreen(
                         item {
                             MinimalEmptyState(
                                 icon = Icons.Default.LocationOff,
-                                title = "No Active Employees",
-                                description = "No employees are currently checked in"
+                                title = stringResource(R.string.no_active_employees),
+                                description = stringResource(R.string.no_active_employees_desc)
                             )
                         }
                     }
@@ -172,7 +178,7 @@ fun MinimalStatsSection(stats: com.ats.android.models.DashboardStats) {
             ) {
                 Column {
                     Text(
-                        text = "Active Now",
+                        text = stringResource(R.string.active_now),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -197,21 +203,21 @@ fun MinimalStatsSection(stats: com.ats.android.models.DashboardStats) {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             MinimalStatCard(
-                title = "Total",
+                title = stringResource(R.string.total),
                 value = stats.totalEmployees.toString(),
                 icon = Icons.Default.People,
                 modifier = Modifier.weight(1f)
             )
             
             MinimalStatCard(
-                title = "Today",
+                title = stringResource(R.string.today),
                 value = stats.checkedInToday.toString(),
                 icon = Icons.Default.Login,
                 modifier = Modifier.weight(1f)
             )
             
             MinimalStatCard(
-                title = "Leave",
+                title = stringResource(R.string.on_leave),
                 value = stats.onLeave.toString(),
                 icon = Icons.Default.PersonOff,
                 modifier = Modifier.weight(1f)
@@ -262,7 +268,7 @@ fun MinimalActivitySection(activities: List<com.ats.android.models.EmployeeActiv
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "Recent Activity",
+            text = stringResource(R.string.recent_activity),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(vertical = 4.dp)
         )
@@ -282,36 +288,49 @@ fun MinimalActivitySection(activities: List<com.ats.android.models.EmployeeActiv
 
 @Composable
 fun MinimalActivityItem(activity: com.ats.android.models.EmployeeActivity) {
-    ListItem(
-        headlineContent = { Text(activity.employeeName) },
-        supportingContent = { Text(activity.action) },
-        leadingContent = {
-            val iconColor = when (activity.type) {
-                ActivityType.CHECK_IN -> MaterialTheme.colorScheme.primary
-                ActivityType.CHECK_OUT -> MaterialTheme.colorScheme.tertiary
-                ActivityType.STATUS_CHANGE -> MaterialTheme.colorScheme.secondary
-            }
-            
-            val icon = when (activity.type) {
-                ActivityType.CHECK_IN -> Icons.Default.ArrowDownward
-                ActivityType.CHECK_OUT -> Icons.Default.ArrowUpward
-                ActivityType.STATUS_CHANGE -> Icons.Default.Edit
-            }
-            
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = icon,
+                imageVector = when(activity.type) {
+                    ActivityType.CHECK_IN -> Icons.Default.Login
+                    ActivityType.CHECK_OUT -> Icons.Default.Logout
+                    else -> Icons.Default.Info
+                },
                 contentDescription = null,
-                tint = iconColor
+                tint = when(activity.type) {
+                    ActivityType.CHECK_IN -> ATSColors.CheckInGreen
+                    ActivityType.CHECK_OUT -> ATSColors.CheckOutBlue
+                    else -> MaterialTheme.colorScheme.primary
+                }
             )
-        },
-        trailingContent = {
-            Text(
-                text = activity.timeAgo,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(activity.employeeName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(
+                        when(activity.type) {
+                            ActivityType.CHECK_IN -> R.string.checked_in
+                            ActivityType.CHECK_OUT -> R.string.checked_out
+                            else -> R.string.status_update
+                        }
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
-    )
+        Text(
+             SimpleDateFormat("HH:mm", Locale.getDefault()).format(activity.timestamp.toDate()),
+             style = MaterialTheme.typography.labelSmall,
+             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
 
 @Composable
@@ -326,11 +345,11 @@ fun MinimalActiveEmployeesSection(activeEmployees: List<com.ats.android.models.A
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Active Employees (${activeEmployees.size})",
+                text = "${stringResource(R.string.active_employees)} (${activeEmployees.size})",
                 style = MaterialTheme.typography.titleMedium
             )
             TextButton(onClick = { /* Navigate to full list */ }) {
-                Text("View All")
+                Text(stringResource(R.string.view_all))
             }
         }
         
@@ -344,52 +363,34 @@ fun MinimalActiveEmployeesSection(activeEmployees: List<com.ats.android.models.A
 
 @Composable
 fun MinimalEmployeeCard(employee: com.ats.android.models.ActiveEmployeeInfo) {
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-        ListItem(
-            headlineContent = { Text(employee.name) },
-            supportingContent = {
-                if (employee.placeName != null) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = employee.placeName,
-                            maxLines = 1
-                        )
-                    }
-                } else {
-                    Text(employee.department)
-                }
-            },
-            leadingContent = {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = employee.name.take(1).uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-            },
-            trailingContent = {
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = employee.duration,
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Text(
-                        text = employee.checkInTime,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
-        )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(employee.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                Text(employee.department, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
     }
 }
 
@@ -399,760 +400,30 @@ fun MinimalEmptyState(
     title: String,
     description: String
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@Composable
-fun ExpressiveHeroCard(
-    title: String,
-    value: String,
-    subtitle: String,
-    icon: ImageVector,
-    gradient: Brush
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "hero_pulse")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.02f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
-    
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(180.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            },
-        shape = RoundedCornerShape(32.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 8.dp,
-            pressedElevation = 12.dp
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(gradient)
-                .padding(28.dp)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Column {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = subtitle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.8f)
-                        )
-                    }
-                    
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp),
-                            tint = Color.White
-                        )
-                    }
-                }
-                
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.displayLarge.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 64.sp
-                    ),
-                    color = Color.White
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun ExpressiveMiniCard(
-    title: String,
-    value: String,
-    icon: ImageVector,
-    containerColor: Color,
-    contentColor: Color,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.height(120.dp),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(28.dp),
-                tint = contentColor
-            )
-            
-            Column {
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.ExtraBold
-                    ),
-                    color = contentColor
-                )
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = contentColor.copy(alpha = 0.8f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun ExpressiveActivitySection(activities: List<com.ats.android.models.EmployeeActivity>) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Live Activity",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                )
-                Text(
-                    text = "Recent check-ins and check-outs",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center
-            ) {
-                val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-                val alpha by infiniteTransition.animateFloat(
-                    initialValue = 1f,
-                    targetValue = 0.3f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(1000),
-                        repeatMode = RepeatMode.Reverse
-                    ),
-                    label = "alpha"
-                )
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = alpha))
-                )
-            }
-        }
-        
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            Column {
-                activities.forEachIndexed { index, activity ->
-                    ExpressiveActivityItem(activity = activity)
-                    if (index < activities.size - 1) {
-                        Divider(
-                            modifier = Modifier.padding(horizontal = 20.dp),
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ExpressiveActivityItem(activity: com.ats.android.models.EmployeeActivity) {
-    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(20.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        val iconColor = when (activity.type) {
-            ActivityType.CHECK_IN -> MaterialTheme.colorScheme.primary
-            ActivityType.CHECK_OUT -> MaterialTheme.colorScheme.tertiary
-            ActivityType.STATUS_CHANGE -> MaterialTheme.colorScheme.secondary
-        }
-        
-        val icon = when (activity.type) {
-            ActivityType.CHECK_IN -> Icons.Default.ArrowDownward
-            ActivityType.CHECK_OUT -> Icons.Default.ArrowUpward
-            ActivityType.STATUS_CHANGE -> Icons.Default.Edit
-        }
-        
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(iconColor.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconColor,
-                modifier = Modifier.size(28.dp)
-            )
-        }
-        
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = activity.employeeName,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold
-                )
-            )
-            Text(
-                text = activity.action,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant
-        ) {
-            Text(
-                text = activity.timeAgo,
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-fun ExpressiveActiveEmployeesSection(activeEmployees: List<com.ats.android.models.ActiveEmployeeInfo>) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Active Employees",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                )
-                Text(
-                    text = "${activeEmployees.size} currently checked in",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            FilledTonalButton(
-                onClick = { /* Navigate to full list */ },
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text("View All")
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    Icons.Default.ArrowForward,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-        
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            activeEmployees.forEach { employee ->
-                ExpressiveEmployeeCard(employee = employee)
-            }
-        }
-    }
-}
-
-@Composable
-fun ExpressiveEmployeeCard(employee: com.ats.android.models.ActiveEmployeeInfo) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp,
-            pressedElevation = 3.dp
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(48.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
         )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Animated Status Indicator
-            Box(
-                modifier = Modifier.size(48.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                val infiniteTransition = rememberInfiniteTransition(label = "status_pulse")
-                val scale by infiniteTransition.animateFloat(
-                    initialValue = 1f,
-                    targetValue = 1.5f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(1500),
-                        repeatMode = RepeatMode.Reverse
-                    ),
-                    label = "scale"
-                )
-                
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .scale(scale)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-                )
-                
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
-                )
-            }
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = employee.name,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                
-                if (employee.placeName != null) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = employee.placeName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1
-                        )
-                    }
-                } else {
-                    Text(
-                        text = employee.department,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-            }
-            
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = employee.duration,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        text = employee.checkInTime,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ExpressiveEmptyState(
-    icon: ImageVector,
-    title: String,
-    description: String
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(48.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(96.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-            }
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@Composable
-fun ModernSummaryCard(
-    title: String,
-    value: String,
-    icon: ImageVector,
-    containerColor: Color,
-    contentColor: Color,
-    modifier: Modifier = Modifier
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
-    
-    Card(
-        modifier = modifier
-            .aspectRatio(1f),
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor
-        ),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = contentColor,
-                modifier = Modifier.size(32.dp)
-            )
-            
-            Column {
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.displaySmall.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = contentColor
-                )
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = contentColor.copy(alpha = 0.8f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun ActivityRow(activity: com.ats.android.models.EmployeeActivity) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val iconColor = when (activity.type) {
-            ActivityType.CHECK_IN -> MaterialTheme.colorScheme.primary
-            ActivityType.CHECK_OUT -> MaterialTheme.colorScheme.tertiary
-            ActivityType.STATUS_CHANGE -> MaterialTheme.colorScheme.secondary
-        }
-        
-        val icon = when (activity.type) {
-            ActivityType.CHECK_IN -> Icons.Default.ArrowDownward
-            ActivityType.CHECK_OUT -> Icons.Default.ArrowUpward
-            ActivityType.STATUS_CHANGE -> Icons.Default.Edit
-        }
-        
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(iconColor.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconColor,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-        
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = activity.employeeName,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Medium
-                )
-            )
-            Text(
-                text = activity.action,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        
+        Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = activity.timeAgo,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
         )
-    }
-}
-
-@Composable
-fun ActiveEmployeeCard(employeeInfo: com.ats.android.models.ActiveEmployeeInfo) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary)
-            )
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = employeeInfo.name,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Medium
-                    )
-                )
-                
-                if (employeeInfo.placeName != null) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = employeeInfo.placeName,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1
-                        )
-                    }
-                } else {
-                    Text(
-                        text = employeeInfo.department,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = employeeInfo.checkInTime,
-                    style = MaterialTheme.typography.labelMedium
-                )
-                Text(
-                    text = employeeInfo.duration,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun EmptyStateCard(
-    icon: ImageVector,
-    title: String,
-    description: String
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        shape = RoundedCornerShape(20.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(48.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
     }
 }

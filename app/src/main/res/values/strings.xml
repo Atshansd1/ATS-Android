@@ -9,24 +9,7 @@
     
     <!-- Attendance Management -->
     <string name="attendance_management">Attendance Management</string>
-    <string name="configure_shifts_locations">Manage shifts and location restrictions</string>
-    <string name="shifts">Shifts</string>
-    <string name="locations">Locations</string>
-    <string name="location_restrictions">Location Restrictions</string>
-    <string name="control_where_employees_check_in">Control where employees can check in</string>
-    <string name="check_in_policy">Check-In Policy</string>
-    <string name="allowed_locations">Allowed Locations</string>
-    <string name="add_location">Add Location</string>
-    <string name="no_locations_added">No locations added yet</string>
-    <string name="apply_to">Apply To</string>
-    <string name="specific_employees">Specific Employees</string>
-    <string name="selected_employees">%d selected</string>
-    <string name="search_location">Search for a location</string>
-    <string name="select_employees">Select Employees</string>
-    <string name="radius_meters">Radius: %d meters</string>
-    <string name="saving">Saving...</string>
-    <string name="configuration_saved">Configuration saved successfully</string>
-    <string name="error_saving_configuration">Error saving configuration</string>
+    <string name="configure_shifts_locations">Manage configuration</string>
     
     <!-- Authentication -->
     <string name="sign_in">Sign In</string>
@@ -169,9 +152,11 @@
     <string name="notification_preferences">Manage notification preferences</string>
     <string name="account">Account</string>
     <string name="profile">Profile</string>
+    <string name="profile_title">Profile</string>
+    <string name="name_label">Name</string>
     <string name="view_edit_profile">View and edit your profile</string>
     <string name="privacy">Privacy</string>
-    <string name="privacy_security">Privacy and security settings</string>
+    <string name="privacy_security">Privacy &amp; Security</string>
     <string name="about">About</string>
     <string name="about_ats">About ATS</string>
     <string name="version">Version</string>
@@ -297,4 +282,432 @@
     <string name="automatic_update">Automatic Update</string>
     <string name="tap_to_install">Tap to install the new version</string>
     <string name="version_info">%s → %s</string>
+    <!-- Leave Management -->
+    <string name="leaves">Leaves</string>
+    <string name="leave_approvals">Approvals</string>
+    <string name="request_leave">Request Leave</string>
+    <string name="leave_balance">Leave Balance</string>
+    <string name="my_requests">My Requests</string>
+    <string name="no_pending_requests">No pending requests</string>
+    <string name="approve">Approve</string>
+    <string name="reject">Reject</string>
+    <string name="leave_vacation">Vacation</string>
+    <string name="leave_sick">Sick Leave</string>
+    <string name="leave_personal">Personal Leave</string>
+    <string name="leave_emergency">Emergency Leave</string>
+    <string name="leave_unpaid">Unpaid Leave</string>
+    <string name="status_pending">Pending</string>
+    <string name="status_approved">Approved</string>
+    <string name="status_rejected">Rejected</string>
+    <string name="status_cancelled">Cancelled</string>
+    <string name="reason_label">Reason</string>
+    <string name="submitted_at">Submitted: %s</string>
+    <string name="note_prefix">Note: %s</string>
+    <string name="reject_leave_request">Reject Request</string>
+    <string name="confirm_reject_request">Are you sure you want to reject %s\'s request?</string>
+    <string name="rejection_reason_optional">Reason (Optional)</string>
+    <string name="reject_request">Reject Request</string>
+    <string name="no_leave_requests">No leave requests found</string>
+    
+
+
+    <string name="my_leaves">My Leaves</string>
+
+    <!-- Change Password -->
+    <string name="change_password">Change Password</string>
+    <string name="current_password">Current Password</string>
+    <string name="new_password">New Password</string>
+    <string name="confirm_password">Confirm New Password</string>
+    <string name="update_password">Update Password</string>
+    <string name="password_min_length_error">Password must be at least 6 characters</string>
+    <string name="password_mismatch_error">Passwords do not match</string>
+    <string name="password_changed_success">Password changed successfully</string>
+    
+    <!-- Notification Settings -->
+    <string name="notifications_description">Manage how you receive notifications.</string>
+    <string name="general">General</string>
+    <string name="push_notifications">Push Notifications</string>
+    <string name="email_notifications">Email Notifications</string>
+    <string name="alerts">Alerts</string>
+    <string name="check_in_reminders">Check-In Reminders</string>
+    <string name="check_in_reminders_desc">Get reminded if you forget to check in</string>
+    <string name="leave_request_updates">Leave Request Updates</string>
+    <string name="leave_request_updates_desc">Status changes for your leave requests</string>
+    <string name="announcements">Announcements</string>
+    <string name="announcements_desc">Company wide announcements</string>
+    
+    <!-- Profile & Analytics -->
+    <string name="contact_information">Contact Information</string>
+    <string name="employment_details">Employment Details</string>
+    <string name="phone">Phone</string>
+    <string name="mobile">Mobile</string>
+    <string name="work_location">Work Location</string>
+    <string name="change_photo">Change Photo</string>
+    <string name="analytics">Analytics</string>
+    <string name="weekly_attendance_trends">Weekly Attendance Trends</string>
+    <string name="leave_distribution">Leave Distribution</string>
+    <string name="check_ins_per_day">Check-ins per day</string>
+    <string name="not_set">Not set</string>
+    <!-- Privacy Center -->
+    <string name="privacy_intro_desc">Control your privacy and security settings.</string>
+    <string name="security">Security</string>
+    <string name="biometric_auth">Biometric Authentication</string>
+    <string name="biometric_auth_desc">Use fingerprint or face unlock</string>
+    <string name="data_privacy">Data Privacy</string>
+    <string name="profile_visibility">Profile Visibility</string>
+    <string name="profile_visibility_desc">Who can see your profile details</string>
+    <string name="activity_history">Activity History</string>
+    <string name="activity_history_desc">Manage your activity logs</string>
+    <string name="legal">Legal</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="terms_of_service">Terms of Service</string>
+    
+    <!-- Location Settings Detail -->
+    <string name="location_settings">Location Settings</string>
+    <string name="location_access_desc">Location access is required for check-in and check-out functionality. We only track your location when you perform these actions.</string>
+    <string name="permissions_status">Permissions Status</string>
+    <string name="precise_location">Precise Location</string>
+    <string name="precise_location_desc">Required for accurate attendance verification</string>
+    <string name="background_location">Background Location</string>
+    <string name="background_location_desc">Not required for basic usage</string>
+    <string name="not_granted">Not Granted</string>
+    <string name="open_system_settings">Open System Settings</string>
+
+    <!-- Additional Profile/Analytics -->
+    <string name="team">Team</string>
+    <string name="requests_count">%d requests</string>
+    <string name="requests">requests</string>
+    <string name="view_all">View All</string>
+    <string name="clear_all_filters">Clear All Filters</string>
+    <string name="english_name">English Name</string>
+    <string name="arabic_name">Arabic Name</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="department_en">Department (English)</string>
+    <string name="department_ar">Department (Arabic)</string>
+    <string name="role">Role</string>
+    <string name="save_changes">Save Changes</string>
+    <string name="debug_logs">Debug Logs</string>
+    <string name="filter_logs_hint">Filter logs (tag or message)</string>
+    <string name="location_search_disabled">Location search feature temporarily disabled. Will be re-enabled soon.</string>
+    <string name="auto_scroll">Auto Scroll</string>
+    <string name="copy_logs">Copy Logs</string>
+    <string name="clear_logs">Clear Logs</string>
+    <string name="logs_copied_to_clipboard">Logs copied to clipboard</string>
+    <string name="logs_cleared">Logs cleared</string>
+    <string name="clear_filter">Clear Filter</string>
+    <string name="filter_excel">Excel</string>
+    <string name="filter_viewmodel">ViewModel</string>
+    <string name="filter_errors">Errors</string>
+    <string name="no_logs_match_filter">No logs match filter</string>
+    <string name="no_logs_yet">No logs yet</string>
+    <string name="try_excel_export">Try Excel export to see logs</string>
+    <string name="log_entry_copied">Log entry copied</string>
+    <string name="entries_count">%d entries</string>
+    
+    <!-- Map Screen -->
+    <string name="apply">Apply</string>
+    <string name="filter_employees">Filter Employees</string>
+
+    <string name="filters">Filters</string>
+    <string name="unknown_location">Unknown location</string>
+
+    <!-- Attendance Management -->
+
+    <string name="saving_configuration">Saving configuration...</string>
+    <string name="save_configuration">Save Configuration</string>
+    <string name="radius_meters">Radius: %d meters</string>
+    <string name="show_on_map">Show on map</string>
+    <string name="remove">Remove</string>
+    <string name="select_employees">Select Employees</string>
+
+    
+    <!-- Restriction Descriptions -->
+    <string name="desc_anywhere">Employees can check in from any location</string>
+    <string name="desc_specific">Check-in limited to one location</string>
+    <string name="desc_multiple">Check-in allowed from multiple locations</string>
+    
+    <string name="restriction_anywhere">Anywhere</string>
+    <string name="restriction_specific">Specific Location</string>
+    <!-- Common/General -->
+    <string name="total">Total</string>
+    
+    <string name="restriction_multiple">Multiple Locations</string>
+    
+    <!-- Dashboard Extended -->
+    <string name="quick_actions">Quick Actions</string>
+    <string name="attendance_overview">Attendance Overview</string>
+    <string name="on_time">On Time</string>
+    <string name="late">Late</string>
+    <string name="absent">Absent</string>
+    <string name="recent_checkins_desc">Recent check-ins and check-outs</string>
+    <string name="currently_checked_in_count">%d currently checked in</string>
+    
+    <!-- Time Ago -->
+    <string name="time_just_now">Just now</string>
+    <string name="time_ago_m">%dm ago</string>
+    <string name="time_ago_h">%dh ago</string>
+    <string name="time_ago_d">%dd ago</string>
+    
+    <!-- Actions -->
+    <string name="action_checked_in">Checked in</string>
+    <string name="action_checked_out">Checked out</string>
+    
+    <!-- Settings Extended -->
+    <string name="dark_mode">Dark Mode</string>
+    <string name="help_support">Help &amp; Support</string>
+    
+    <!-- Shift Management -->
+    <string name="shift_management">Shift Management</string>
+    <string name="configure_work_schedule">Configure Work Schedule</string>
+    <string name="set_working_days_hours">Set working days and hours for your organization</string>
+    <string name="work_days">Work Days</string>
+    <string name="work_day">Work Day</string>
+    <string name="day_off">Day Off</string>
+    <string name="start_time">Start Time</string>
+    <string name="end_time">End Time</string>
+    <string name="duration_hours">%s hours</string>
+    <string name="hour_label">Hour</string>
+    <string name="minute_label">Minute</string>
+    <string name="time_picker_title">%s Time - %s</string>
+    <string name="navigate_back">Back</string>
+    
+    <!-- Days -->
+    <string name="day_sunday">Sunday</string>
+    <string name="day_monday">Monday</string>
+    <string name="day_tuesday">Tuesday</string>
+    <string name="day_wednesday">Wednesday</string>
+    <string name="day_thursday">Thursday</string>
+    <string name="day_friday">Friday</string>
+    <string name="day_saturday">Saturday</string>
+    
+    <!-- Dialog Actions -->
+    <string name="confirm">Confirm</string>
+
+
+
+    <!-- Check In Screen -->
+    <string name="hello_user">Hello, %s</string>
+    <string name="status_checked_in">Currently Checked In</string>
+    <string name="status_ready_to_check_in">Ready to Check In</string>
+    <string name="stats_summary_fmt">%.1f hrs / %d days</string>
+    <string name="currently_active">Currently Active</string>
+    <string name="duration_hm_fmt">%dh %dm</string>
+
+    
+    <!-- Employee Management -->
+    <string name="delete_employee_title">Delete Employee</string>
+    <string name="delete_employee_confirmation_fmt">Are you sure you want to delete %s? This action cannot be undone.</string>
+
+    <string name="no_email">No email</string>
+    <string name="more_options">More options</string>
+
+    <string name="activate">Activate</string>
+    <string name="deactivate">Deactivate</string>
+    <string name="add_employee_title">Add Employee</string>
+    <string name="edit_employee_title">Edit Employee</string>
+
+
+
+    <!-- Enhanced Map Screen -->
+    <string name="search_location">Search Location</string>
+
+    <string name="search_error">Search Error</string>
+    <string name="try_different_search">Try a different search term</string>
+    <string name="active_employees_nearby_fmt">%d active employees nearby</string>
+    <string name="nearby_employees_title">NEARBY EMPLOYEES</string>
+    <string name="nearest">Nearest</string>
+
+    <!-- Reports Screen -->
+    <string name="reports_title">Reports</string>
+    <string name="reports_feature_title">Reports Feature</string>
+    <string name="reports_feature_desc">Generate and export attendance reports</string>
+
+    <!-- Change Password Screen -->
+    <string name="current_password_label">Current Password</string>
+    <string name="new_password_label">New Password</string>
+    <string name="confirm_password_label">Confirm New Password</string>
+
+
+    <string name="passwords_mismatch">Passwords do not match</string>
+    <string name="update_password_action">Update Password</string>
+
+    <!-- Analytics Screen -->
+    <string name="analytics_title">Analytics</string>
+    <string name="analytics_weekly_attendance">Weekly Attendance Trends</string>
+    <string name="analytics_leave_distribution">Leave Distribution</string>
+    <string name="analytics_checkins_per_day">Check-ins per day</string>
+    <string name="day_mon_short">Mon</string>
+    <string name="day_tue_short">Tue</string>
+    <string name="day_wed_short">Wed</string>
+    <string name="day_thu_short">Thu</string>
+    <string name="day_fri_short">Fri</string>
+    <string name="day_sat_short">Sat</string>
+    <string name="day_sun_short">Sun</string>
+
+    <string name="analytics_total_employees">Total Employees</string>
+    <string name="analytics_active_today">Active Today</string>
+    <string name="analytics_avg_work_hours">Avg Work Hours</string>
+    <string name="analytics_attendance_rate">Attendance Rate</string>
+    <string name="analytics_attendance_trend">Attendance Trend</string>
+    <string name="analytics_hourly_activity">Hourly Activity</string>
+    <string name="analytics_top_locations">Top Locations</string>
+    <string name="analytics_week">Week</string>
+    <string name="analytics_month">Month</string>
+    <string name="analytics_3_months">3 Months</string>
+    <string name="analytics_no_data">No data available</string>
+    <string name="analytics_check_back">Check back later</string>
+
+    <!-- IOS Employee Management -->
+    <string name="title_employees">Employees</string>
+
+    <string name="no_employees">No Employees</string>
+    <string name="no_results">No Results</string>
+    <string name="add_employees_empty_state">Add employees to get started</string>
+    
+    <string name="excel_export">Excel</string>
+    <string name="pdf_export">PDF</string>
+    <string name="csv_export">CSV</string>
+    <string name="error_generating_report">Error generating report</string>
+    <string name="excel_export_success">Excel exported successfully!</string>
+    <string name="pdf_export_success">PDF exported successfully!</string>
+    <string name="csv_export_success">CSV exported successfully!</string>
+    <string name="export_failed_check_logs">Export failed - check Debug Logs in Settings</string>
+    <string name="waiting_for_data">Waiting for report data...</string>
+    <string name="exporting_excel">Exporting to Excel...</string>
+    <string name="exporting_pdf">Exporting to PDF...</string>
+    <string name="exporting_csv">Exporting to CSV...</string>
+    <string name="no_data_available">No data available for selected filters</string>
+    <string name="generating_report_ellipses">Generating report...</string>
+    <string name="english_name_label">English Name</string>
+    <string name="arabic_name_label">Arabic Name</string>
+    <string name="phone_number_label">Phone Number</string>
+    <string name="role_label">Role</string>
+    <string name="no_results_found">No results found</string>
+    <string name="no_records_found">No records found</string>
+    <string name="check_in_verb">Check In</string>
+    <string name="check_out_verb">Check Out</string>
+
+    <string name="no_active_employees_desc">No employees are currently checked in.</string>
+    <string name="checked_out">Checked Out</string>
+    <string name="status_update">Status Update</string>
+    <string name="back">Back</string>
+    <string name="shifts">Shifts</string>
+    <string name="locations">Locations</string>
+    <string name="location_restrictions">Location Restrictions</string>
+    <string name="location_restrictions_desc">Restrict where employees can check in from.</string>
+    <string name="check_in_policy">Check-In Policy</string>
+    <string name="allowed_locations">Allowed Locations</string>
+    <string name="add_location">Add Location</string>
+    <string name="no_locations_added">No locations added yet.</string>
+    <string name="apply_to">Apply To</string>
+    <string name="specific_employees">Specific Employees</string>
+    <string name="selected_count">%d selected</string>
+
+    <!-- Hardcoded Strings Fix - CheckInScreen -->
+    <string name="hello_greeting">Hello, %s</string>
+    <string name="fetching_location">Fetching location...</string>
+    
+    <!-- EmployeeDetailScreen -->
+    <string name="upload_photo">Upload Photo</string>
+    <string name="phone_label">Phone</string>
+    <string name="department_label">Department</string>
+    <string name="recent_attendance_30">Recent Attendance (30 days)</string>
+    <string name="showing_last_5_of">Showing last 5 of %d records</string>
+    <string name="active_status">Active</string>
+    <string name="done_status">Done</string>
+    <string name="on_leave_status">On Leave</string>
+    <string name="absent_status">Absent</string>
+    <string name="in_time">In: %s</string>
+    <string name="out_time">Out: %s</string>
+    
+    <!-- EnhancedMapScreen -->
+    <string name="search_location_title">Search Location</string>
+    
+    <!-- IOSEmployeeManagementScreen -->
+    <string name="search_employees_placeholder">Search employees</string>
+    
+    <!-- HistoryScreen -->
+    <string name="error_loading_history">Error loading history</string>
+    
+    <!-- Missing strings for EmployeeDetailScreen -->
+    <string name="uploading">Uploading...</string>
+    <string name="status">Status</string>
+    
+    <!-- Map search -->
+    <string name="search_for">Search for "%s"</string>
+    
+    <!-- Map -->
+    <string name="active_employees_count">%d Active Employees</string>
+    
+    <!-- Sign out -->
+    <string name="sign_out_confirmation">Are you sure you want to sign out?</string>
+    
+    <!-- Settings strings -->
+    <string name="language_subtitle">English / العربية</string>
+    <string name="notifications_subtitle">Manage notification preferences</string>
+    <string name="profile_subtitle">View and edit your profile</string>
+    <string name="privacy_subtitle">Privacy and security settings</string>
+    
+    <!-- Leaves Screen (new) -->
+    <string name="no_leave_requests_found">No leave requests found</string>
+    <string name="vacation">Vacation</string>
+    <string name="sick_leave">Sick Leave</string>
+    <string name="personal_leave">Personal Leave</string>
+    <string name="emergency_leave">Emergency Leave</string>
+    <string name="unpaid_leave">Unpaid Leave</string>
+    <string name="days_remaining_format">%1$d/%2$d days</string>
+    <string name="days_used_format">%d days used</string>
+    
+    <!-- Privacy Center (new) -->
+    <string name="biometric_authentication">Biometric Authentication</string>
+    <string name="biometric_subtitle">Use fingerprint or face unlock</string>
+    
+    <!-- Leave Management -->
+    <string name="management_title">Management</string>
+    <string name="leave_management">Leave Management</string>
+    <string name="leave_approval">Leave Approval</string>
+    <string name="review_leave_requests">Review employee leave requests</string>
+    <string name="view_leave_balance">View and request leaves</string>
+    
+    <!-- Admin Settings Descriptions -->
+    <string name="attendance_locations">Attendance Locations</string>
+    <string name="attendance_locations_desc">Manage office locations and geofences</string>
+    <string name="analytics_desc">View attendance trends and stats</string>
+    <string name="shift_management_desc">Manage work schedules and shifts</string>
+    <string name="force_checkout_title">Force Check Out</string>
+    <string name="force_checkout_confirm">Are you sure you want to force check out %1$s? This will end their current active session.</string>
+    <string name="employee_management_title">Employees</string>
+    <string name="search_placeholder">Search for employees...</string>
+    <string name="admin_checkout_label">Admin Checkout</string>
+    <string name="notification_force_checkout_title">Check Out Alert</string>
+    <string name="notification_force_checkout_body">Your session was ended by an administrator.</string>
+    <string name="force_checkout">Force Checkout</string>
+    <string name="force_checkout_confirmation">Are you sure you want to force checkout this employee?</string>
+
+    <!-- Attendance Centers -->
+
+    <string name="new_location">New Location</string>
+    <string name="edit_location">Edit Location</string>
+    <string name="create">Create</string>
+
+    <string name="location_details">Location Details</string>
+    <string name="location_name">Location Name</string>
+    <string name="bilingual_details">Bilingual Details</string>
+    <string name="name_en">Name (English)</string>
+    <string name="name_ar">Name (Arabic)</string>
+    <string name="address_en">Address (English)</string>
+    <string name="address_ar">Address (Arabic)</string>
+    <string name="location">Location</string>
+    <string name="radius">Radius</string>
+    <string name="assigned_employees">Assigned Employees</string>
+
+
+    <string name="active_location">Active Location</string>
+    <string name="active_location_desc">Enable or disable this attendance center</string>
+
+    <string name="delete_location_title">Delete Location</string>
+    <string name="no_locations_found">No locations found</string>
+    <string name="create_first_location">Create your first location</string>
+
+    <string name="deselect_all">Deselect All</string>
 </resources>

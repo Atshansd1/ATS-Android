@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import com.ats.android.R
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
     
@@ -61,27 +62,29 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         val activeEmployeesList = locations.map { pair ->
                             val employee = pair.first
                             val location = pair.second
-                            Log.d(TAG, "   Processing: ${employee.displayName} at ${location.placeName}")
+                            val displayPlaceName = location.getLocalizedPlaceName() ?: location.placeName
+                            Log.d(TAG, "   Processing: ${employee.displayName} at $displayPlaceName")
                             ActiveEmployeeInfo(
                                 id = employee.employeeId,
                                 name = employee.displayName,
                                 department = employee.team,
                                 checkInTime = formatTime(location.timestamp.toDate()),
                                 duration = formatDuration(location.checkInTime.toDate()),
-                                placeName = location.placeName
+                                placeName = displayPlaceName
                             )
                         }
                         _activeEmployees.value = activeEmployeesList
                         _activeEmployeeItems.value = locations.map { pair ->
                             val employee = pair.first
                             val location = pair.second
+                            val displayPlaceName = location.getLocalizedPlaceName() ?: location.placeName
                             com.ats.android.ui.screens.ActiveEmployeeItem(
                                 id = employee.employeeId,
                                 name = employee.displayName,
                                 department = employee.team,
                                 checkInTime = formatTime(location.timestamp.toDate()),
                                 duration = formatDuration(location.checkInTime.toDate()),
-                                placeName = location.placeName,
+                                placeName = displayPlaceName,
                                 avatarUrl = employee.avatarURL,
                                 role = employee.role
                             )
@@ -146,7 +149,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
     }
-    
+
     private suspend fun loadRecentActivity() {
         try {
             // Get recent attendance records to build activity feed
@@ -164,7 +167,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         EmployeeActivity(
                             employeeId = record.employeeId,
                             employeeName = employee?.displayName ?: record.employeeId,
-                            action = "Checked in",
+                            action = context.getString(R.string.action_checked_in),
                             timestamp = record.checkInTime,
                             type = ActivityType.CHECK_IN
                         )
@@ -177,7 +180,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         EmployeeActivity(
                             employeeId = record.employeeId,
                             employeeName = employee?.displayName ?: record.employeeId,
-                            action = "Checked out",
+                            action = context.getString(R.string.action_checked_out),
                             timestamp = record.checkOutTime,
                             type = ActivityType.CHECK_OUT
                         )
@@ -217,10 +220,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val diff = now.time - date.time
         
         return when {
-            diff < 60_000 -> "Just now"
-            diff < 3600_000 -> "${diff / 60_000}m ago"
-            diff < 86400_000 -> "${diff / 3600_000}h ago"
-            else -> "${diff / 86400_000}d ago"
+            diff < 60_000 -> context.getString(R.string.time_just_now)
+            diff < 3600_000 -> context.getString(R.string.time_ago_m, diff / 60_000)
+            diff < 86400_000 -> context.getString(R.string.time_ago_h, diff / 3600_000)
+            else -> context.getString(R.string.time_ago_d, diff / 86400_000)
         }
     }
     

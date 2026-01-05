@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App Name -->
-    <string name="app_name">ATS</string>
+    <string name="app_name">Hodoor+</string>
     <string name="unknown">Unknown</string>
     
     <!-- Tab Labels -->
@@ -710,4 +710,11 @@
     <string name="create_first_location">Create your first location</string>
 
     <string name="deselect_all">Deselect All</string>
+
+    <!-- Push Notifications -->
+    <string name="force_checkout_message">Your session was ended by an administrator.</string>
+    <string name="check_in_reminder_title">Check In Reminder</string>
+    <string name="check_in_reminder_message">Don\'t forget to check in at your work location.</string>
+    <string name="check_out_reminder_title">Check Out Reminder</string>
+    <string name="check_out_reminder_message">Remember to check out before leaving work.</string>
 </resources>

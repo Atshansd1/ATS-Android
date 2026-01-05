@@ -23,7 +23,7 @@ import com.ats.android.utils.LanguageProvider
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Switch from splash theme to main theme
-        setTheme(R.style.Theme_ATS)
+        setTheme(R.style.Theme_Hodoor)
         
         super.onCreate(savedInstanceState)
         

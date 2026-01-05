@@ -38,7 +38,7 @@ class ATSApplication : Application(), ImageLoaderFactory {
         super.onCreate()
         
         val currentLanguage = LocaleManager.getCurrentLanguage(this)
-        Log.d(TAG, "🔥 ATS Application is initializing... Language: $currentLanguage")
+        Log.d(TAG, "🔥 Hodoor+ Application is initializing... Language: $currentLanguage")
         
         // Initialize Firebase
         FirebaseApp.initializeApp(this)
@@ -47,7 +47,7 @@ class ATSApplication : Application(), ImageLoaderFactory {
         // Create notification channels
         createNotificationChannels()
         
-        Log.d(TAG, "🎉 ATS Application initialization complete!")
+        Log.d(TAG, "🎉 Hodoor+ Application initialization complete!")
     }
     
     override fun newImageLoader(): ImageLoader {

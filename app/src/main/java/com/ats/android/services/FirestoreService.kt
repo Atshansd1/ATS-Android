@@ -132,6 +132,40 @@ class FirestoreService private constructor() {
     }
     
     /**
+     * Update FCM token for push notifications
+     */
+    suspend fun updateFCMToken(employeeId: String, fcmToken: String) {
+        try {
+            Log.d(TAG, "🔔 Updating FCM token for employee: $employeeId")
+            
+            val snapshot = db.collection(EMPLOYEES_COLLECTION)
+                .whereEqualTo("employeeId", employeeId)
+                .get()
+                .await()
+            
+            if (snapshot.documents.isEmpty()) {
+                Log.w(TAG, "⚠️ Employee not found for FCM token update: $employeeId")
+                return
+            }
+            
+            val docId = snapshot.documents[0].id
+            db.collection(EMPLOYEES_COLLECTION)
+                .document(docId)
+                .update(
+                    mapOf(
+                        "fcmToken" to fcmToken,
+                        "fcmTokenUpdatedAt" to Timestamp.now()
+                    )
+                )
+                .await()
+            
+            Log.d(TAG, "✅ FCM token updated for employee: $employeeId")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error updating FCM token: ${e.message}", e)
+        }
+    }
+    
+    /**
      * Update employee avatar URL
      * Syncs to Firebase and automatically reflects on iOS
      */
@@ -380,6 +414,42 @@ class FirestoreService private constructor() {
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "❌ Check-out error: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * Delete old attendance records before a given date
+     * Admin function for cleaning up test/old data
+     */
+    suspend fun deleteOldAttendanceRecords(beforeDate: Date): Result<Int> {
+        return try {
+            Log.d(TAG, "🗑️ Deleting attendance records before: $beforeDate")
+            
+            val snapshot = db.collection(ATTENDANCE_COLLECTION)
+                .whereLessThan("checkInTime", Timestamp(beforeDate))
+                .get()
+                .await()
+            
+            if (snapshot.documents.isEmpty()) {
+                Log.d(TAG, "ℹ️ No old records found to delete")
+                return Result.success(0)
+            }
+            
+            val batch = db.batch()
+            var count = 0
+            
+            for (doc in snapshot.documents) {
+                batch.delete(doc.reference)
+                count++
+            }
+            
+            batch.commit().await()
+            
+            Log.d(TAG, "✅ Deleted $count old attendance records")
+            Result.success(count)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error deleting old records: ${e.message}", e)
             Result.failure(e)
         }
     }

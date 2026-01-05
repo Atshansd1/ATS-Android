@@ -272,6 +272,8 @@ class LocationTrackingService : Service() {
         val empId = employeeId ?: return
         val now = Timestamp.now()
         
+        Log.d(TAG, "🔍 processMovements called for $empId at ${currentLocation.latitude}, ${currentLocation.longitude}")
+        
         // --- Logic 1: Stationary Detection ---
         val distFromStationaryStart = stationaryStartLocation?.distanceTo(currentLocation) ?: 0f
         

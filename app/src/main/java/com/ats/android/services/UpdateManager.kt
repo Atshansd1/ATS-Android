@@ -30,7 +30,7 @@ class UpdateManager(private val context: Context) {
     companion object {
         private const val TAG = "UpdateManager"
         private const val GITHUB_API_URL = "https://api.github.com/repos/Atshansd1/ATS-Android/releases/latest"
-        private const val APK_FILENAME = "ATS-Update.apk"
+        private const val APK_FILENAME = "Hodoor-Update.apk"
     }
     
     data class VersionInfo(
@@ -187,7 +187,7 @@ class UpdateManager(private val context: Context) {
             
             // Create download request
             val request = DownloadManager.Request(Uri.parse(urlToUse)).apply {
-                setTitle("ATS Update")
+                setTitle("Hodoor+ Update")
                 setDescription("Downloading latest version")
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 setDestinationInExternalFilesDir(

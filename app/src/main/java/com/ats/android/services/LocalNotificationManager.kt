@@ -105,14 +105,13 @@ class LocalNotificationManager private constructor(private val context: Context)
      * @param minute Minute (0-59)
      */
     fun scheduleDailyCheckInReminder(hour: Int = 9, minute: Int = 0) {
-        // Save preference
+        // Save time preference only (enabled is set by setDailyReminderEnabled)
         prefs.edit()
-            .putBoolean(PREF_DAILY_REMINDER_ENABLED, true)
             .putString(PREF_DAILY_REMINDER_TIME, "$hour:$minute")
-            .apply()
+            .commit()
         
-        // Cancel existing reminders
-        cancelDailyCheckInReminder()
+        // Cancel existing alarms before scheduling new ones
+        cancelDailyAlarms()
         
         // Schedule for each weekday (Monday = 2, Friday = 6)
         for (weekday in Calendar.MONDAY..Calendar.FRIDAY) {
@@ -158,8 +157,11 @@ class LocalNotificationManager private constructor(private val context: Context)
     }
     
     fun cancelDailyCheckInReminder() {
-        prefs.edit().putBoolean(PREF_DAILY_REMINDER_ENABLED, false).apply()
-        
+        cancelDailyAlarms()
+        Log.d(TAG, "✅ Daily reminders cancelled")
+    }
+    
+    private fun cancelDailyAlarms() {
         for (weekday in Calendar.MONDAY..Calendar.FRIDAY) {
             val intent = Intent(context, NotificationReceiver::class.java)
             val pendingIntent = PendingIntent.getBroadcast(
@@ -170,7 +172,6 @@ class LocalNotificationManager private constructor(private val context: Context)
             )
             pendingIntent?.let { alarmManager.cancel(it) }
         }
-        Log.d(TAG, "✅ Daily reminders cancelled")
     }
     
     fun isDailyReminderEnabled(): Boolean {

@@ -173,11 +173,18 @@ class LocalNotificationManager private constructor(private val context: Context)
         Log.d(TAG, "✅ Daily reminders cancelled")
     }
     
-    fun isDailyReminderEnabled(): Boolean = prefs.getBoolean(PREF_DAILY_REMINDER_ENABLED, false)
+    fun isDailyReminderEnabled(): Boolean {
+        val enabled = prefs.getBoolean(PREF_DAILY_REMINDER_ENABLED, false)
+        Log.d(TAG, "📖 Reading daily reminder enabled = $enabled")
+        return enabled
+    }
     
     fun setDailyReminderEnabled(enabled: Boolean) {
-        prefs.edit().putBoolean(PREF_DAILY_REMINDER_ENABLED, enabled).apply()
-        Log.d(TAG, "📝 Daily reminder enabled = $enabled")
+        val success = prefs.edit().putBoolean(PREF_DAILY_REMINDER_ENABLED, enabled).commit()
+        Log.d(TAG, "📝 Saved daily reminder enabled = $enabled, success = $success")
+        // Verify save
+        val readBack = prefs.getBoolean(PREF_DAILY_REMINDER_ENABLED, !enabled)
+        Log.d(TAG, "📖 Verified read-back = $readBack")
     }
     
     fun getDailyReminderTime(): Pair<Int, Int> {

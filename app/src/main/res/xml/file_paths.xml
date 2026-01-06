@@ -2,6 +2,8 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- External files directory for reports -->
     <external-files-path name="reports" path="." />
+    <!-- External files Download directory for APK updates -->
+    <external-files-path name="downloads" path="Download/" />
     <!-- Cache directory for temporary files -->
     <cache-path name="cache" path="." />
     <!-- External storage for sharing -->

@@ -223,21 +223,39 @@ class UpdateManager(private val context: Context) {
                 APK_FILENAME
             )
             
+            Log.d(TAG, "APK file path: ${file.absolutePath}")
+            Log.d(TAG, "APK file exists: ${file.exists()}")
+            Log.d(TAG, "APK file size: ${file.length()} bytes")
+            
             if (!file.exists()) {
                 Log.e(TAG, "APK file not found")
                 _downloadProgress.value = DownloadProgress.Error("File not found")
                 return
             }
             
+            if (file.length() == 0L) {
+                Log.e(TAG, "APK file is empty")
+                _downloadProgress.value = DownloadProgress.Error("Download incomplete")
+                return
+            }
+            
             val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    file
-                )
+                try {
+                    FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        file
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "FileProvider error: ${e.message}", e)
+                    // Fallback: try with external path
+                    Uri.fromFile(file)
+                }
             } else {
                 Uri.fromFile(file)
             }
+            
+            Log.d(TAG, "Install URI: $uri")
             
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/vnd.android.package-archive")
@@ -245,8 +263,15 @@ class UpdateManager(private val context: Context) {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             
-            context.startActivity(intent)
-            Log.d(TAG, "Install intent started")
+            // Check if there's an app to handle this intent
+            if (intent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(intent)
+                Log.d(TAG, "Install intent started successfully")
+                _downloadProgress.value = DownloadProgress.Installing
+            } else {
+                Log.e(TAG, "No app to handle install intent")
+                _downloadProgress.value = DownloadProgress.Error("Cannot open installer")
+            }
             
         } catch (e: Exception) {
             Log.e(TAG, "Error installing update: ${e.message}", e)
@@ -336,6 +361,7 @@ class UpdateManager(private val context: Context) {
         object Idle : DownloadProgress()
         data class Downloading(val progress: Int) : DownloadProgress()
         object Completed : DownloadProgress()
+        object Installing : DownloadProgress()
         data class Error(val message: String) : DownloadProgress()
     }
 }

@@ -98,6 +98,7 @@ fun NotificationSettingsScreen(
                         checked = checkInRemindersEnabled,
                         onCheckedChange = { enabled ->
                             checkInRemindersEnabled = enabled
+                            notificationManager.setDailyReminderEnabled(enabled)
                             if (enabled) {
                                 notificationManager.scheduleDailyCheckInReminder(reminderHour, reminderMinute)
                             } else {

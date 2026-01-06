@@ -175,6 +175,11 @@ class LocalNotificationManager private constructor(private val context: Context)
     
     fun isDailyReminderEnabled(): Boolean = prefs.getBoolean(PREF_DAILY_REMINDER_ENABLED, false)
     
+    fun setDailyReminderEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(PREF_DAILY_REMINDER_ENABLED, enabled).apply()
+        Log.d(TAG, "📝 Daily reminder enabled = $enabled")
+    }
+    
     fun getDailyReminderTime(): Pair<Int, Int> {
         val time = prefs.getString(PREF_DAILY_REMINDER_TIME, "9:0") ?: "9:0"
         val parts = time.split(":")

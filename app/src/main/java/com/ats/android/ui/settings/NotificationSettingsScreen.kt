@@ -246,29 +246,75 @@ fun NotificationSettingsScreen(
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                         )
                         
-                        Text(
-                            text = "Remind after ${checkoutHours.toInt()} hours",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(horizontal = 4.dp)
-                        )
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        Slider(
-                            value = checkoutHours,
-                            onValueChange = { checkoutHours = it },
-                            valueRange = 4f..12f,
-                            steps = 7,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
+                        // iOS-style Stepper
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("4h", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("8h", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("12h", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = "After ${checkoutHours.toInt()} hours",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // Decrease button
+                                Surface(
+                                    onClick = { 
+                                        if (checkoutHours > 4f) checkoutHours -= 1f
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (checkoutHours > 4f) 
+                                        MaterialTheme.colorScheme.secondaryContainer 
+                                    else 
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                ) {
+                                    Text(
+                                        text = "−",
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                        color = if (checkoutHours > 4f)
+                                            MaterialTheme.colorScheme.onSecondaryContainer
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                    )
+                                }
+                                
+                                // Value display
+                                Text(
+                                    text = "${checkoutHours.toInt()}h",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    modifier = Modifier.width(40.dp),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                                
+                                // Increase button
+                                Surface(
+                                    onClick = { 
+                                        if (checkoutHours < 12f) checkoutHours += 1f
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (checkoutHours < 12f) 
+                                        MaterialTheme.colorScheme.secondaryContainer 
+                                    else 
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                ) {
+                                    Text(
+                                        text = "+",
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                        color = if (checkoutHours < 12f)
+                                            MaterialTheme.colorScheme.onSecondaryContainer
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                    )
+                                }
+                            }
                         }
                     }
                 }

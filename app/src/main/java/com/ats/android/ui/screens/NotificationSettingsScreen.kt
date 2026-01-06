@@ -161,6 +161,7 @@ fun NotificationSettingsScreen(
                         checked = checkOutRemindersEnabled,
                         onCheckedChange = { enabled ->
                             checkOutRemindersEnabled = enabled
+                            notificationManager.setCheckoutReminderEnabled(enabled)
                             if (!enabled) {
                                 notificationManager.cancelCheckOutReminder()
                             }
@@ -195,7 +196,10 @@ fun NotificationSettingsScreen(
                                     // Decrease button
                                     Surface(
                                         onClick = { 
-                                            if (checkoutHours > 4) checkoutHours -= 1
+                                            if (checkoutHours > 4) {
+                                                checkoutHours -= 1
+                                                notificationManager.setCheckoutHours(checkoutHours)
+                                            }
                                         },
                                         shape = RoundedCornerShape(8.dp),
                                         color = if (checkoutHours > 4) 
@@ -217,7 +221,10 @@ fun NotificationSettingsScreen(
                                     // Increase button
                                     Surface(
                                         onClick = { 
-                                            if (checkoutHours < 12) checkoutHours += 1
+                                            if (checkoutHours < 12) {
+                                                checkoutHours += 1
+                                                notificationManager.setCheckoutHours(checkoutHours)
+                                            }
                                         },
                                         shape = RoundedCornerShape(8.dp),
                                         color = if (checkoutHours < 12) 

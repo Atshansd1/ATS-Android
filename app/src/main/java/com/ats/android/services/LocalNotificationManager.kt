@@ -245,6 +245,14 @@ class LocalNotificationManager private constructor(private val context: Context)
     fun isCheckoutReminderEnabled(): Boolean = prefs.getBoolean(PREF_CHECKOUT_REMINDER_ENABLED, true)
     fun getCheckoutHours(): Float = prefs.getFloat(PREF_CHECKOUT_HOURS, 8f)
     
+    fun setCheckoutReminderEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(PREF_CHECKOUT_REMINDER_ENABLED, enabled).apply()
+    }
+    
+    fun setCheckoutHours(hours: Int) {
+        prefs.edit().putFloat(PREF_CHECKOUT_HOURS, hours.toFloat()).apply()
+    }
+    
     // MARK: - Geofence Reminder
     
     /**

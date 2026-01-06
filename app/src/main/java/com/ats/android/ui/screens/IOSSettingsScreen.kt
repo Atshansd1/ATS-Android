@@ -231,47 +231,71 @@ fun IOSSettingsScreen(
                 }
             }
             
-            // Update Section (Only show if new version available)
-            versionInfo?.let { info ->
-                if (info.isUpdateAvailable) {
-                    item {
-                        ExpressiveUpdateCard(
-                            currentVersion = currentAppVersion,
-                            newVersion = info.latestVersion,
-                            downloadProgress = downloadProgress,
-                            onUpdateClick = {
-                                updateManager.downloadAndInstallUpdate(info.downloadUrl)
-                            }
-                        )
+            // App Updates Section (Always visible)
+            item {
+                SettingsGroupCard(title = stringResource(com.ats.android.R.string.app_updates)) {
+                    // Current Version
+                    IOSSettingsRow(
+                        icon = Icons.Default.Info,
+                        title = stringResource(com.ats.android.R.string.version),
+                        value = "v$currentAppVersion",
+                        showChevron = false
+                    )
+                    
+                    Divider(color = ATSColors.DividerColor)
+                    
+                    // Update Status / Check for Updates
+                    when {
+                        downloadProgress is UpdateManager.DownloadProgress.Downloading -> {
+                            val progress = (downloadProgress as UpdateManager.DownloadProgress.Downloading)
+                            IOSSettingsRow(
+                                icon = Icons.Default.Download,
+                                title = stringResource(com.ats.android.R.string.downloading_update),
+                                value = "${progress.progress}%",
+                                showChevron = false
+                            )
+                        }
+                        versionInfo?.isUpdateAvailable == true -> {
+                            IOSSettingsRow(
+                                icon = Icons.Default.NewReleases,
+                                title = stringResource(com.ats.android.R.string.new_version_available),
+                                value = "v${versionInfo?.latestVersion}",
+                                onClick = {
+                                    versionInfo?.downloadUrl?.let { url ->
+                                        updateManager.downloadAndInstallUpdate(url)
+                                    }
+                                }
+                            )
+                        }
+                        else -> {
+                            IOSSettingsRow(
+                                icon = Icons.Default.Refresh,
+                                title = stringResource(com.ats.android.R.string.check_for_updates),
+                                value = null,
+                                onClick = {
+                                    scope.launch {
+                                        updateManager.checkForUpdates()
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
                 
-                // About Section
-                item {
-                    SettingsGroupCard(title = stringResource(com.ats.android.R.string.about)) {
-                        IOSSettingsRow(
-                            icon = Icons.Default.Info,
-                            title = stringResource(com.ats.android.R.string.version),
-                            value = currentAppVersion,
-                            showChevron = false,
-                            onClick = { 
-                                showMessage = "ATS Android v$currentAppVersion"
-                            }
-                        )
-                        
-                        Divider(color = ATSColors.DividerColor)
-                        
-                        IOSSettingsRow(
-                            icon = Icons.Default.Code,
-                            title = stringResource(com.ats.android.R.string.app_info),
-                            value = null,
-                            onClick = { 
-                                showMessage = context.getString(com.ats.android.R.string.app_info_details)
-                            }
-                        )
-                    }
+            // About Section
+            item {
+                SettingsGroupCard(title = stringResource(com.ats.android.R.string.about)) {
+                    IOSSettingsRow(
+                        icon = Icons.Default.Code,
+                        title = stringResource(com.ats.android.R.string.app_info),
+                        value = null,
+                        onClick = { 
+                            showMessage = context.getString(com.ats.android.R.string.app_info_details)
+                        }
+                    )
                 }
+            }
                 
                 // Sign Out Button
                 item {

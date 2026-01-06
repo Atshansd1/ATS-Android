@@ -797,4 +797,40 @@
     <string name="attendance_locations_desc">إدارة مواقع المكاتب والمحيط الجغرافي</string>
     <string name="analytics_desc">عرض إحصائيات واتجاهات الحضور</string>
     <string name="shift_management_desc">إدارة جداول العمل والمناوبات</string>
+    
+    <!-- Push Notifications - Employee -->
+    <string name="check_in_reminder_title">تذكير بتسجيل الحضور</string>
+    <string name="check_in_reminder_body">لا تنسَ تسجيل الحضور لوردية اليوم.</string>
+    <string name="check_out_reminder_title">تذكير بتسجيل الانصراف</string>
+    <string name="check_out_reminder_body">وردية العمل تنتهي قريباً. لا تنسَ تسجيل الانصراف.</string>
+    <string name="admin_force_checkout_title">انتهاء الجلسة</string>
+    <string name="admin_force_checkout_body">تم إنهاء جلستك من قبل المسؤول.</string>
+    <string name="shift_start_reminder_title">وردية العمل تبدأ قريباً</string>
+    <string name="shift_start_reminder_body">تبدأ وردية العمل خلال ١٥ دقيقة.</string>
+    <string name="shift_end_reminder_title">وردية العمل تنتهي قريباً</string>
+    <string name="shift_end_reminder_body">تنتهي وردية العمل خلال ١٥ دقيقة.</string>
+    <string name="general_notification_title">إشعار Hodoor+</string>
+    <string name="general_notification_body">لديك إشعار جديد.</string>
+    
+    <!-- Push Notifications - Admin -->
+    <string name="admin_new_checkin_title">تسجيل حضور جديد</string>
+    <string name="admin_new_checkin_body">%s قام بتسجيل الحضور.</string>
+    <string name="admin_new_checkout_title">تسجيل انصراف جديد</string>
+    <string name="admin_new_checkout_body">%s قام بتسجيل الانصراف.</string>
+    <string name="admin_leave_request_title">طلب إجازة جديد</string>
+    <string name="admin_leave_request_body">%s قدّم طلب إجازة.</string>
+    <string name="admin_late_checkin_title">تنبيه تأخر</string>
+    <string name="admin_late_checkin_body">%s تأخر في الحضور اليوم.</string>
+    <string name="admin_absent_alert_title">تنبيه غياب موظف</string>
+    <string name="admin_absent_alert_body">%s لم يسجل الحضور بعد اليوم.</string>
+    
+    <!-- Notification Settings UI -->
+    <string name="check_out_reminders">تذكيرات الانصراف</string>
+    <string name="location_based_reminders">تذكيرات حسب الموقع</string>
+    <string name="daily_reminders">التذكيرات اليومية</string>
+    <string name="enable_checkin_reminders">تفعيل تذكيرات الحضور</string>
+    <string name="checkin_reminder_desc">احصل على تذكير بتسجيل الحضور كل يوم عمل في الوقت المفضل لديك.</string>
+    <string name="checkout_reminder_desc">احصل على تذكير بتسجيل الانصراف بعد العمل لعدد الساعات المحدد.</string>
+    <string name="geofence_notifications">إشعارات الموقع</string>
+    <string name="geofence_desc">احصل على إشعار عند وصولك لموقع العمل.</string>
 </resources>

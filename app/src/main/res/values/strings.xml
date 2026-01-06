@@ -711,10 +711,39 @@
 
     <string name="deselect_all">Deselect All</string>
 
-    <!-- Push Notifications -->
-    <string name="force_checkout_message">Your session was ended by an administrator.</string>
-    <string name="check_in_reminder_title">Check In Reminder</string>
-    <string name="check_in_reminder_message">Don\'t forget to check in at your work location.</string>
-    <string name="check_out_reminder_title">Check Out Reminder</string>
-    <string name="check_out_reminder_message">Remember to check out before leaving work.</string>
+    <!-- Push Notifications - Employee -->
+    <string name="check_in_reminder_title">Check-In Reminder</string>
+    <string name="check_in_reminder_body">Don\'t forget to check in for today\'s shift.</string>
+    <string name="check_out_reminder_title">Check-Out Reminder</string>
+    <string name="check_out_reminder_body">Your shift is ending soon. Remember to check out.</string>
+    <string name="admin_force_checkout_title">Session Ended</string>
+    <string name="admin_force_checkout_body">Your session was ended by an administrator.</string>
+    <string name="shift_start_reminder_title">Shift Starting Soon</string>
+    <string name="shift_start_reminder_body">Your shift starts in 15 minutes.</string>
+    <string name="shift_end_reminder_title">Shift Ending Soon</string>
+    <string name="shift_end_reminder_body">Your shift ends in 15 minutes.</string>
+    <string name="general_notification_title">Hodoor+ Notification</string>
+    <string name="general_notification_body">You have a new notification.</string>
+    
+    <!-- Push Notifications - Admin -->
+    <string name="admin_new_checkin_title">New Check-In</string>
+    <string name="admin_new_checkin_body">%s has checked in.</string>
+    <string name="admin_new_checkout_title">New Check-Out</string>
+    <string name="admin_new_checkout_body">%s has checked out.</string>
+    <string name="admin_leave_request_title">New Leave Request</string>
+    <string name="admin_leave_request_body">%s has submitted a leave request.</string>
+    <string name="admin_late_checkin_title">Late Check-In Alert</string>
+    <string name="admin_late_checkin_body">%s checked in late today.</string>
+    <string name="admin_absent_alert_title">Absent Employee Alert</string>
+    <string name="admin_absent_alert_body">%s has not checked in yet today.</string>
+    
+    <!-- Notification Settings UI -->
+    <string name="check_out_reminders">Check-Out Reminders</string>
+    <string name="location_based_reminders">Location-Based Reminders</string>
+    <string name="daily_reminders">Daily Reminders</string>
+    <string name="enable_checkin_reminders">Enable Check-In Reminders</string>
+    <string name="checkin_reminder_desc">Get reminded to check in every weekday at your preferred time.</string>
+    <string name="checkout_reminder_desc">Get reminded to check out after working for the specified hours.</string>
+    <string name="geofence_notifications">Location Notifications</string>
+    <string name="geofence_desc">Get notified when you arrive at your work location.</string>
 </resources>

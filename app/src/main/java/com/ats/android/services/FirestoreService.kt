@@ -759,6 +759,7 @@ class FirestoreService private constructor() {
         Log.d(TAG, "📥 Fetching active locations")
         try {
             val snapshot = db.collection(ACTIVE_LOCATIONS_COLLECTION)
+                .whereEqualTo("isActive", true)
                 .get()
                 .await()
             
@@ -918,6 +919,7 @@ class FirestoreService private constructor() {
                 }
                 
                 db.collection(ACTIVE_LOCATIONS_COLLECTION)
+                    .whereEqualTo("isActive", true)
                     .addSnapshotListener { locationSnapshot, locationError ->
                          if (locationError != null) {
                             Log.e(TAG, "❌ Location listen failed: ${locationError.message}")

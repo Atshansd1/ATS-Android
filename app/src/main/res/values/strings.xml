@@ -746,4 +746,11 @@
     <string name="checkout_reminder_desc">Get reminded to check out after working for the specified hours.</string>
     <string name="geofence_notifications">Location Notifications</string>
     <string name="geofence_desc">Get notified when you arrive at your work location.</string>
+
+    <!-- Admin Notifications -->
+    <string name="admin_notifications">Admin Notifications</string>
+    <string name="admin_notifications_desc">Receive notifications about employee activity</string>
+    <string name="new_leave_requests">New Leave Requests</string>
+    <string name="late_checkins">Late Check-Ins</string>
+    <string name="missed_checkins">Missed Check-Ins</string>
 </resources>

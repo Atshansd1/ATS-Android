@@ -53,6 +53,9 @@ class LocalNotificationManager private constructor(private val context: Context)
         private const val PREF_CHECKOUT_REMINDER_ENABLED = "checkout_reminder_enabled"
         private const val PREF_CHECKOUT_HOURS = "checkout_hours"
         private const val PREF_GEOFENCE_ENABLED = "geofence_enabled"
+        private const val PREF_LEAVE_REQUEST_NOTIFICATIONS = "leave_request_notifications"
+        private const val PREF_LATE_CHECKIN_NOTIFICATIONS = "late_checkin_notifications"
+        private const val PREF_MISSED_CHECKIN_NOTIFICATIONS = "missed_checkin_notifications"
         
         @Volatile
         private var instance: LocalNotificationManager? = null
@@ -288,6 +291,29 @@ class LocalNotificationManager private constructor(private val context: Context)
     }
     
     fun isGeofenceEnabled(): Boolean = prefs.getBoolean(PREF_GEOFENCE_ENABLED, true)
+    
+    // MARK: - Admin Notifications
+    
+    fun isLeaveRequestNotificationsEnabled(): Boolean = 
+        prefs.getBoolean(PREF_LEAVE_REQUEST_NOTIFICATIONS, true)
+    
+    fun setLeaveRequestNotificationsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(PREF_LEAVE_REQUEST_NOTIFICATIONS, enabled).apply()
+    }
+    
+    fun isLateCheckInNotificationsEnabled(): Boolean = 
+        prefs.getBoolean(PREF_LATE_CHECKIN_NOTIFICATIONS, true)
+    
+    fun setLateCheckInNotificationsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(PREF_LATE_CHECKIN_NOTIFICATIONS, enabled).apply()
+    }
+    
+    fun isMissedCheckInNotificationsEnabled(): Boolean = 
+        prefs.getBoolean(PREF_MISSED_CHECKIN_NOTIFICATIONS, true)
+    
+    fun setMissedCheckInNotificationsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(PREF_MISSED_CHECKIN_NOTIFICATIONS, enabled).apply()
+    }
     
     // MARK: - Shift Reminders
     

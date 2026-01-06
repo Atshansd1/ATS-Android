@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.ats.android.R
+import com.ats.android.services.AuthService
 import com.ats.android.services.LocalNotificationManager
 import com.ats.android.ui.components.SettingsGroupCard
 
@@ -43,7 +44,6 @@ fun NotificationSettingsScreen(
 ) {
     val context = LocalContext.current
     val notificationManager = remember { LocalNotificationManager.getInstance(context) }
-    
     // State
     var checkInRemindersEnabled by remember { mutableStateOf(notificationManager.isDailyReminderEnabled()) }
     var checkOutRemindersEnabled by remember { mutableStateOf(notificationManager.isCheckoutReminderEnabled()) }
@@ -53,8 +53,18 @@ fun NotificationSettingsScreen(
     var reminderHour by remember { mutableIntStateOf(savedHour) }
     var reminderMinute by remember { mutableIntStateOf(savedMinute) }
     var checkoutHours by remember { mutableIntStateOf(notificationManager.getCheckoutHours().toInt()) }
-    
     var showTimePicker by remember { mutableStateOf(false) }
+    
+    // Admin notification state
+    var leaveRequestsEnabled by remember { mutableStateOf(notificationManager.isLeaveRequestNotificationsEnabled()) }
+    var lateCheckInsEnabled by remember { mutableStateOf(notificationManager.isLateCheckInNotificationsEnabled()) }
+    var missedCheckInsEnabled by remember { mutableStateOf(notificationManager.isMissedCheckInNotificationsEnabled()) }
+    
+    // Get current user role
+    val isAdmin = AuthService.getInstance().currentUser?.role?.isAdmin == true
+    val isSupervisor = AuthService.getInstance().currentUser?.role?.isSupervisor == true
+    val showAdminNotifications = isAdmin || isSupervisor
+    val showEmployeeNotifications = !isAdmin
     var hasNotificationPermission by remember { mutableStateOf(notificationManager.hasNotificationPermission()) }
     
     // Permission launcher
@@ -89,194 +99,246 @@ fun NotificationSettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Daily Reminders Section
-            item {
-                SettingsGroupCard(title = stringResource(R.string.daily_reminders)) {
-                    // Enable Check-In Reminders Toggle
-                    NotificationToggleRow(
-                        title = stringResource(R.string.enable_checkin_reminders),
-                        checked = checkInRemindersEnabled,
-                        onCheckedChange = { enabled ->
-                            checkInRemindersEnabled = enabled
-                            notificationManager.setDailyReminderEnabled(enabled)
-                            if (enabled) {
-                                notificationManager.scheduleDailyCheckInReminder(reminderHour, reminderMinute)
-                            } else {
-                                notificationManager.cancelDailyCheckInReminder()
+            // Daily Reminders Section (employees only)
+            if (showEmployeeNotifications) {
+                item {
+                    SettingsGroupCard(title = stringResource(R.string.daily_reminders)) {
+                        // Enable Check-In Reminders Toggle
+                        NotificationToggleRow(
+                            title = stringResource(R.string.enable_checkin_reminders),
+                            checked = checkInRemindersEnabled,
+                            onCheckedChange = { enabled ->
+                                checkInRemindersEnabled = enabled
+                                notificationManager.setDailyReminderEnabled(enabled)
+                                if (enabled) {
+                                    notificationManager.scheduleDailyCheckInReminder(reminderHour, reminderMinute)
+                                } else {
+                                    notificationManager.cancelDailyCheckInReminder()
+                                }
                             }
-                        }
-                    )
-                    
-                    // Reminder Time (only visible when enabled)
-                    AnimatedVisibility(
-                        visible = checkInRemindersEnabled,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically()
-                    ) {
-                        Column {
-                            Divider()
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Reminder Time",
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                
-                                Surface(
-                                    onClick = { showTimePicker = true },
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                        
+                        // Reminder Time (only visible when enabled)
+                        AnimatedVisibility(
+                            visible = checkInRemindersEnabled,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Column {
+                                Divider()
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = String.format("%02d:%02d", reminderHour, reminderMinute),
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        text = "Reminder Time",
+                                        style = MaterialTheme.typography.bodyLarge
                                     )
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Footer description
-                    Text(
-                        text = stringResource(R.string.checkin_reminder_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
-            }
-            
-            // Checkout Reminders Section
-            item {
-                SettingsGroupCard(title = stringResource(R.string.check_out_reminders)) {
-                    // Checkout Reminders Toggle
-                    NotificationToggleRow(
-                        title = stringResource(R.string.check_out_reminders),
-                        checked = checkOutRemindersEnabled,
-                        onCheckedChange = { enabled ->
-                            checkOutRemindersEnabled = enabled
-                            notificationManager.setCheckoutReminderEnabled(enabled)
-                            if (!enabled) {
-                                notificationManager.cancelCheckOutReminder()
-                            }
-                        }
-                    )
-                    
-                    // Hours Stepper (only visible when enabled)
-                    AnimatedVisibility(
-                        visible = checkOutRemindersEnabled,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically()
-                    ) {
-                        Column {
-                            Divider()
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "After $checkoutHours hours",
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                
-                                // iOS-style Stepper
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    // Decrease button
-                                    Surface(
-                                        onClick = { 
-                                            if (checkoutHours > 4) {
-                                                checkoutHours -= 1
-                                                notificationManager.setCheckoutHours(checkoutHours)
-                                            }
-                                        },
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = if (checkoutHours > 4) 
-                                            MaterialTheme.colorScheme.secondaryContainer 
-                                        else 
-                                            MaterialTheme.colorScheme.surfaceVariant
-                                    ) {
-                                        Text(
-                                            text = "−",
-                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = if (checkoutHours > 4)
-                                                MaterialTheme.colorScheme.onSecondaryContainer
-                                            else
-                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                                        )
-                                    }
                                     
-                                    // Increase button
                                     Surface(
-                                        onClick = { 
-                                            if (checkoutHours < 12) {
-                                                checkoutHours += 1
-                                                notificationManager.setCheckoutHours(checkoutHours)
-                                            }
-                                        },
+                                        onClick = { showTimePicker = true },
                                         shape = RoundedCornerShape(8.dp),
-                                        color = if (checkoutHours < 12) 
-                                            MaterialTheme.colorScheme.secondaryContainer 
-                                        else 
-                                            MaterialTheme.colorScheme.surfaceVariant
+                                        color = MaterialTheme.colorScheme.secondaryContainer
                                     ) {
                                         Text(
-                                            text = "+",
-                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = if (checkoutHours < 12)
-                                                MaterialTheme.colorScheme.onSecondaryContainer
-                                            else
-                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                            text = String.format("%02d:%02d", reminderHour, reminderMinute),
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
                                         )
                                     }
                                 }
                             }
                         }
+                        
+                        // Footer description
+                        Text(
+                            text = stringResource(R.string.checkin_reminder_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
                     }
-                    
-                    // Footer description
-                    Text(
-                        text = stringResource(R.string.checkout_reminder_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
                 }
             }
             
-            // Geofence Notifications Section
-            item {
-                SettingsGroupCard(title = stringResource(R.string.geofence_notifications)) {
-                    NotificationToggleRow(
-                        title = stringResource(R.string.location_based_reminders),
-                        checked = geofenceEnabled,
-                        onCheckedChange = { enabled ->
-                            geofenceEnabled = enabled
-                            notificationManager.setGeofenceEnabled(enabled)
+            // Checkout Reminders Section (employees only)
+            if (showEmployeeNotifications) {
+                item {
+                    SettingsGroupCard(title = stringResource(R.string.check_out_reminders)) {
+                        // Checkout Reminders Toggle
+                        NotificationToggleRow(
+                            title = stringResource(R.string.check_out_reminders),
+                            checked = checkOutRemindersEnabled,
+                            onCheckedChange = { enabled ->
+                                checkOutRemindersEnabled = enabled
+                                notificationManager.setCheckoutReminderEnabled(enabled)
+                                if (!enabled) {
+                                    notificationManager.cancelCheckOutReminder()
+                                }
+                            }
+                        )
+                        
+                        // Hours Stepper (only visible when enabled)
+                        AnimatedVisibility(
+                            visible = checkOutRemindersEnabled,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Column {
+                                Divider()
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "After $checkoutHours hours",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    
+                                    // iOS-style Stepper
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        // Decrease button
+                                        Surface(
+                                            onClick = { 
+                                                if (checkoutHours > 4) {
+                                                    checkoutHours -= 1
+                                                    notificationManager.setCheckoutHours(checkoutHours)
+                                                }
+                                            },
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = if (checkoutHours > 4) 
+                                                MaterialTheme.colorScheme.secondaryContainer 
+                                            else 
+                                                MaterialTheme.colorScheme.surfaceVariant
+                                        ) {
+                                            Text(
+                                                text = "−",
+                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = if (checkoutHours > 4)
+                                                    MaterialTheme.colorScheme.onSecondaryContainer
+                                                else
+                                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                            )
+                                        }
+                                        
+                                        // Increase button
+                                        Surface(
+                                            onClick = { 
+                                                if (checkoutHours < 12) {
+                                                    checkoutHours += 1
+                                                    notificationManager.setCheckoutHours(checkoutHours)
+                                                }
+                                            },
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = if (checkoutHours < 12) 
+                                                MaterialTheme.colorScheme.secondaryContainer 
+                                            else 
+                                                MaterialTheme.colorScheme.surfaceVariant
+                                        ) {
+                                            Text(
+                                                text = "+",
+                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = if (checkoutHours < 12)
+                                                    MaterialTheme.colorScheme.onSecondaryContainer
+                                                else
+                                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    )
-                    
-                    // Footer description
-                    Text(
-                        text = stringResource(R.string.geofence_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+                        
+                        // Footer description
+                        Text(
+                            text = stringResource(R.string.checkout_reminder_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+            
+            // Geofence Notifications Section (employees only)
+            if (showEmployeeNotifications) {
+                item {
+                    SettingsGroupCard(title = stringResource(R.string.geofence_notifications)) {
+                        NotificationToggleRow(
+                            title = stringResource(R.string.location_based_reminders),
+                            checked = geofenceEnabled,
+                            onCheckedChange = { enabled ->
+                                geofenceEnabled = enabled
+                                notificationManager.setGeofenceEnabled(enabled)
+                            }
+                        )
+                        
+                        // Footer description
+                        Text(
+                            text = stringResource(R.string.geofence_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+            
+            // Admin Notifications Section (admins and supervisors only)
+            if (showAdminNotifications) {
+                item {
+                    SettingsGroupCard(title = stringResource(R.string.admin_notifications)) {
+                        NotificationToggleRow(
+                            title = stringResource(R.string.new_leave_requests),
+                            checked = leaveRequestsEnabled,
+                            onCheckedChange = { enabled ->
+                                leaveRequestsEnabled = enabled
+                                notificationManager.setLeaveRequestNotificationsEnabled(enabled)
+                            }
+                        )
+                        
+                        Divider()
+                        
+                        NotificationToggleRow(
+                            title = stringResource(R.string.late_checkins),
+                            checked = lateCheckInsEnabled,
+                            onCheckedChange = { enabled ->
+                                lateCheckInsEnabled = enabled
+                                notificationManager.setLateCheckInNotificationsEnabled(enabled)
+                            }
+                        )
+                        
+                        Divider()
+                        
+                        NotificationToggleRow(
+                            title = stringResource(R.string.missed_checkins),
+                            checked = missedCheckInsEnabled,
+                            onCheckedChange = { enabled ->
+                                missedCheckInsEnabled = enabled
+                                notificationManager.setMissedCheckInNotificationsEnabled(enabled)
+                            }
+                        )
+                        
+                        // Footer description
+                        Text(
+                            text = stringResource(R.string.admin_notifications_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
                 }
             }
         }

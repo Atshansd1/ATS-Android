@@ -833,4 +833,11 @@
     <string name="checkout_reminder_desc">احصل على تذكير بتسجيل الانصراف بعد العمل لعدد الساعات المحدد.</string>
     <string name="geofence_notifications">إشعارات الموقع</string>
     <string name="geofence_desc">احصل على إشعار عند وصولك لموقع العمل.</string>
+
+    <!-- Admin Notifications -->
+    <string name="admin_notifications">إشعارات الإدارة</string>
+    <string name="admin_notifications_desc">استلام إشعارات حول نشاط الموظفين</string>
+    <string name="new_leave_requests">طلبات الإجازة الجديدة</string>
+    <string name="late_checkins">تسجيل الحضور المتأخر</string>
+    <string name="missed_checkins">تسجيل الحضور الفائت</string>
 </resources>

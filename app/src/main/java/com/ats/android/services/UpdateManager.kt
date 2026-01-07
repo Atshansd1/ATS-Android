@@ -239,44 +239,52 @@ class UpdateManager(private val context: Context) {
                 return
             }
             
-            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                try {
-                    FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.fileprovider",
-                        file
-                    )
-                } catch (e: Exception) {
-                    Log.e(TAG, "FileProvider error: ${e.message}", e)
-                    // Fallback: try with external path
-                    Uri.fromFile(file)
+            // Check if we have install permission
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!context.packageManager.canRequestPackageInstalls()) {
+                    Log.w(TAG, "Install permission not granted, opening settings")
+                    _downloadProgress.value = DownloadProgress.Error("Please enable 'Install unknown apps' permission")
+                    
+                    // Open settings to enable install permission
+                    val settingsIntent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(settingsIntent)
+                    return
                 }
-            } else {
-                Uri.fromFile(file)
             }
+            
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
             
             Log.d(TAG, "Install URI: $uri")
             
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/vnd.android.package-archive")
+            // Use ACTION_INSTALL_PACKAGE for better compatibility
+            val intent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
+                data = uri
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+                putExtra(Intent.EXTRA_RETURN_RESULT, true)
             }
             
-            // Check if there's an app to handle this intent
-            if (intent.resolveActivity(context.packageManager) != null) {
-                context.startActivity(intent)
-                Log.d(TAG, "Install intent started successfully")
-                _downloadProgress.value = DownloadProgress.Installing
-            } else {
-                Log.e(TAG, "No app to handle install intent")
-                _downloadProgress.value = DownloadProgress.Error("Cannot open installer")
-            }
+            _downloadProgress.value = DownloadProgress.Installing
+            context.startActivity(intent)
+            Log.d(TAG, "Install intent started successfully")
             
         } catch (e: Exception) {
             Log.e(TAG, "Error installing update: ${e.message}", e)
             _downloadProgress.value = DownloadProgress.Error(e.message ?: "Installation failed")
         }
+    }
+    
+    // Public method to retry installation after granting permission
+    fun retryInstall() {
+        installUpdate()
     }
     
     private fun startProgressMonitoring() {

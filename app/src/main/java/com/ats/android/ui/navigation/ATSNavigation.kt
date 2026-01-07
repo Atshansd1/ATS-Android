@@ -310,11 +310,12 @@ fun MainScaffold(
                     android.util.Log.d("MainScaffold", "Added 5 tabs for SUPERVISOR (Dashboard, Map, CheckIn, Reports, Settings)")
                 }
                 EmployeeRole.EMPLOYEE -> {
-                    // Employee: Check-In, Leaves, Settings
+                    // Employee: Check-In, History, Leaves, Settings (matches iOS)
                     add(Screen.CheckIn)
-                     add(Screen.Leaves)
+                    add(Screen.History)
+                    add(Screen.Leaves)
                     add(Screen.Settings)
-                    android.util.Log.d("MainScaffold", "Added 2 tabs for EMPLOYEE")
+                    android.util.Log.d("MainScaffold", "Added 4 tabs for EMPLOYEE (CheckIn, History, Leaves, Settings)")
                 }
             }
         }

@@ -68,6 +68,68 @@ class LocationService(private val context: Context) {
                 locationManager?.isProviderEnabled(LocationManager.NETWORK_PROVIDER) == true
     }
     
+    /**
+     * Check if a location is from a mock/fake GPS provider
+     * Returns true if the location appears to be spoofed
+     */
+    fun isMockLocation(location: Location): Boolean {
+        // Check the isFromMockProvider flag (Android 18+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            if (location.isFromMockProvider) {
+                Log.w(TAG, "🚨 MOCK LOCATION DETECTED via isFromMockProvider!")
+                return true
+            }
+        }
+        
+        // Additional check for Android 31+ using isMock
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (location.isMock) {
+                Log.w(TAG, "🚨 MOCK LOCATION DETECTED via isMock!")
+                return true
+            }
+        }
+        
+        // Check if mock location apps are enabled in developer settings
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            @Suppress("DEPRECATION")
+            val mockLocationEnabled = android.provider.Settings.Secure.getString(
+                context.contentResolver,
+                android.provider.Settings.Secure.ALLOW_MOCK_LOCATION
+            ) == "1"
+            
+            if (mockLocationEnabled) {
+                Log.w(TAG, "⚠️ Mock location setting is enabled in developer options")
+                // This alone doesn't mean they're spoofing, but it's a flag
+            }
+        }
+        
+        return false
+    }
+    
+    /**
+     * Validate location and check for spoofing
+     * Returns null if location is valid, or an error message if suspicious
+     */
+    fun validateLocation(location: Location): String? {
+        if (isMockLocation(location)) {
+            return "Fake GPS detected. Check-in blocked for security."
+        }
+        
+        // Check for unrealistic accuracy (too perfect = suspicious)
+        if (location.accuracy <= 0) {
+            Log.w(TAG, "⚠️ Suspicious accuracy: ${location.accuracy}")
+            return "Invalid location accuracy detected."
+        }
+        
+        // Check for unrealistic altitude (if available)
+        if (location.hasAltitude() && (location.altitude < -500 || location.altitude > 10000)) {
+            Log.w(TAG, "⚠️ Suspicious altitude: ${location.altitude}")
+            // Don't block, just log - some devices have GPS issues
+        }
+        
+        return null // Location is valid
+    }
+    
     fun isGooglePlayServicesAvailable(): Boolean {
         val availability = GoogleApiAvailability.getInstance()
         val resultCode = availability.isGooglePlayServicesAvailable(context)
@@ -165,15 +227,6 @@ class LocationService(private val context: Context) {
     private fun isLocationRecent(location: Location): Boolean {
         val ageMillis = System.currentTimeMillis() - location.time
         return ageMillis < 60000 // Less than 1 minute old
-    }
-
-    fun isMockLocation(location: Location): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            location.isMock
-        } else {
-            @Suppress("DEPRECATION")
-            location.isFromMockProvider
-        }
     }
     
     fun getLocationUpdates(): Flow<Location> = callbackFlow {

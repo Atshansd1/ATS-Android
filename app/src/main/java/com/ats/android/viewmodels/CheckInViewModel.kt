@@ -13,9 +13,12 @@ import androidx.lifecycle.viewModelScope
 import com.ats.android.R
 import com.ats.android.models.AttendanceRecord
 import com.ats.android.models.Employee
+import com.ats.android.services.AuditLogService
+import com.ats.android.services.DeviceBindingService
 import com.ats.android.services.FirestoreService
 import com.ats.android.services.GeocodingService
 import com.ats.android.services.LocationService
+import com.ats.android.services.SecurityAlertService
 import com.google.firebase.firestore.GeoPoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +30,11 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
     private val firestoreService = FirestoreService.getInstance()
     private val locationService = LocationService(application.applicationContext)
     private val geocodingService = GeocodingService(application.applicationContext)
+    
+    // Security services
+    private val auditLogService = AuditLogService(application.applicationContext)
+    private val securityAlertService = SecurityAlertService(application.applicationContext)
+    private val deviceBindingService = DeviceBindingService(application.applicationContext)
     
     private val _uiState = MutableStateFlow<CheckInUiState>(CheckInUiState.Loading)
     val uiState: StateFlow<CheckInUiState> = _uiState.asStateFlow()
@@ -310,8 +318,42 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                 
                 // Security Check: Mock Location
                 if (locationService.isMockLocation(location)) {
-                     _uiState.value = CheckInUiState.Error("Mock location detected. Please disable any 'Fake GPS' apps and try again.")
-                     return@launch
+                    // Create security alert for mock location attempt
+                    securityAlertService.alertMockLocation(
+                        employeeId = employee.employeeId,
+                        employeeName = employee.displayName,
+                        location = GeoPoint(location.latitude, location.longitude)
+                    )
+                    auditLogService.logAction(
+                        employeeId = employee.employeeId,
+                        action = AuditLogService.Actions.MOCK_LOCATION_DETECTED,
+                        location = GeoPoint(location.latitude, location.longitude),
+                        isSuspicious = true,
+                        flagReasons = listOf("MOCK_LOCATION_DETECTED")
+                    )
+                    _uiState.value = CheckInUiState.Error("Mock location detected. Please disable any 'Fake GPS' apps and try again.")
+                    return@launch
+                }
+                
+                // Security Check: Device Binding
+                when (val deviceCheck = deviceBindingService.checkDevice(employee.employeeId, employee.displayName)) {
+                    is DeviceBindingService.DeviceCheckResult.NewDevice -> {
+                        // First time - register this device
+                        deviceBindingService.registerDevice(employee.employeeId)
+                        Log.d(TAG, "📱 Registered new device for ${employee.displayName}")
+                    }
+                    is DeviceBindingService.DeviceCheckResult.Blocked -> {
+                        _uiState.value = CheckInUiState.Error(deviceCheck.reason)
+                        return@launch
+                    }
+                    is DeviceBindingService.DeviceCheckResult.DifferentDevice -> {
+                        // Different device - warn but allow (unless locked)
+                        Log.w(TAG, "⚠️ Different device detected for ${employee.displayName}")
+                        // The alert was already created by DeviceBindingService
+                    }
+                    is DeviceBindingService.DeviceCheckResult.Allowed -> {
+                        Log.d(TAG, "✅ Device verified for ${employee.displayName}")
+                    }
                 }
                 
                 // Security Check: Attendance Centers (Geofencing)
@@ -343,6 +385,17 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                     _isCheckedIn.value = true
                     _uiState.value = CheckInUiState.Success("Checked in successfully")
                     Log.d(TAG, "✅ Check-in successful")
+                    
+                    // Audit Log: Record check-in with all details
+                    auditLogService.logAction(
+                        employeeId = employee.employeeId,
+                        action = AuditLogService.Actions.CHECK_IN,
+                        location = geoPoint,
+                        metadata = mapOf(
+                            "placeName" to (placeName ?: "Unknown"),
+                            "centerName" to (validationResult.localizedName ?: "Unknown")
+                        )
+                    )
                     
                     // Start location tracking service
                     com.ats.android.services.LocationTrackingService.startTracking(

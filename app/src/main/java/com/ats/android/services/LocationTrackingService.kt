@@ -168,6 +168,14 @@ class LocationTrackingService : Service() {
         locationUpdateJob = serviceScope.launch {
             while (isActive) {
                 try {
+                    // CRITICAL: Check if background location permission is still granted
+                    if (!locationService.hasBackgroundLocationPermission()) {
+                        Log.w(TAG, "⚠️ Background location permission revoked! Starting auto-checkout...")
+                        sendPermissionRevokedNotification()
+                        performAutoCheckout()
+                        return@launch // Exit the loop and stop service
+                    }
+                    
                     updateLocation()
                     delay(UPDATE_INTERVAL_MS) // Wait 2 minutes before next update
                 } catch (e: Exception) {
@@ -424,6 +432,62 @@ class LocationTrackingService : Service() {
             .build()
             
         notificationManager.notify(NOTIFICATION_ID + 1, notification)
+    }
+    
+    /**
+     * Send notification when permission is revoked during background tracking
+     */
+    private fun sendPermissionRevokedNotification() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(getString(R.string.permission_warning_notification_title))
+            .setContentText(getString(R.string.permission_revoked_checkout_body))
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+            
+        notificationManager.notify(NOTIFICATION_ID + 2, notification)
+        Log.d(TAG, "📢 Permission revoked notification sent")
+    }
+    
+    /**
+     * Perform automatic checkout when permission is revoked
+     */
+    private fun performAutoCheckout() {
+        serviceScope.launch {
+            try {
+                val empId = employeeId ?: return@launch
+                
+                Log.d(TAG, "🔄 Performing auto-checkout for employee: $empId")
+                
+                // Get the active check-in record
+                val activeRecord = firestoreService.getActiveCheckIn(empId)
+                if (activeRecord != null) {
+                    // Convert GeoPointData to GeoPoint
+                    val location = activeRecord.checkInLocation?.let { 
+                        GeoPoint(it.latitude, it.longitude) 
+                    } ?: GeoPoint(0.0, 0.0)
+                    
+                    // Perform checkout using correct function signature
+                    firestoreService.checkOut(
+                        employeeId = empId,
+                        location = location,
+                        placeName = "Auto-Checkout (Permission Revoked)"
+                    )
+                    
+                    Log.d(TAG, "✅ Auto-checkout complete for: $empId")
+                }
+                
+                // Stop the service
+                stopSelf()
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Auto-checkout error: ${e.message}", e)
+                stopSelf()
+            }
+        }
     }
     
     override fun onDestroy() {

@@ -770,4 +770,5 @@
     <string name="permission_warning_channel_description">Alerts when location permission changes during check-in</string>
     <string name="permission_warning_notification_title">⚠️ Location Permission Changed</string>
     <string name="permission_warning_notification_body">You will be automatically checked out in 30 seconds. Please restore \'Allow all the time\' location permission to continue your shift.</string>
+    <string name="permission_revoked_checkout_body">Your location permission was changed. You have been automatically checked out.</string>
 </resources>

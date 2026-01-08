@@ -136,8 +136,12 @@ class UpdateManager(private val context: Context) {
     }
     
     private fun compareVersions(v1: String, v2: String): Int {
-        val parts1 = v1.split(".").map { it.toIntOrNull() ?: 0 }
-        val parts2 = v2.split(".").map { it.toIntOrNull() ?: 0 }
+        // Handle tags like "2.1.4-build58" by extracting build number
+        val normalized1 = normalizeVersion(v1)
+        val normalized2 = normalizeVersion(v2)
+        
+        val parts1 = normalized1.split(".").map { it.toIntOrNull() ?: 0 }
+        val parts2 = normalized2.split(".").map { it.toIntOrNull() ?: 0 }
         
         for (i in 0 until maxOf(parts1.size, parts2.size)) {
             val part1 = parts1.getOrNull(i) ?: 0
@@ -147,6 +151,27 @@ class UpdateManager(private val context: Context) {
             }
         }
         return 0
+    }
+    
+    /**
+     * Normalize version string:
+     * "2.1.4-build58" -> "2.1.4.58"
+     * "2.1.4.58" -> "2.1.4.58"
+     * "2.1.4" -> "2.1.4.0"
+     */
+    private fun normalizeVersion(version: String): String {
+        // Handle "-buildXX" suffix
+        val buildRegex = Regex("(\\d+\\.\\d+\\.\\d+)-build(\\d+)")
+        val buildMatch = buildRegex.find(version)
+        if (buildMatch != null) {
+            val baseVersion = buildMatch.groupValues[1]
+            val buildNumber = buildMatch.groupValues[2]
+            return "$baseVersion.$buildNumber"
+        }
+        
+        // If already in format "X.X.X.X", return as is
+        val parts = version.split(".")
+        return if (parts.size >= 4) version else "$version.0"
     }
     
     fun downloadAndInstallUpdate(downloadUrl: String? = null) {

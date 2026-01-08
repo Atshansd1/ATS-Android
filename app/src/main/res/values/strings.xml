@@ -764,4 +764,10 @@
     <string name="auto_checkout_warning">Auto check-out in %d seconds</string>
     <string name="restore_permission">Restore Permission</string>
     <string name="open_settings">Open Settings</string>
+    
+    <!-- Permission Warning Notification -->
+    <string name="permission_warning_channel_name">Location Permission Alerts</string>
+    <string name="permission_warning_channel_description">Alerts when location permission changes during check-in</string>
+    <string name="permission_warning_notification_title">⚠️ Location Permission Changed</string>
+    <string name="permission_warning_notification_body">You will be automatically checked out in 30 seconds. Please restore \'Allow all the time\' location permission to continue your shift.</string>
 </resources>

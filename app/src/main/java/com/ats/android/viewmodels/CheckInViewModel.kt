@@ -1,11 +1,16 @@
 package com.ats.android.viewmodels
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.location.Location
+import android.os.Build
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.ats.android.R
 import com.ats.android.models.AttendanceRecord
 import com.ats.android.models.Employee
 import com.ats.android.services.FirestoreService
@@ -123,6 +128,9 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         _permissionCountdown.value = 30
         _showPermissionDowngradeAlert.value = true
         
+        // Send notification to warn user
+        sendPermissionWarningNotification()
+        
         countdownJob = viewModelScope.launch {
             while (_permissionCountdown.value > 0) {
                 kotlinx.coroutines.delay(1000)
@@ -144,6 +152,39 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
         countdownJob = null
         _showPermissionDowngradeAlert.value = false
         _permissionCountdown.value = 30
+    }
+    
+    /**
+     * Send local notification warning about permission change and auto-checkout
+     */
+    private fun sendPermissionWarningNotification() {
+        val context = getApplication<Application>().applicationContext
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        
+        // Create notification channel for Android 8.0+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                PERMISSION_WARNING_CHANNEL_ID,
+                context.getString(R.string.permission_warning_channel_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = context.getString(R.string.permission_warning_channel_description)
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+        
+        val notification = NotificationCompat.Builder(context, PERMISSION_WARNING_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(context.getString(R.string.permission_warning_notification_title))
+            .setContentText(context.getString(R.string.permission_warning_notification_body))
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText(context.getString(R.string.permission_warning_notification_body)))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+        
+        notificationManager.notify(PERMISSION_WARNING_NOTIFICATION_ID, notification)
+        Log.d(TAG, "📢 Permission warning notification sent")
     }
     
     private suspend fun getCurrentLocation() {
@@ -488,6 +529,8 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
     
     companion object {
         private const val TAG = "CheckInViewModel"
+        private const val PERMISSION_WARNING_CHANNEL_ID = "permission_warning"
+        private const val PERMISSION_WARNING_NOTIFICATION_ID = 9001
     }
 }
 

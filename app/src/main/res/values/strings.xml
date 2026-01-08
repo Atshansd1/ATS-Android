@@ -754,4 +754,14 @@
     <string name="new_leave_requests">New Leave Requests</string>
     <string name="late_checkins">Late Check-Ins</string>
     <string name="missed_checkins">Missed Check-Ins</string>
+    
+    <!-- Always Location Permission -->
+    <string name="background_location_required">Background location permission is required for check-in tracking. Please enable it in Settings.</string>
+    <string name="background_location_title">Location Permission Required</string>
+    <string name="background_location_message">To track your attendance accurately while you work, please enable \'Allow all the time\' location access in Settings.</string>
+    <string name="permission_downgrade_title">Location Permission Changed</string>
+    <string name="permission_downgrade_message">You changed location permission. You will be automatically checked out in %d seconds unless you restore permission.</string>
+    <string name="auto_checkout_warning">Auto check-out in %d seconds</string>
+    <string name="restore_permission">Restore Permission</string>
+    <string name="open_settings">Open Settings</string>
 </resources>

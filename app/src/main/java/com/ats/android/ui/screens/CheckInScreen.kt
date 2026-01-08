@@ -58,13 +58,76 @@ fun CheckInScreen(
     val placeName by viewModel.placeName.collectAsState()
     val activeRecord by viewModel.activeRecord.collectAsState()
     
+    // Permission States
+    val showPermissionRequired by viewModel.showBackgroundPermissionRequired.collectAsState()
+    val showPermissionDowngrade by viewModel.showPermissionDowngradeAlert.collectAsState()
+    val countdown by viewModel.permissionCountdown.collectAsState()
+    
     val attendanceRecords by historyViewModel.attendanceRecords.collectAsState()
+    val context = LocalContext.current
+    
+    // Lifecycle Observer for Resume Check
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                currentEmployee?.let { viewModel.checkBackgroundPermissionForActiveSession(it) }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
     
     LaunchedEffect(currentEmployee) {
         if (currentEmployee != null) {
             viewModel.initialize(currentEmployee)
             historyViewModel.loadHistory(currentEmployee)
         }
+    }
+    
+    // Permission Required Alert
+    if (showPermissionRequired) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissBackgroundPermissionDialog() },
+            title = { Text(stringResource(R.string.background_location_title)) },
+            text = { Text(stringResource(R.string.background_location_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val intent = android.content.Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                        context.startActivity(intent)
+                    }
+                ) {
+                    Text(stringResource(R.string.open_settings))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissBackgroundPermissionDialog() }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+    
+    // Permission Downgrade Countdown Alert
+    if (showPermissionDowngrade) {
+        AlertDialog(
+            onDismissRequest = { /* Prevent dismiss */ },
+            title = { Text(stringResource(R.string.permission_downgrade_title)) },
+            text = { Text(stringResource(R.string.permission_downgrade_message, countdown)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val intent = android.content.Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                        context.startActivity(intent)
+                    }
+                ) {
+                    Text(stringResource(R.string.restore_permission))
+                }
+            }
+        )
     }
     
     // Status Pulse Animation

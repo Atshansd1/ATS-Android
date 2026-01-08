@@ -44,6 +44,24 @@ class LocationService(private val context: Context) {
         return hasFine || hasCoarse
     }
     
+    /**
+     * Check if app has background location permission (required for Android 10+)
+     * This is the equivalent of iOS "Always" permission
+     */
+    fun hasBackgroundLocationPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_BACKGROUND_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            // On older Android versions, foreground permission is enough
+            hasLocationPermission()
+        }
+    }
+    
+
+    
     fun isLocationEnabled(): Boolean {
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
         return locationManager?.isProviderEnabled(LocationManager.GPS_PROVIDER) == true ||

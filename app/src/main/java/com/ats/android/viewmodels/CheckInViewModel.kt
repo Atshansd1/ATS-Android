@@ -38,6 +38,18 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
     private val _activeRecord = MutableStateFlow<AttendanceRecord?>(null)
     val activeRecord: StateFlow<AttendanceRecord?> = _activeRecord.asStateFlow()
     
+    // Background permission enforcement (equivalent to iOS "Always" requirement)
+    private val _showBackgroundPermissionRequired = MutableStateFlow(false)
+    val showBackgroundPermissionRequired: StateFlow<Boolean> = _showBackgroundPermissionRequired.asStateFlow()
+    
+    private val _showPermissionDowngradeAlert = MutableStateFlow(false)
+    val showPermissionDowngradeAlert: StateFlow<Boolean> = _showPermissionDowngradeAlert.asStateFlow()
+    
+    private val _permissionCountdown = MutableStateFlow(30)
+    val permissionCountdown: StateFlow<Int> = _permissionCountdown.asStateFlow()
+    
+    private var countdownJob: kotlinx.coroutines.Job? = null
+    
     fun initialize(employee: Employee?) {
         if (employee == null) {
             _uiState.value = CheckInUiState.Error("Employee not found")
@@ -81,6 +93,57 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
      */
     fun clearError() {
         _uiState.value = CheckInUiState.Ready
+    }
+    
+    /**
+     * Dismiss background permission required dialog
+     */
+    fun dismissBackgroundPermissionDialog() {
+        _showBackgroundPermissionRequired.value = false
+    }
+    
+    /**
+     * Check background permission for active check-in session
+     * Call this when app resumes to detect permission changes
+     */
+    fun checkBackgroundPermissionForActiveSession(employee: Employee) {
+        if (_isCheckedIn.value && !locationService.hasBackgroundLocationPermission()) {
+            Log.w(TAG, "⚠️ Background permission revoked during active session")
+            startAutoCheckoutCountdown(employee)
+        }
+    }
+    
+    /**
+     * Start 30-second countdown to auto-checkout when permission is revoked
+     */
+    private fun startAutoCheckoutCountdown(employee: Employee) {
+        // Avoid duplicate timers
+        if (countdownJob != null) return
+        
+        _permissionCountdown.value = 30
+        _showPermissionDowngradeAlert.value = true
+        
+        countdownJob = viewModelScope.launch {
+            while (_permissionCountdown.value > 0) {
+                kotlinx.coroutines.delay(1000)
+                _permissionCountdown.value -= 1
+            }
+            
+            // Auto checkout after countdown
+            _showPermissionDowngradeAlert.value = false
+            checkOut(employee)
+            countdownJob = null
+        }
+    }
+    
+    /**
+     * Cancel auto-checkout countdown (user restored permission)
+     */
+    fun cancelAutoCheckout() {
+        countdownJob?.cancel()
+        countdownJob = null
+        _showPermissionDowngradeAlert.value = false
+        _permissionCountdown.value = 30
     }
     
     private suspend fun getCurrentLocation() {
@@ -170,6 +233,14 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                 // Check permissions
                 if (!locationService.hasLocationPermission()) {
                     _uiState.value = CheckInUiState.Error("Location permission is required. Please grant permission in app settings.")
+                    return@launch
+                }
+                
+                // CRITICAL: Require background location permission for continuous tracking
+                if (!locationService.hasBackgroundLocationPermission()) {
+                    _showBackgroundPermissionRequired.value = true
+                    _uiState.value = CheckInUiState.Ready
+                    Log.w(TAG, "⚠️ Background location permission required for check-in")
                     return@launch
                 }
                 

@@ -18,6 +18,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ats.android.R
 
@@ -254,6 +256,57 @@ fun CreateCenterScreen(
                             Icon(Icons.Default.EditLocation, null, tint = MaterialTheme.colorScheme.primary)
                         }
                     }
+                    
+                    Divider(modifier = Modifier.padding(vertical = Spacing.sm))
+                    
+                    // Coordinate Input Section
+                    Text(
+                        text = stringResource(R.string.enter_coordinates),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    
+                    var latitudeText by remember { mutableStateOf(latitude.toString()) }
+                    var longitudeText by remember { mutableStateOf(longitude.toString()) }
+                    
+                    // Update text fields when coordinates change from map
+                    LaunchedEffect(latitude, longitude) {
+                        latitudeText = String.format("%.6f", latitude)
+                        longitudeText = String.format("%.6f", longitude)
+                    }
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+                    ) {
+                        OutlinedTextField(
+                            value = latitudeText,
+                            onValueChange = { text ->
+                                latitudeText = text
+                                text.toDoubleOrNull()?.let { 
+                                    if (it >= -90 && it <= 90) latitude = it 
+                                }
+                            },
+                            label = { Text("Lat") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                        OutlinedTextField(
+                            value = longitudeText,
+                            onValueChange = { text ->
+                                longitudeText = text
+                                text.toDoubleOrNull()?.let { 
+                                    if (it >= -180 && it <= 180) longitude = it 
+                                }
+                            },
+                            label = { Text("Lng") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                        )
+                    }
+                    
                     Divider(modifier = Modifier.padding(vertical = Spacing.md))
                     
                     // Radius Slider

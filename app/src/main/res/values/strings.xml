@@ -699,6 +699,7 @@
     <string name="address_ar">Address (Arabic)</string>
     <string name="location">Location</string>
     <string name="radius">Radius</string>
+    <string name="enter_coordinates">Or enter coordinates directly</string>
     <string name="assigned_employees">Assigned Employees</string>
 
 

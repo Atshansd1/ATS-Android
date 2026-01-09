@@ -78,10 +78,17 @@ class MapViewModel(context: Context? = null) : ViewModel() {
                     viewModelScope.launch {
                         Log.d(TAG, "📍 Received ${locations.size} active locations from Firestore")
                         
-                        // 1. First, map to EmployeeLocation with original positions
+                        // 1. Fetch verified check-in times
+                        val employeeIds = locations.map { it.first.employeeId }
+                        val verifiedTimes = firestoreService.getLatestCheckInTimes(employeeIds)
+
+                        // 2. Map to EmployeeLocation with original positions
                         val initialList = locations.map { (employee, activeLocation) ->
                              Log.d(TAG, "📍 Mapping location for: ${employee.displayName}")
                              employeeDataMap[employee.employeeId] = employee
+                             
+                             // Use verified time if available
+                             val realCheckInTime = verifiedTimes[employee.employeeId] ?: activeLocation.checkInTime.toDate()
                              
                              EmployeeLocation(
                                 employeeId = employee.employeeId,
@@ -94,7 +101,7 @@ class MapViewModel(context: Context? = null) : ViewModel() {
                                 timestamp = activeLocation.lastUpdated.toDate(),
                                 role = employee.role,
                                 avatarUrl = employee.avatarURL,
-                                checkInTime = activeLocation.checkInTime.toDate()
+                                checkInTime = realCheckInTime
                             )
                         }
                         

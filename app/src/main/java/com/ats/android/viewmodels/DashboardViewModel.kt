@@ -59,17 +59,27 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 firestoreService.observeActiveLocations { locations ->
                     Log.d(TAG, "🔔 Real-time callback triggered with ${locations.size} locations")
                     viewModelScope.launch {
+                        // Resilient Check-in Time Fetch:
+                        // Fetch authoritative check-in times from 'attendance' collection to fix corrupted times from legacy apps
+                        val employeeIds = locations.map { it.first.employeeId }
+                        val verifiedTimes = firestoreService.getLatestCheckInTimes(employeeIds)
+                        
                         val activeEmployeesList = locations.map { pair ->
                             val employee = pair.first
                             val location = pair.second
                             val displayPlaceName = location.getLocalizedPlaceName() ?: location.placeName
-                            Log.d(TAG, "   Processing: ${employee.displayName} at $displayPlaceName")
+                            
+                            // Use verified time if available, otherwise fallback to location time (which might be corrupted)
+                            val realCheckInTime = verifiedTimes[employee.employeeId] ?: location.checkInTime.toDate()
+                            
+                            Log.d(TAG, "   Processing: ${employee.displayName} - VerifiedTime: ${verifiedTimes[employee.employeeId] != null}")
+                            
                             ActiveEmployeeInfo(
                                 id = employee.employeeId,
                                 name = employee.displayName,
                                 department = employee.team,
-                                checkInTime = formatTime(location.checkInTime.toDate()),
-                                duration = formatDuration(location.checkInTime.toDate()),
+                                checkInTime = formatTime(realCheckInTime),
+                                duration = formatDuration(realCheckInTime),
                                 placeName = displayPlaceName
                             )
                         }
@@ -78,12 +88,16 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                             val employee = pair.first
                             val location = pair.second
                             val displayPlaceName = location.getLocalizedPlaceName() ?: location.placeName
+                            
+                            // Use verified time here as well
+                            val realCheckInTime = verifiedTimes[employee.employeeId] ?: location.checkInTime.toDate()
+                            
                             com.ats.android.ui.screens.ActiveEmployeeItem(
                                 id = employee.employeeId,
                                 name = employee.displayName,
                                 department = employee.team,
-                                checkInTime = formatTime(location.checkInTime.toDate()),
-                                duration = formatDuration(location.checkInTime.toDate()),
+                                checkInTime = formatTime(realCheckInTime),
+                                duration = formatDuration(realCheckInTime),
                                 placeName = displayPlaceName,
                                 avatarUrl = employee.avatarURL,
                                 role = employee.role

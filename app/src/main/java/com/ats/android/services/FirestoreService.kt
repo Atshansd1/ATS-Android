@@ -862,6 +862,45 @@ class FirestoreService private constructor() {
         }
     }
     
+    /**
+     * Get authoritative check-in times from Attendance collection.
+     * This is required because legacy app versions may overwrite ActiveLocation checkInTime
+     * with incorrect values (e.g. current timestamp).
+     */
+    suspend fun getLatestCheckInTimes(employeeIds: List<String>): Map<String, Date> {
+        if (employeeIds.isEmpty()) return emptyMap()
+        
+        return try {
+            val result = mutableMapOf<String, Date>()
+            
+            // Query in batches of 10 to avoid 'IN' query limits (limit is 30, but 10 is safe)
+            employeeIds.chunked(10).forEach { batch ->
+                val snapshot = db.collection(ATTENDANCE_COLLECTION)
+                    .whereIn("employeeId", batch)
+                    .whereEqualTo("status", "checked_in")
+                    .get()
+                    .await()
+                    
+                for (doc in snapshot.documents) {
+                    val employeeId = doc.getString("employeeId")
+                    val checkInTimestamp = doc.getTimestamp("checkInTime")
+                    
+                    if (employeeId != null && checkInTimestamp != null) {
+                        // If multiple records exist (shouldn't happen for checked_in), 
+                        // verify we get the latest if we query sorted, but here we just take what matches.
+                        // Ideally we trust the 'checked_in' status implies the current session.
+                        result[employeeId] = checkInTimestamp.toDate()
+                    }
+                }
+            }
+            Log.d(TAG, "✅ Fetched ${result.size} verified check-in times from attendance")
+            result
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error fetching check-in times: ${e.message}", e)
+            emptyMap()
+        }
+    }
+
     suspend fun getRecentAttendance(limit: Int = 10): List<AttendanceRecord> {
         return try {
             Log.d(TAG, "📥 Fetching recent attendance records (last 24 hours)")

@@ -68,7 +68,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                                 id = employee.employeeId,
                                 name = employee.displayName,
                                 department = employee.team,
-                                checkInTime = formatTime(location.timestamp.toDate()),
+                                checkInTime = formatTime(location.checkInTime.toDate()),
                                 duration = formatDuration(location.checkInTime.toDate()),
                                 placeName = displayPlaceName
                             )
@@ -82,7 +82,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                                 id = employee.employeeId,
                                 name = employee.displayName,
                                 department = employee.team,
-                                checkInTime = formatTime(location.timestamp.toDate()),
+                                checkInTime = formatTime(location.checkInTime.toDate()),
                                 duration = formatDuration(location.checkInTime.toDate()),
                                 placeName = displayPlaceName,
                                 avatarUrl = employee.avatarURL,

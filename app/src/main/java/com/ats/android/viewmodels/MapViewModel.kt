@@ -91,7 +91,7 @@ class MapViewModel(context: Context? = null) : ViewModel() {
                                     activeLocation.location.longitude
                                 ),
                                 placeName = activeLocation.placeName,
-                                timestamp = activeLocation.timestamp.toDate(),
+                                timestamp = activeLocation.lastUpdated.toDate(),
                                 role = employee.role,
                                 avatarUrl = employee.avatarURL,
                                 checkInTime = activeLocation.checkInTime.toDate()

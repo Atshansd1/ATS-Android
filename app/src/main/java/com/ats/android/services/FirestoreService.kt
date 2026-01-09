@@ -708,13 +708,40 @@ class FirestoreService private constructor() {
     ) {
         try {
             // CRITICAL: Only update active location if employee is actually checked in
-            val activeCheckIn = getActiveCheckIn(employeeId)
-            if (activeCheckIn == null) {
+            // Fetch the raw document to get the true checkInTime (avoid model default values)
+            val attendanceSnapshot = db.collection(ATTENDANCE_COLLECTION)
+                .whereEqualTo("employeeId", employeeId)
+                .whereEqualTo("status", "checked_in")
+                .orderBy("checkInTime", Query.Direction.DESCENDING)
+                .limit(1)
+                .get()
+                .await()
+            
+            if (attendanceSnapshot.documents.isEmpty()) {
                 Log.d(TAG, "⚠️ Employee $employeeId not checked in, skipping active location update")
                 return
             }
             
+            // Get the REAL checkInTime directly from the Firestore document
+            // This avoids the model default of Timestamp.now() if deserialization fails
+            val attendanceDoc = attendanceSnapshot.documents[0]
+            val originalCheckInTime = attendanceDoc.getTimestamp("checkInTime")
+            
+            if (originalCheckInTime == null) {
+                Log.e(TAG, "❌ CheckInTime is null for employee $employeeId, skipping update")
+                return
+            }
+            
             val now = Timestamp.now()
+            
+            // Validate: checkInTime should be BEFORE now (not equal or very close)
+            // If it's within 5 seconds of now, it's likely a deserialization default
+            val timeDiffSeconds = now.seconds - originalCheckInTime.seconds
+            if (timeDiffSeconds < 5) {
+                Log.w(TAG, "⚠️ CheckInTime ($originalCheckInTime) is suspiciously close to now, using stored time")
+            }
+            
+            Log.d(TAG, "📍 Using original check-in time: ${originalCheckInTime.toDate()}")
             
             // iOS-compatible GeoPointData structure (not native GeoPoint!)
             val locationData = hashMapOf<String, Any?>(
@@ -724,14 +751,11 @@ class FirestoreService private constructor() {
                 "timestamp" to now
             )
             
-            // Use the original check-in time from the active record (already a Timestamp)
-            val checkInTimestamp = activeCheckIn.checkInTime
-            
             val activeLocation = hashMapOf<String, Any?>(
                 "employeeId" to employeeId,
                 "location" to locationData,  // Use GeoPointData structure
                 "lastUpdated" to now,        // iOS expects "lastUpdated" not "timestamp"
-                "checkInTime" to checkInTimestamp,  // Preserve original check-in time
+                "checkInTime" to originalCheckInTime,  // Preserve original check-in time from document
                 "isActive" to true,
                 "placeName" to (placeName ?: "Unknown Location"),
                 "placeNameEn" to (placeNameEn ?: placeName),

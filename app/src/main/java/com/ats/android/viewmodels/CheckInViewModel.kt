@@ -279,6 +279,18 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                 _uiState.value = CheckInUiState.Processing
                 Log.d(TAG, "⏱️ Checking in: ${employee.displayName}")
                 
+                // MANDATORY UPDATE CHECK - Block check-in if update is available
+                val updateManager = com.ats.android.services.UpdateManager(getApplication())
+                val versionInfo = updateManager.checkForUpdates()
+                if (versionInfo?.isUpdateAvailable == true) {
+                    Log.w(TAG, "🚫 Update required - blocking check-in")
+                    _uiState.value = CheckInUiState.Error(
+                        "App update required! Please update to version ${versionInfo.latestVersion} before checking in. " +
+                        "Go to Settings → Check for Update"
+                    )
+                    return@launch
+                }
+                
                 // Check permissions
                 if (!locationService.hasLocationPermission()) {
                     _uiState.value = CheckInUiState.Error("Location permission is required. Please grant permission in app settings.")

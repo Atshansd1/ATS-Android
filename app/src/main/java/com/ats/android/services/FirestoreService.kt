@@ -707,25 +707,43 @@ class FirestoreService private constructor() {
         placeNameAr: String? = null
     ) {
         try {
-            // CRITICAL: Only update active location if employee is actually checked in
-            // Fetch the raw document to get the true checkInTime (avoid model default values)
-            val attendanceSnapshot = db.collection(ATTENDANCE_COLLECTION)
-                .whereEqualTo("employeeId", employeeId)
-                .whereEqualTo("status", "checked_in")
-                .orderBy("checkInTime", Query.Direction.DESCENDING)
-                .limit(1)
-                .get()
-                .await()
+            var originalCheckInTime: Timestamp? = null
             
-            if (attendanceSnapshot.documents.isEmpty()) {
-                Log.d(TAG, "⚠️ Employee $employeeId not checked in, skipping active location update")
-                return
+            // Strategy: First try to get checkInTime from existing ActiveLocation (Direct read, fast)
+            try {
+                val activeDoc = db.collection(ACTIVE_LOCATIONS_COLLECTION)
+                    .document(employeeId)
+                    .get()
+                    .await()
+                    
+                if (activeDoc.exists()) {
+                    originalCheckInTime = activeDoc.getTimestamp("checkInTime")
+                    // if (originalCheckInTime != null) Log.d(TAG, "✅ Using checkInTime from existing ActiveLocation")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ Failed to read existing active location: ${e.message}")
             }
             
-            // Get the REAL checkInTime directly from the Firestore document
-            // This avoids the model default of Timestamp.now() if deserialization fails
-            val attendanceDoc = attendanceSnapshot.documents[0]
-            val originalCheckInTime = attendanceDoc.getTimestamp("checkInTime")
+            // Fallback: Query Attendance collection (Slower, requires index)
+            if (originalCheckInTime == null) {
+                Log.d(TAG, "⚠️ Missing checkInTime in ActiveLocation, falling back to Attendance query...")
+                
+                val attendanceSnapshot = db.collection(ATTENDANCE_COLLECTION)
+                    .whereEqualTo("employeeId", employeeId)
+                    .whereEqualTo("status", "checked_in")
+                    .orderBy("checkInTime", Query.Direction.DESCENDING)
+                    .limit(1)
+                    .get()
+                    .await()
+                
+                if (attendanceSnapshot.documents.isEmpty()) {
+                    Log.d(TAG, "⚠️ Employee $employeeId not checked in, skipping active location update")
+                    return
+                }
+                
+                val attendanceDoc = attendanceSnapshot.documents[0]
+                originalCheckInTime = attendanceDoc.getTimestamp("checkInTime")
+            }
             
             if (originalCheckInTime == null) {
                 Log.e(TAG, "❌ CheckInTime is null for employee $employeeId, skipping update")
@@ -734,11 +752,10 @@ class FirestoreService private constructor() {
             
             val now = Timestamp.now()
             
-            // Validate: checkInTime should be BEFORE now (not equal or very close)
-            // If it's within 5 seconds of now, it's likely a deserialization default
+            // Validate: checkInTime should be BEFORE now
             val timeDiffSeconds = now.seconds - originalCheckInTime.seconds
-            if (timeDiffSeconds < 5) {
-                Log.w(TAG, "⚠️ CheckInTime ($originalCheckInTime) is suspiciously close to now, using stored time")
+            if (timeDiffSeconds < 0) {
+                 Log.w(TAG, "⚠️ CheckInTime is in the future? Using stored time anyway.")
             }
             
             Log.d(TAG, "📍 Using original check-in time: ${originalCheckInTime.toDate()}")

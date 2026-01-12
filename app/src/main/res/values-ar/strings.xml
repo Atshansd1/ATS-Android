@@ -840,4 +840,30 @@
     <string name="new_leave_requests">طلبات الإجازة الجديدة</string>
     <string name="late_checkins">تسجيل الحضور المتأخر</string>
     <string name="missed_checkins">تسجيل الحضور الفائت</string>
+
+    <!-- Force Checkout -->
+    <string name="force_checkout_title">فرض تسجيل الانصراف</string>
+    <string name="force_checkout_confirm">هل أنت متأكد من فرض تسجيل الانصراف للموظف %1$s؟ سيؤدي ذلك إلى إنهاء جلسته النشطة.</string>
+    <string name="notification_force_checkout_title">تنبيه تسجيل الانصراف</string>
+    <string name="notification_force_checkout_body">تم إنهاء جلستك من قبل المسؤول.</string>
+    <string name="force_checkout">فرض الانصراف</string>
+    <string name="force_checkout_confirmation">هل أنت متأكد من رغبتك في فرض تسجيل الانصراف لهذا الموظف؟</string>
+    <string name="admin_checkout_label">انصراف إداري</string>
+
+    <!-- Always Location Permission -->
+    <string name="background_location_required">يتطلب تتبع الحضور إذن الموقع في الخلفية. يرجى تفعيله من الإعدادات.</string>
+    <string name="background_location_title">مطلوب إذن الموقع</string>
+    <string name="background_location_message">لتتبع حضورك بدقة أثناء العمل، يرجى تفعيل خيار \'السماح طوال الوقت\' للموقع في الإعدادات.</string>
+    <string name="permission_downgrade_title">تم تغيير إذن الموقع</string>
+    <string name="permission_downgrade_message">تم تغيير إذن الموقع. سيتم تسجيل انصرافك تلقائياً خلال %d ثوانٍ ما لم تستعد الإذن.</string>
+    <string name="auto_checkout_warning">انصراف تلقائي خلال %d ثوانٍ</string>
+    <string name="restore_permission">استعادة الإذن</string>
+    <string name="open_settings">فتح الإعدادات</string>
+
+    <!-- Permission Warning Notification -->
+    <string name="permission_warning_channel_name">تنبيهات إذن الموقع</string>
+    <string name="permission_warning_channel_description">تنبيهات عند تغيير إذن الموقع أثناء التسجيل</string>
+    <string name="permission_warning_notification_title">⚠️ تم تغيير إذن الموقع</string>
+    <string name="permission_warning_notification_body">سيتم تسجيل انصرافك تلقائياً خلال 30 ثانية. يرجى استعادة إذن \'السماح طوال الوقت\' لمتابعة ورديتك.</string>
+    <string name="permission_revoked_checkout_body">تم تغيير إذن الموقع الخاص بك. تم تسجيل انصرافك تلقائياً.</string>
 </resources>

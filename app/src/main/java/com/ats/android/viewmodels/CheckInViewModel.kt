@@ -519,7 +519,8 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                     _currentLocation.value = location
                 }
                 
-                // If still no location, use check-in location
+                // If still no location, use check-in location (only if remote checkout is allowed validation passes, or as last resort fallback for data)
+                // note: we validate location afterwards, so using stale location might fail validation which is good
                 if (location == null && _activeRecord.value?.checkInLocation != null) {
                     val checkInLoc = _activeRecord.value!!.checkInLocation!!
                     location = Location("fallback").apply {
@@ -534,27 +535,80 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                     _uiState.value = CheckInUiState.Error("Location not available. Please try again.")
                     return@launch
                 }
+
+                // VALIDATION: Check-out Restrictions
+                // 1. Fetch centers
+                val centers = firestoreService.getAllAttendanceCenters()
+                val activeCenters = centers.filter { it.isActive }
                 
-                // If we got a fresh location, try to get the place name
+                if (activeCenters.isNotEmpty()) {
+                    // 2. Filter for this employee
+                    val employeeCenters = activeCenters.filter { center ->
+                        center.assignedEmployeeIds.isEmpty() || center.assignedEmployeeIds.contains(employee.employeeId)
+                    }
+                    
+                    if (employeeCenters.isNotEmpty()) {
+                        // 3. Check for Remote Checkout Permission
+                        val isRemoteAllowed = employeeCenters.any { center ->
+                            center.allowRemoteCheckout || center.remoteCheckoutEmployeeIds.contains(employee.employeeId)
+                        }
+                        
+                        if (!isRemoteAllowed) {
+                            // 4. Enforce Geofencing (Must be at a valid center)
+                            var isWithinRadius = false
+                            var validCenterName: String? = null
+                            
+                            for (center in employeeCenters) {
+                                val centerLocation = Location("center").apply {
+                                    latitude = center.coordinate.latitude
+                                    longitude = center.coordinate.longitude
+                                }
+                                if (location!!.distanceTo(centerLocation) <= center.radiusMeters) {
+                                    isWithinRadius = true
+                                    validCenterName = center.localizedName
+                                    break
+                                }
+                            }
+                            
+                            if (!isWithinRadius) {
+                                Log.w(TAG, "🚫 Checkout Blocked: Remote checkout not allowed and user is not at any assigned center.")
+                                _uiState.value = CheckInUiState.Error("You must be at an authorized attendance center to check out.")
+                                return@launch
+                            } else {
+                                Log.d(TAG, "✅ Checkout Allowed: User is at valid center ($validCenterName)")
+                                if (placeName == null) placeName = validCenterName
+                            }
+                        } else {
+                            Log.d(TAG, "✅ Checkout Allowed: Remote checkout permitted for this user")
+                        }
+                    } else {
+                         // Edge case: Employee has no assigned centers but there are active centers defined.
+                         // Standard logic: If strict, block. If loose, allow.
+                         // Existing checkIn logic blocks them. So checkOut should probably block too?
+                         // "You are not within an authorized attendance center."
+                         // However, if they managed to check in, they should be able to check out?
+                         // Let's enforce strictness to match Check-in.
+                         Log.w(TAG, "🚫 Checkout Blocked: User not assigned to any active center.")
+                         _uiState.value = CheckInUiState.Error("Restricted: You are not assigned to any active attendance center.")
+                         return@launch
+                    }
+                }
+                // If activeCenters is empty, we allow checkout (legacy/setup mode)
+                
+                // If we got a fresh location and permissions are good, get place name if needed
                 if (placeName == null) {
                     Log.d(TAG, "🔍 Fetching place name for checkout location...")
                     placeName = kotlinx.coroutines.withTimeoutOrNull(3000L) {
-                        geocodingService.getPlaceName(location.latitude, location.longitude)
-                    }
-                    
-                    if (placeName != null) {
-                        Log.d(TAG, "✅ Checkout place name: $placeName")
-                    } else {
-                        Log.w(TAG, "⚠️ Could not get place name, using coordinates")
+                        geocodingService.getPlaceName(location!!.latitude, location!!.longitude)
                     }
                 }
                 
                 // Use place name if available, otherwise use coordinates
                 if (placeName == null) {
-                    placeName = "${String.format("%.4f", location.latitude)}, ${String.format("%.4f", location.longitude)}"
+                    placeName = "${String.format("%.4f", location!!.latitude)}, ${String.format("%.4f", location!!.longitude)}"
                 }
                 
-                val geoPoint = GeoPoint(location.latitude, location.longitude)
+                val geoPoint = GeoPoint(location!!.latitude, location!!.longitude)
                 val result = firestoreService.checkOut(
                     employeeId = employee.employeeId,
                     location = geoPoint,

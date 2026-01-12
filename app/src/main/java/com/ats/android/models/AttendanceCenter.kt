@@ -13,6 +13,10 @@ data class AttendanceCenter(
     val assignedEmployeeIds: List<String> = emptyList(),
     val isActive: Boolean = true,
     
+    // Check-out Restrictions
+    val allowRemoteCheckout: Boolean = false, // If true, all assigned employees can check out from anywhere
+    val remoteCheckoutEmployeeIds: List<String> = emptyList(), // Specific employees who can check out from anywhere
+    
     // Bilingual support
     val nameEn: String? = null,
     val nameAr: String? = null,

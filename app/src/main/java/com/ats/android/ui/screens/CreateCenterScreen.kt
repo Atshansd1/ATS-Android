@@ -69,6 +69,11 @@ fun CreateCenterScreen(
     var latitude by remember { mutableDoubleStateOf(25.2048) } // Default Dubai
     var longitude by remember { mutableDoubleStateOf(55.2708) }
 
+    // Remote Checkout State
+    var allowRemoteCheckout by remember { mutableStateOf(false) }
+    var selectedRemoteCheckoutEmployeeIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var showRemoteEmployeeSelection by remember { mutableStateOf(false) }
+
     // Populate form when data is loaded
     LaunchedEffect(centerToEdit) {
         centerToEdit?.let { center ->
@@ -77,6 +82,10 @@ fun CreateCenterScreen(
             radiusMeters = center.radiusMeters.toFloat()
             selectedEmployeeIds = center.assignedEmployeeIds.toSet()
             isActive = center.isActive
+            // Load remote checkout settings
+            allowRemoteCheckout = center.allowRemoteCheckout
+            selectedRemoteCheckoutEmployeeIds = center.remoteCheckoutEmployeeIds.toSet()
+            
             nameEn = center.nameEn ?: ""
             nameAr = center.nameAr ?: ""
             addressEn = center.addressEn ?: ""
@@ -123,6 +132,10 @@ fun CreateCenterScreen(
                                     radiusMeters = radiusMeters.toDouble(),
                                     assignedEmployeeIds = selectedEmployeeIds.toList(),
                                     isActive = isActive,
+                                    // Save new fields
+                                    allowRemoteCheckout = allowRemoteCheckout,
+                                    remoteCheckoutEmployeeIds = selectedRemoteCheckoutEmployeeIds.toList(),
+                                    
                                     nameEn = nameEn.takeIf { it.isNotBlank() },
                                     nameAr = nameAr.takeIf { it.isNotBlank() },
                                     addressEn = addressEn.takeIf { it.isNotBlank() },
@@ -136,6 +149,10 @@ fun CreateCenterScreen(
                                     radiusMeters = radiusMeters.toDouble(),
                                     assignedEmployeeIds = selectedEmployeeIds.toList(),
                                     isActive = isActive,
+                                    // Save new fields
+                                    allowRemoteCheckout = allowRemoteCheckout,
+                                    remoteCheckoutEmployeeIds = selectedRemoteCheckoutEmployeeIds.toList(),
+                                    
                                     nameEn = nameEn.takeIf { it.isNotBlank() },
                                     nameAr = nameAr.takeIf { it.isNotBlank() },
                                     addressEn = addressEn.takeIf { it.isNotBlank() },
@@ -331,7 +348,7 @@ fun CreateCenterScreen(
                 }
             }
             
-            // Employees Section
+            // Assigned Employees Section
             SectionHeader(stringResource(R.string.assigned_employees))
             GlassCard(modifier = Modifier.clickable { showEmployeeSelection = true }) {
                 Row(
@@ -347,6 +364,53 @@ fun CreateCenterScreen(
                             Text("${selectedEmployeeIds.size}", color = MaterialTheme.colorScheme.primary)
                         }
                         Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            
+            // Checkout Configuration
+            SectionHeader("Checkout Restrictions")
+            GlassCard {
+                Column(modifier = Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    // Global Switch
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Allow Global Remote Checkout", fontWeight = FontWeight.Bold)
+                            Text(
+                                "If enabled, ALL employees assigned to this center can check out from anywhere.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = allowRemoteCheckout, 
+                            onCheckedChange = { allowRemoteCheckout = it }
+                        )
+                    }
+                    
+                    // Exceptions list (Only show if Global is OFF)
+                    if (!allowRemoteCheckout) {
+                        Divider()
+                        Text("Exceptions (Allowed Employees)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                        
+                        Row(
+                             modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showRemoteEmployeeSelection = true }
+                                .padding(vertical = 8.dp),
+                             horizontalArrangement = Arrangement.SpaceBetween,
+                             verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Select specific employees")
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("${selectedRemoteCheckoutEmployeeIds.size} Selected", color = MaterialTheme.colorScheme.primary)
+                                Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
                 }
             }
@@ -428,78 +492,100 @@ fun CreateCenterScreen(
         )
     }
     
-    // Employee Selection Dialog (Simple version for now, reusing existing ViewModel logic if possible or local)
+    // Employee Selection Dialog (Assigned)
     if (showEmployeeSelection) {
-        AlertDialog(
-            onDismissRequest = { showEmployeeSelection = false },
-            title = { Text(stringResource(R.string.select_employees)) },
-            text = {
-                // Determine display list
-                // For simplicity, we filter locally or use ViewModel
-                val employees = allEmployees
-                
-                LazyColumn(modifier = Modifier.height(400.dp)) {
-                     // "Select All" / "Deselect All" Logic could go here
-                     item {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    if (selectedEmployeeIds.size == employees.size) {
-                                        selectedEmployeeIds = emptySet()
-                                    } else {
-                                        selectedEmployeeIds = employees.map { it.employeeId }.toSet()
-                                    }
-                                }
-                                .padding(8.dp),
-                             horizontalArrangement = Arrangement.End
-                        ) {
-                            Text(
-                                if (selectedEmployeeIds.size == employees.size) stringResource(R.string.deselect_all) 
-                                else stringResource(R.string.select_all),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                     }
-                     
-                    items(employees) { employee ->
-                        val isSelected = selectedEmployeeIds.contains(employee.employeeId)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    selectedEmployeeIds = if (isSelected) {
-                                        selectedEmployeeIds - employee.employeeId
-                                    } else {
-                                        selectedEmployeeIds + employee.employeeId
-                                    }
-                                }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = isSelected,
-                                onCheckedChange = { 
-                                     selectedEmployeeIds = if (it) {
-                                        selectedEmployeeIds + employee.employeeId
-                                    } else {
-                                        selectedEmployeeIds - employee.employeeId
-                                    }
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(employee.displayName)
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showEmployeeSelection = false }) {
-                    Text(stringResource(R.string.done))
-                }
-            }
+        EmployeeSelectionDialog(
+            employees = allEmployees,
+            selectedIds = selectedEmployeeIds,
+            title = stringResource(R.string.select_employees),
+            onDismiss = { showEmployeeSelection = false },
+            onSelectionChanged = { selectedEmployeeIds = it }
         )
     }
+    
+    // Remote Checkout Employee Selection Dialog
+    if (showRemoteEmployeeSelection) {
+        EmployeeSelectionDialog(
+            employees = allEmployees,
+            selectedIds = selectedRemoteCheckoutEmployeeIds,
+            title = "Select Remote Checkout Exceptions",
+            onDismiss = { showRemoteEmployeeSelection = false },
+            onSelectionChanged = { selectedRemoteCheckoutEmployeeIds = it }
+        )
+    }
+}
+
+// Reusable Employee Selection Dialog
+@Composable
+fun EmployeeSelectionDialog(
+    employees: List<com.ats.android.models.Employee>,
+    selectedIds: Set<String>,
+    title: String,
+    onDismiss: () -> Unit,
+    onSelectionChanged: (Set<String>) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            LazyColumn(modifier = Modifier.height(400.dp)) {
+                 item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (selectedIds.size == employees.size) {
+                                    onSelectionChanged(emptySet())
+                                } else {
+                                    onSelectionChanged(employees.map { it.employeeId }.toSet())
+                                }
+                            }
+                            .padding(8.dp),
+                         horizontalArrangement = Arrangement.End
+                    ) {
+                        Text(
+                            if (selectedIds.size == employees.size) stringResource(R.string.deselect_all) 
+                            else stringResource(R.string.select_all),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                 }
+                 
+                items(employees) { employee ->
+                    val isSelected = selectedIds.contains(employee.employeeId)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onSelectionChanged(
+                                    if (isSelected) selectedIds - employee.employeeId
+                                    else selectedIds + employee.employeeId
+                                )
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = isSelected,
+                            onCheckedChange = { 
+                                 onSelectionChanged(
+                                    if (it) selectedIds + employee.employeeId
+                                    else selectedIds - employee.employeeId
+                                )
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(employee.displayName)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.done))
+            }
+        }
+    )
 }
 
 @Composable

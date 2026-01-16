@@ -235,6 +235,8 @@ class FirestoreService private constructor() {
             
             docRef.set(centerWithTimestamps).await()
             Log.d(TAG, "Created attendance center: ${center.name} (ID: ${docRef.id})")
+            Log.d(TAG, "  allowRemoteCheckout: ${center.allowRemoteCheckout}")
+            Log.d(TAG, "  remoteCheckoutEmployeeIds: ${center.remoteCheckoutEmployeeIds}")
             Result.success(docRef.id)
         } catch (e: Exception) {
             Log.e(TAG, "Error creating attendance center", e)

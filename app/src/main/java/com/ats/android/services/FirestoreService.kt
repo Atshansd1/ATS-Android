@@ -255,6 +255,8 @@ class FirestoreService private constructor() {
             
             docRef.set(centerWithTimestamp).await() // Using set to overwrite/merge
             Log.d(TAG, "Updated attendance center: ${center.name}")
+            Log.d(TAG, "  allowRemoteCheckout: ${center.allowRemoteCheckout}")
+            Log.d(TAG, "  remoteCheckoutEmployeeIds: ${center.remoteCheckoutEmployeeIds}")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error updating attendance center", e)

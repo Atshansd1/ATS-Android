@@ -67,7 +67,7 @@ class AuthService private constructor() {
             _currentEmployee = employee
             
             // Save user role for notification logic
-            com.ats.android.services.LocalNotificationManager.getInstance(com.ats.android.ATSApp.instance)
+            com.ats.android.services.LocalNotificationManager.getInstance(com.ats.android.ATSApplication.instance)
                 .setUserRole(employee.role.name)
                 
             Log.d(TAG, "✅ Current employee loaded: ${employee.displayName}")

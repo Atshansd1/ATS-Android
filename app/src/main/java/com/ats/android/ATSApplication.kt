@@ -21,6 +21,9 @@ class ATSApplication : Application(), ImageLoaderFactory {
         const val TAG = "ATSApplication"
         const val LOCATION_NOTIFICATION_CHANNEL_ID = "location_tracking"
         const val GENERAL_NOTIFICATION_CHANNEL_ID = "general"
+        
+        lateinit var instance: ATSApplication
+            private set
     }
     
     override fun attachBaseContext(base: Context) {
@@ -36,6 +39,7 @@ class ATSApplication : Application(), ImageLoaderFactory {
     
     override fun onCreate() {
         super.onCreate()
+        instance = this
         
         val currentLanguage = LocaleManager.getCurrentLanguage(this)
         Log.d(TAG, "🔥 Hodoor+ Application is initializing... Language: $currentLanguage")

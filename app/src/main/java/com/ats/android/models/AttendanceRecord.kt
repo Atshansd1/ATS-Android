@@ -17,6 +17,10 @@ data class AttendanceRecord(
     val checkOutLocation: GeoPointData? = null, // iOS-compatible format
     val checkInPlaceName: String? = null,
     val checkOutPlaceName: String? = null,
+    val checkInPlaceNameEn: String? = null,
+    val checkInPlaceNameAr: String? = null,
+    val checkOutPlaceNameEn: String? = null,
+    val checkOutPlaceNameAr: String? = null,
     val totalDuration: Double? = null, // iOS uses TimeInterval (Double), not Long
     @get:com.google.firebase.firestore.PropertyName("status")
     @set:com.google.firebase.firestore.PropertyName("status")
@@ -39,6 +43,30 @@ data class AttendanceRecord(
     @get:com.google.firebase.firestore.Exclude
     val durationHours: Double
         get() = (totalDuration ?: duration?.toDouble() ?: 0.0) / 3600.0
+    
+    /**
+     * Get localized check-in place name based on language preference
+     */
+    @com.google.firebase.firestore.Exclude
+    fun getLocalizedCheckInPlaceName(isArabic: Boolean): String {
+        return if (isArabic) {
+            checkInPlaceNameAr ?: checkInPlaceName ?: ""
+        } else {
+            checkInPlaceNameEn ?: checkInPlaceName ?: ""
+        }
+    }
+    
+    /**
+     * Get localized check-out place name based on language preference
+     */
+    @com.google.firebase.firestore.Exclude
+    fun getLocalizedCheckOutPlaceName(isArabic: Boolean): String {
+        return if (isArabic) {
+            checkOutPlaceNameAr ?: checkOutPlaceName ?: ""
+        } else {
+            checkOutPlaceNameEn ?: checkOutPlaceName ?: ""
+        }
+    }
 }
 
 /**

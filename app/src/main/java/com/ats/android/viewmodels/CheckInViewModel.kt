@@ -395,6 +395,9 @@ class CheckInViewModel(application: Application) : AndroidViewModel(application)
                 
                 if (result.isSuccess) {
                     _isCheckedIn.value = true
+                    LocalNotificationManager.getInstance(getApplication())
+                        .setLastCheckInDate(System.currentTimeMillis())
+                        
                     _uiState.value = CheckInUiState.Success("Checked in successfully")
                     Log.d(TAG, "✅ Check-in successful")
                     

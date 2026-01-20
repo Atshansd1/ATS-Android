@@ -70,7 +70,7 @@ fun CreateCenterScreen(
     var longitude by remember { mutableDoubleStateOf(55.2708) }
 
     // Remote Checkout State
-    var allowRemoteCheckout by remember { mutableStateOf(false) }
+    var allowRemoteCheckout by remember { mutableStateOf(true) }
     var selectedRemoteCheckoutEmployeeIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showRemoteEmployeeSelection by remember { mutableStateOf(false) }
 

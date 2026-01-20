@@ -265,8 +265,8 @@ class ReportsViewModel : ViewModel() {
                 for (record in _reportData.value) {
                     val checkInTime = dateTimeFormat.format(record.checkInTime.toDate())
                     val checkOutTime = record.checkOutTime?.let { dateTimeFormat.format(it.toDate()) } ?: ""
-                    val checkInPlace = record.checkInPlaceName ?: ""
-                    val checkOutPlace = record.checkOutPlaceName ?: ""
+                    val checkInPlace = record.getLocalizedCheckInPlaceName(isArabic)
+                    val checkOutPlace = record.getLocalizedCheckOutPlaceName(isArabic)
                     // Always use English number format (dot as decimal separator)
                     val duration = if (record.totalDuration != null || record.duration != null) {
                         String.format(Locale.US, "%.2f", record.durationHours)

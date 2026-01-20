@@ -295,7 +295,7 @@ object PdfReportGenerator {
             drawTextInCell(canvas, record.employeeId, colX[0] + 2f, y, colWidths[0] - 4f, dataPaint)
             drawTextInCell(canvas, record.employeeName ?: "N/A", colX[1] + 2f, y, colWidths[1] - 4f, dataPaint)
             drawTextInCell(canvas, dateTimeFormat.format(record.checkInTime.toDate()), colX[2] + 2f, y, colWidths[2] - 4f, dataPaint)
-            drawTextInCell(canvas, record.checkInPlaceName ?: "N/A", colX[3] + 2f, y, colWidths[3] - 4f, dataPaint)
+            drawTextInCell(canvas, record.getLocalizedCheckInPlaceName(isArabic).ifEmpty { "N/A" }, colX[3] + 2f, y, colWidths[3] - 4f, dataPaint)
             
             if (record.checkOutTime != null) {
                 drawTextInCell(canvas, dateTimeFormat.format(record.checkOutTime!!.toDate()), colX[4] + 2f, y, colWidths[4] - 4f, dataPaint)
@@ -303,7 +303,7 @@ object PdfReportGenerator {
                 drawTextInCell(canvas, "--", colX[4] + 2f, y, colWidths[4] - 4f, dataPaint)
             }
             
-            drawTextInCell(canvas, record.checkOutPlaceName ?: "--", colX[5] + 2f, y, colWidths[5] - 4f, dataPaint)
+            drawTextInCell(canvas, record.getLocalizedCheckOutPlaceName(isArabic).ifEmpty { "--" }, colX[5] + 2f, y, colWidths[5] - 4f, dataPaint)
             
             // Duration
             val duration = if (record.totalDuration != null && record.totalDuration!! > 0) {

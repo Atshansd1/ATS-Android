@@ -65,6 +65,11 @@ class AuthService private constructor() {
             val uid = auth.currentUser?.uid ?: return null
             val employee = firestoreService.getEmployee(uid)
             _currentEmployee = employee
+            
+            // Save user role for notification logic
+            com.ats.android.services.LocalNotificationManager.getInstance(com.ats.android.ATSApp.instance)
+                .setUserRole(employee.role.name)
+                
             Log.d(TAG, "✅ Current employee loaded: ${employee.displayName}")
             employee
         } catch (e: Exception) {

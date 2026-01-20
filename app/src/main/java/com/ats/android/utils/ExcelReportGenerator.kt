@@ -293,7 +293,7 @@ object ExcelReportGenerator {
             
             // Check-In Location
             row.createCell(3).apply {
-                setCellValue(record.checkInPlaceName ?: "N/A")
+                setCellValue(record.getLocalizedCheckInPlaceName(isArabic).ifEmpty { "N/A" })
                 cellStyle = dataStyle
             }
             
@@ -316,7 +316,7 @@ object ExcelReportGenerator {
             
             // Check-Out Location
             row.createCell(5).apply {
-                setCellValue(record.checkOutPlaceName ?: "--")
+                setCellValue(record.getLocalizedCheckOutPlaceName(isArabic).ifEmpty { "--" })
                 cellStyle = dataStyle
             }
             

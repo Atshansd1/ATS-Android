@@ -416,6 +416,52 @@ class LocalNotificationManager private constructor(private val context: Context)
             true
         }
     }
+    
+    // MARK: - Smart Notification Logic
+    
+    fun setUserRole(role: String) {
+        prefs.edit().putString("user_role", role).apply()
+        Log.d(TAG, "👤 User role saved: $role")
+        
+        // If admin, ensure reminders are cancelled
+        if (role.equals("admin", ignoreCase = true) || role.equals("super_admin", ignoreCase = true)) {
+            cancelDailyCheckInReminder()
+            Log.d(TAG, "🚫 Admin role detected - cancelled all check-in reminders")
+        }
+    }
+    
+    fun setLastCheckInDate(timestamp: Long) {
+        prefs.edit().putLong("last_check_in_date", timestamp).apply()
+        Log.d(TAG, "✅ Last check-in date updated: $timestamp")
+    }
+    
+    fun shouldShowDailyReminder(): Boolean {
+        // 1. Check if Admin
+        val role = prefs.getString("user_role", "employee")
+        if (role.equals("admin", ignoreCase = true) || role.equals("super_admin", ignoreCase = true)) {
+            Log.d(TAG, "🔕 Skipping reminder: User is Admin")
+            return false
+        }
+        
+        // 2. Check if already checked in TODAY
+        val lastCheckIn = prefs.getLong("last_check_in_date", 0)
+        if (lastCheckIn > 0) {
+            val calendar = Calendar.getInstance()
+            val todayDay = calendar.get(Calendar.DAY_OF_YEAR)
+            val todayYear = calendar.get(Calendar.YEAR)
+            
+            calendar.timeInMillis = lastCheckIn
+            val checkInDay = calendar.get(Calendar.DAY_OF_YEAR)
+            val checkInYear = calendar.get(Calendar.YEAR)
+            
+            if (todayDay == checkInDay && todayYear == checkInYear) {
+                Log.d(TAG, "🔕 Skipping reminder: Already checked in today")
+                return false
+            }
+        }
+        
+        return true
+    }
 }
 
 /**
@@ -434,11 +480,19 @@ class NotificationReceiver : BroadcastReceiver() {
         val notificationId = intent.getIntExtra("notification_id", 0)
         
         val (title, body, channelId) = when (intent.action) {
-            "DAILY_CHECK_IN_REMINDER" -> Triple(
-                context.getString(R.string.check_in_reminder_title),
-                context.getString(R.string.check_in_reminder_body),
-                "hodoor_reminders"
-            )
+            "DAILY_CHECK_IN_REMINDER" -> {
+                // Feature: Check if we should actually show this reminder
+                if (!LocalNotificationManager.getInstance(context).shouldShowDailyReminder()) {
+                    Log.d(TAG, "🔕 Daily reminder suppressed based on smart logic")
+                    return
+                }
+                
+                Triple(
+                    context.getString(R.string.check_in_reminder_title),
+                    context.getString(R.string.check_in_reminder_body),
+                    "hodoor_reminders"
+                )
+            }
             "CHECK_OUT_REMINDER" -> Triple(
                 context.getString(R.string.check_out_reminder_title),
                 context.getString(R.string.check_out_reminder_body),

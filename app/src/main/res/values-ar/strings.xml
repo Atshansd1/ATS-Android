@@ -803,6 +803,19 @@
     <string name="check_in_reminder_body">لا تنسَ تسجيل الحضور لوردية اليوم.</string>
     <string name="check_out_reminder_title">تذكير بتسجيل الانصراف</string>
     <string name="check_out_reminder_body">وردية العمل تنتهي قريباً. لا تنسَ تسجيل الانصراف.</string>
+    
+    <!-- Interactive Checkout Notification -->
+    <string name="still_working_title">هل لا تزال في العمل؟</string>
+    <string name="still_working_body">يبدو أنك نسيت تسجيل الانصراف. هل لا تزال تعمل؟</string>
+    <string name="yes_still_working">نعم، لا أزال أعمل</string>
+    <string name="no_check_me_out">لا، سجل انصرافي</string>
+    <string name="checking_out">جاري تسجيل الانصراف…</string>
+    <string name="please_wait">يرجى الانتظار</string>
+    <string name="checkout_complete">تم تسجيل الانصراف</string>
+    <string name="checkout_success">تم تسجيل انصرافك بنجاح.</string>
+    <string name="checkout_failed">فشل تسجيل الانصراف</string>
+    <string name="no_active_checkin">لم يتم العثور على تسجيل حضور نشط</string>
+    
     <string name="admin_force_checkout_title">انتهاء الجلسة</string>
     <string name="admin_force_checkout_body">تم إنهاء جلستك من قبل المسؤول.</string>
     <string name="shift_start_reminder_title">وردية العمل تبدأ قريباً</string>
@@ -866,4 +879,10 @@
     <string name="permission_warning_notification_title">⚠️ تم تغيير إذن الموقع</string>
     <string name="permission_warning_notification_body">سيتم تسجيل انصرافك تلقائياً خلال 30 ثانية. يرجى استعادة إذن \'السماح طوال الوقت\' لمتابعة ورديتك.</string>
     <string name="permission_revoked_checkout_body">تم تغيير إذن الموقع الخاص بك. تم تسجيل انصرافك تلقائياً.</string>
+    
+    <!-- Auto-Update Notifications -->
+    <string name="update_channel_name">تحديثات التطبيق</string>
+    <string name="update_channel_description">إشعارات عند توفر إصدارات جديدة</string>
+    <string name="update_available_title">تحديث متاح</string>
+    <string name="update_available_body">يتوفر إصدار جديد (%1$s). انقر للتحديث.</string>
 </resources>

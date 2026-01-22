@@ -717,6 +717,19 @@
     <string name="check_in_reminder_body">Don\'t forget to check in for today\'s shift.</string>
     <string name="check_out_reminder_title">Check-Out Reminder</string>
     <string name="check_out_reminder_body">Your shift is ending soon. Remember to check out.</string>
+    
+    <!-- Interactive Checkout Notification -->
+    <string name="still_working_title">Are you still at work?</string>
+    <string name="still_working_body">It looks like you may have forgotten to check out. Are you still working?</string>
+    <string name="yes_still_working">Yes, still working</string>
+    <string name="no_check_me_out">No, check me out</string>
+    <string name="checking_out">Checking out…</string>
+    <string name="please_wait">Please wait</string>
+    <string name="checkout_complete">Check-Out Complete</string>
+    <string name="checkout_success">You have been successfully checked out.</string>
+    <string name="checkout_failed">Check-Out Failed</string>
+    <string name="no_active_checkin">No active check-in found</string>
+    
     <string name="admin_force_checkout_title">Session Ended</string>
     <string name="admin_force_checkout_body">Your session was ended by an administrator.</string>
     <string name="shift_start_reminder_title">Shift Starting Soon</string>
@@ -771,4 +784,10 @@
     <string name="permission_warning_notification_title">⚠️ Location Permission Changed</string>
     <string name="permission_warning_notification_body">You will be automatically checked out in 30 seconds. Please restore \'Allow all the time\' location permission to continue your shift.</string>
     <string name="permission_revoked_checkout_body">Your location permission was changed. You have been automatically checked out.</string>
+    
+    <!-- Auto-Update Notifications -->
+    <string name="update_channel_name">App Updates</string>
+    <string name="update_channel_description">Notifications when new app versions are available</string>
+    <string name="update_available_title">Update Available</string>
+    <string name="update_available_body">A new version (%1$s) is available. Tap to update.</string>
 </resources>

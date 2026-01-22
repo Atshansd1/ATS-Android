@@ -60,6 +60,13 @@
             </intent-filter>
         </service>
         
+        <!-- Checkout Service for automatic checkout from notification -->
+        <service
+            android:name=".services.CheckoutService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+        
         <!-- Notification Receiver for scheduled alarms -->
         <receiver
             android:name=".services.NotificationReceiver"
@@ -70,6 +77,8 @@
                 <action android:name="CHECK_OUT_REMINDER" />
                 <action android:name="SHIFT_START_REMINDER" />
                 <action android:name="SHIFT_END_REMINDER" />
+                <action android:name="com.ats.android.ACTION_STILL_WORKING" />
+                <action android:name="com.ats.android.ACTION_CHECKOUT_NOW" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>

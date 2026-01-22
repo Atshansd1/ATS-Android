@@ -57,6 +57,10 @@ class LocalNotificationManager private constructor(private val context: Context)
         private const val PREF_LATE_CHECKIN_NOTIFICATIONS = "late_checkin_notifications"
         private const val PREF_MISSED_CHECKIN_NOTIFICATIONS = "missed_checkin_notifications"
         
+        // Action constants for interactive checkout notification
+        const val ACTION_STILL_WORKING = "com.ats.android.ACTION_STILL_WORKING"
+        const val ACTION_CHECKOUT_NOW = "com.ats.android.ACTION_CHECKOUT_NOW"
+        
         @Volatile
         private var instance: LocalNotificationManager? = null
         
@@ -471,6 +475,7 @@ class NotificationReceiver : BroadcastReceiver() {
     
     companion object {
         private const val TAG = "NotificationReceiver"
+        private const val CHECKOUT_NOTIFICATION_ID = 2000
     }
     
     override fun onReceive(context: Context, intent: Intent) {
@@ -479,38 +484,72 @@ class NotificationReceiver : BroadcastReceiver() {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notificationId = intent.getIntExtra("notification_id", 0)
         
-        val (title, body, channelId) = when (intent.action) {
+        when (intent.action) {
             "DAILY_CHECK_IN_REMINDER" -> {
                 // Feature: Check if we should actually show this reminder
                 if (!LocalNotificationManager.getInstance(context).shouldShowDailyReminder()) {
                     Log.d(TAG, "🔕 Daily reminder suppressed based on smart logic")
                     return
                 }
-                
-                Triple(
+                showSimpleNotification(
+                    context,
+                    notificationManager,
+                    notificationId,
                     context.getString(R.string.check_in_reminder_title),
-                    context.getString(R.string.check_in_reminder_body),
-                    "hodoor_reminders"
+                    context.getString(R.string.check_in_reminder_body)
                 )
             }
-            "CHECK_OUT_REMINDER" -> Triple(
-                context.getString(R.string.check_out_reminder_title),
-                context.getString(R.string.check_out_reminder_body),
-                "hodoor_reminders"
-            )
-            "SHIFT_START_REMINDER" -> Triple(
-                context.getString(R.string.shift_start_reminder_title),
-                context.getString(R.string.shift_start_reminder_body),
-                "hodoor_reminders"
-            )
-            "SHIFT_END_REMINDER" -> Triple(
-                context.getString(R.string.shift_end_reminder_title),
-                context.getString(R.string.shift_end_reminder_body),
-                "hodoor_reminders"
-            )
-            else -> return
+            "CHECK_OUT_REMINDER" -> {
+                // Show interactive notification with action buttons
+                showCheckoutReminderWithActions(context, notificationManager)
+            }
+            LocalNotificationManager.ACTION_STILL_WORKING -> {
+                // User clicked "Yes, still working" - dismiss and reschedule for 1 hour later
+                Log.d(TAG, "👍 User is still working - rescheduling reminder")
+                notificationManager.cancel(CHECKOUT_NOTIFICATION_ID)
+                LocalNotificationManager.getInstance(context).scheduleCheckOutReminder(1.0)
+            }
+            LocalNotificationManager.ACTION_CHECKOUT_NOW -> {
+                // User clicked "No, check me out" - perform automatic checkout
+                Log.d(TAG, "👋 User wants to checkout - starting CheckoutService")
+                notificationManager.cancel(CHECKOUT_NOTIFICATION_ID)
+                
+                // Start background checkout service
+                val checkoutIntent = Intent(context, CheckoutService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(checkoutIntent)
+                } else {
+                    context.startService(checkoutIntent)
+                }
+            }
+            "SHIFT_START_REMINDER" -> {
+                showSimpleNotification(
+                    context,
+                    notificationManager,
+                    notificationId,
+                    context.getString(R.string.shift_start_reminder_title),
+                    context.getString(R.string.shift_start_reminder_body)
+                )
+            }
+            "SHIFT_END_REMINDER" -> {
+                showSimpleNotification(
+                    context,
+                    notificationManager,
+                    notificationId,
+                    context.getString(R.string.shift_end_reminder_title),
+                    context.getString(R.string.shift_end_reminder_body)
+                )
+            }
         }
-        
+    }
+    
+    private fun showSimpleNotification(
+        context: Context,
+        notificationManager: NotificationManager,
+        notificationId: Int,
+        title: String,
+        body: String
+    ) {
         val mainIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
@@ -522,7 +561,7 @@ class NotificationReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         
-        val notification = NotificationCompat.Builder(context, channelId)
+        val notification = NotificationCompat.Builder(context, "hodoor_reminders")
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
@@ -533,5 +572,62 @@ class NotificationReceiver : BroadcastReceiver() {
         
         notificationManager.notify(notificationId, notification)
         Log.d(TAG, "✅ Notification shown: $title")
+    }
+    
+    private fun showCheckoutReminderWithActions(context: Context, notificationManager: NotificationManager) {
+        val mainIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        
+        val mainPendingIntent = PendingIntent.getActivity(
+            context,
+            0,
+            mainIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        
+        // "Yes, still working" action
+        val stillWorkingIntent = Intent(context, NotificationReceiver::class.java).apply {
+            action = LocalNotificationManager.ACTION_STILL_WORKING
+        }
+        val stillWorkingPendingIntent = PendingIntent.getBroadcast(
+            context,
+            1001,
+            stillWorkingIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        
+        // "No, check me out" action
+        val checkoutIntent = Intent(context, NotificationReceiver::class.java).apply {
+            action = LocalNotificationManager.ACTION_CHECKOUT_NOW
+        }
+        val checkoutPendingIntent = PendingIntent.getBroadcast(
+            context,
+            1002,
+            checkoutIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        
+        // Get localized strings
+        val title = context.getString(R.string.still_working_title)
+        val body = context.getString(R.string.still_working_body)
+        val yesButton = context.getString(R.string.yes_still_working)
+        val noButton = context.getString(R.string.no_check_me_out)
+        
+        val notification = NotificationCompat.Builder(context, "hodoor_reminders")
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(false)
+            .setOngoing(true) // Make it persistent until user responds
+            .setContentIntent(mainPendingIntent)
+            .addAction(R.drawable.ic_notification, yesButton, stillWorkingPendingIntent)
+            .addAction(R.drawable.ic_notification, noButton, checkoutPendingIntent)
+            .build()
+        
+        notificationManager.notify(CHECKOUT_NOTIFICATION_ID, notification)
+        Log.d(TAG, "✅ Interactive checkout reminder shown with action buttons")
     }
 }
